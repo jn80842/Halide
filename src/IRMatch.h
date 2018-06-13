@@ -759,93 +759,94 @@ struct CmpOp {
     }
 };
 
+// for later: bitwidths use bvadd, etc, not + etc
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
-    s << "(" << op.a << " + " << op.b << ")";
+    s << "(+ " << op.a << "  " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Sub, A, B> &op) {
-    s << "(" << op.a << " - " << op.b << ")";
+    s << "(- " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
-    s << "(" << op.a << " * " << op.b << ")";
+    s << "(* " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
-    s << "(" << op.a << " / " << op.b << ")";
+    s << "(/ " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<And, A, B> &op) {
-    s << "(" << op.a << " && " << op.b << ")";
+    s << "(and " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Or, A, B> &op) {
-    s << "(" << op.a << " || " << op.b << ")";
+    s << "(or " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Min, A, B> &op) {
-    s << "min(" << op.a << ", " << op.b << ")";
+    s << "(min " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
-    s << "max(" << op.a << ", " << op.b << ")";
+    s << "(max " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<LE, A, B> &op) {
-    s << "(" << op.a << " <= " << op.b << ")";
+    s << "(<= " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<LT, A, B> &op) {
-    s << "(" << op.a << " < " << op.b << ")";
+    s << "(< " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GE, A, B> &op) {
-    s << "(" << op.a << " >= " << op.b << ")";
+    s << "(>= " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
-    s << "(" << op.a << " > " << op.b << ")";
+    s << "(> " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<EQ, A, B> &op) {
-    s << "(" << op.a << " == " << op.b << ")";
+    s << "(=" << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
-    s << "(" << op.a << " != " << op.b << ")";
+    s << "(not (=" << op.a << " " << op.b << "))";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
-    s << "(" << op.a << " % " << op.b << ")";
+    s << "(mod " << op.a << " " << op.b << ")";
     return s;
 }
 
@@ -2006,7 +2007,7 @@ template<typename Before,
 HALIDE_NEVER_INLINE
 void fuzz_test_rule(Before &&before, After &&after, Predicate &&pred,
                    halide_type_t wildcard_type, halide_type_t output_type) noexcept {
-
+/*
     // We only validate the rules in the scalar case
     wildcard_type.lanes = output_type.lanes = 1;
 
@@ -2014,10 +2015,11 @@ void fuzz_test_rule(Before &&before, After &&after, Predicate &&pred,
     static std::set<uint32_t> tested;
 
     if (!tested.insert(reinterpret_bits<uint32_t>(wildcard_type)).second) return;
-
+    << "', '" << pred << "', " << Type(wildcard_type) << ", " << Type(output_type)
+*/
     // Print it in a form where it can be piped into a python/z3 validator
-    debug(0) << "validate('" << before << "', '" << after << "', '" << pred << "', " << Type(wildcard_type) << ", " << Type(output_type) << ")\n";
-
+    debug(0) << "(assert (not (= " << before << " " << after << ")))\n";
+/*
     // Substitute some random constants into the before and after
     // expressions and see if the rule holds true. This should catch
     // silly errors, but not necessarily corner cases.
@@ -2120,7 +2122,7 @@ void fuzz_test_rule(Before &&before, After &&after, Predicate &&pred,
             debug(0) << val_before.u.u64 << " " << val_after.u.u64 << "\n";
             internal_error;
         }
-    }
+    } */
 }
 
 template<typename Before,
@@ -2160,7 +2162,7 @@ bool evaluate_predicate(Pattern p, MatcherState &state) {
 // operator() to ensure the input and the output have the same value
 // for lots of random values of the wildcards. Run
 // correctness_simplify with this on.
-#define HALIDE_FUZZ_TEST_RULES 0
+#define HALIDE_FUZZ_TEST_RULES 1
 
 template<typename Instance>
 struct Rewriter {
