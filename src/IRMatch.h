@@ -2011,6 +2011,17 @@ std::ostream &operator<<(std::ostream &s, const IsFloat<A> &op) {
     return s;
 }
 
+template<typename Before,
+         typename After,
+         typename Predicate,
+         typename = typename std::enable_if<std::remove_reference<Before>::type::foldable &&
+                                            std::remove_reference<After>::type::foldable>::type>
+HALIDE_NEVER_INLINE
+void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred,
+                                halide_type_t wildcard_type, halide_type_t output_type) noexcept {
+    debug(0) << "(assert (not (= " << before << " " << after << ")))\n";
+}
+
 // Verify properties of each rewrite rule. Currently just fuzz tests them.
 template<typename Before,
          typename After,
@@ -2020,7 +2031,7 @@ template<typename Before,
 HALIDE_NEVER_INLINE
 void fuzz_test_rule(Before &&before, After &&after, Predicate &&pred,
                    halide_type_t wildcard_type, halide_type_t output_type) noexcept {
-/*
+
     // We only validate the rules in the scalar case
     wildcard_type.lanes = output_type.lanes = 1;
 
@@ -2028,11 +2039,10 @@ void fuzz_test_rule(Before &&before, After &&after, Predicate &&pred,
     static std::set<uint32_t> tested;
 
     if (!tested.insert(reinterpret_bits<uint32_t>(wildcard_type)).second) return;
-    << "', '" << pred << "', " << Type(wildcard_type) << ", " << Type(output_type)
-*/
+
     // Print it in a form where it can be piped into a python/z3 validator
-    debug(0) << "(assert (not (= " << before << " " << after << ")))\n";
-/*
+    debug(0) << "validate('" << before << "', '" << after << "', '" << pred << "', " << Type(wildcard_type) << ", " << Type(output_type) << ")\n";
+
     // Substitute some random constants into the before and after
     // expressions and see if the rule holds true. This should catch
     // silly errors, but not necessarily corner cases.
@@ -2135,7 +2145,18 @@ void fuzz_test_rule(Before &&before, After &&after, Predicate &&pred,
             debug(0) << val_before.u.u64 << " " << val_after.u.u64 << "\n";
             internal_error;
         }
-    } */
+    }
+}
+
+template<typename Before,
+         typename After,
+         typename Predicate,
+         typename = typename std::enable_if<!(std::remove_reference<Before>::type::foldable &&
+                                              std::remove_reference<After>::type::foldable)>::type>
+HALIDE_ALWAYS_INLINE
+void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred,
+                   halide_type_t, halide_type_t, int dummy = 0) noexcept {
+    // We can't verify rewrite rules that can't be constant-folded.
 }
 
 template<typename Before,
@@ -2175,7 +2196,10 @@ bool evaluate_predicate(Pattern p, MatcherState &state) {
 // operator() to ensure the input and the output have the same value
 // for lots of random values of the wildcards. Run
 // correctness_simplify with this on.
-#define HALIDE_FUZZ_TEST_RULES 1
+#define HALIDE_FUZZ_TEST_RULES 0
+
+// isolate z3 verification of rules
+#define HALIDE_VERIFY_SIMPLIFY_RULES 1
 
 template<typename Instance>
 struct Rewriter {
@@ -2204,6 +2228,9 @@ struct Rewriter {
         static_assert((Before::binds & After::binds) == After::binds, "Rule result uses unbound values");
         #if HALIDE_FUZZ_TEST_RULES
         fuzz_test_rule(before, after, true, wildcard_type, output_type);
+        #endif
+        #if HALIDE_VERIFY_SIMPLIFY_RULES
+        verify_simplification_rule(before, after, true, wildcard_type, output_type);
         #endif
         if (before.template match<0>(instance, state)) {
             build_replacement(after);
@@ -2244,6 +2271,9 @@ struct Rewriter {
         #if HALIDE_FUZZ_TEST_RULES
         fuzz_test_rule(before, Const(after), true, wildcard_type, output_type);
         #endif
+        #if HALIDE_VERIFY_SIMPLIFY_RULES
+        verify_simplification_rule(before, Const(after), true, wildcard_type, output_type);
+        #endif
         if (before.template match<0>(instance, state)) {
             result = make_const(output_type, after);
             #if HALIDE_DEBUG_MATCHED_RULES
@@ -2271,6 +2301,9 @@ struct Rewriter {
         static_assert((Before::binds & Predicate::binds) == Predicate::binds, "Rule predicate uses unbound values");
         #if HALIDE_FUZZ_TEST_RULES
         fuzz_test_rule(before, after, pred, wildcard_type, output_type);
+        #endif
+        #if HALIDE_VERIFY_SIMPLIFY_RULES
+        verify_simplification_rule(before, after, pred, wildcard_type, output_type);
         #endif
         if (before.template match<0>(instance, state) &&
             evaluate_predicate(pred, state)) {
@@ -2318,6 +2351,9 @@ struct Rewriter {
         static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
         #if HALIDE_FUZZ_TEST_RULES
         fuzz_test_rule(before, Const(after), pred, wildcard_type, output_type);
+        #endif
+        #if HALIDE_VERIFY_SIMPLIFY_RULES
+        verify_simplification_rule(before, Const(after), pred, wildcard_type, output_type);
         #endif
         if (before.template match<0>(instance, state) &&
             evaluate_predicate(pred, state)) {
