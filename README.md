@@ -21,6 +21,8 @@ Halide, see the notes below.
 Build Status
 ============
 
+[![Join the chat at https://gitter.im/jn80842-Halide/Lobby](https://badges.gitter.im/jn80842-Halide/Lobby.svg)](https://gitter.im/jn80842-Halide/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 | Linux                        |
 |------------------------------|
 | [![linux build status][1]][2]|
