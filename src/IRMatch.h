@@ -5,6 +5,9 @@
  * Defines a method to match a fragment of IR against a pattern containing wildcards
  */
 
+#include <iostream>
+#include <fstream>
+
 #include "IR.h"
 #include "IREquality.h"
 #include "IROperator.h"
@@ -1796,9 +1799,11 @@ auto fold(A a) noexcept -> Fold<decltype(pattern_arg(a))> {
     return {pattern_arg(a)};
 }
 
+// fold doesn't mean anything for verification because constants are also symbolic variables
+// instead, fold only (potentially) changes order of operations, so we output nothing
 template<typename A>
 std::ostream &operator<<(std::ostream &s, const Fold<A> &op) {
-    s << "fold(" << op.a << ")";
+    s << op.a ;
     return s;
 }
 
@@ -2006,6 +2011,11 @@ template<typename Before,
 HALIDE_NEVER_INLINE
 void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred,
                                 halide_type_t wildcard_type, halide_type_t output_type) noexcept {
+    std::ofstream assertfile;
+    std::string filename = "assert" + std::to_string(rand()) + ".smt2";
+    assertfile.open(filename);
+    assertfile << "(assert (not (= " << before << " " << after << ")))\n";
+    assertfile.close();
     debug(0) << "(assert (not (= " << before << " " << after << ")))\n";
 }
 
@@ -2398,7 +2408,7 @@ auto rewriter(const Expr &e) noexcept -> Rewriter<decltype(pattern_arg(e))> {
 }
 // @}
 
-}
+} // namespace IRMatcher
 
 }  // namespace Internal
 }  // namespace Halide
