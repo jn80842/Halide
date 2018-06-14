@@ -1443,7 +1443,7 @@ auto not_op(A a) -> decltype(IRMatcher::operator!(a)) {return IRMatcher::operato
 
 template<typename A>
 inline std::ostream &operator<<(std::ostream &s, const NotOp<A> &op) {
-    s << "!(" << op.a << ")";
+    s << "(not " << op.a << ")";
     return s;
 }
 
@@ -1717,7 +1717,7 @@ struct NegateOp {
 
 template<typename A>
 std::ostream &operator<<(std::ostream &s, const NegateOp<A> &op) {
-    s << "-" << op.a;
+    s << "(- " << op.a << ")";
     return s;
 }
 
