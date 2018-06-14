@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     Expr b1 = Variable::make(Bool(), "b1");
     Expr b2 = Variable::make(Bool(), "b2");
 
-    check(x + 0, x);
+    check(x + x, 3);
 
     printf("Success!\n");
 
