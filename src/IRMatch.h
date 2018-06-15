@@ -801,13 +801,13 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Or, A, B> &op) {
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Min, A, B> &op) {
-    s << "(min " << op.a << " " << op.b << ")";
+    s << "(ite (<=  " << op.a << " " << op.b << ") " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
-    s << "(max " << op.a << " " << op.b << ")";
+    s << "(ite (>=  " << op.a << " " << op.b << ") " << op.a << " " << op.b << ")";
     return s;
 }
 
@@ -837,13 +837,13 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<EQ, A, B> &op) {
-    s << "(=" << op.a << " " << op.b << ")";
+    s << "(= " << op.a << " " << op.b << ")";
     return s;
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
-    s << "(not (=" << op.a << " " << op.b << "))";
+    s << "(not (= " << op.a << " " << op.b << "))";
     return s;
 }
 
@@ -2013,7 +2013,16 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
                                 halide_type_t wildcard_type, halide_type_t output_type) noexcept {
     std::ofstream assertfile;
     std::string filename = "assert" + std::to_string(rand()) + ".smt2";
+    // all this predicate stuff is super hacky, fix later
+    std::ostringstream pred_stream;
+    pred_stream << pred;
+    std::string pred_string = pred_stream.str();
     assertfile.open(filename);
+    if (pred_string == "1") {
+        assertfile << "(assert true)";
+    } else {
+        assertfile << "(assert " << pred << ")\n";
+    }
     assertfile << "(assert (not (= " << before << " " << after << ")))\n";
     assertfile.close();
     debug(0) << "(assert (not (= " << before << " " << after << ")))\n";
