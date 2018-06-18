@@ -1499,7 +1499,7 @@ struct SelectOp {
 
 template<typename C, typename T, typename F>
 std::ostream &operator<<(std::ostream &s, const SelectOp<C, T, F> &op) {
-    s << "select(" << op.c << ", " << op.t << ", " << op.f << ")";
+    s << "(ite (not (= " << op.c << " 0))" << op.t << " " << op.f << ")";
     return s;
 }
 
