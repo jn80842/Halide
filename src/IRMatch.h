@@ -2032,7 +2032,7 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     std::string pred_string = pred_stream.str();
     assertfile.open(filename);
     if (pred_string == "1") {
-        assertfile << "(assert true)";
+        assertfile << "(assert true)\n";
     } else {
         assertfile << "(assert " << pred << ")\n";
     }

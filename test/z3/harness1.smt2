@@ -5,3 +5,7 @@
 (declare-const c0 Int)
 (declare-const c1 Int)
 (declare-const c2 Int)
+(declare-const _0b Bool)
+(declare-const _1b Bool)
+(declare-const _2b Bool)
+(declare-const _3b Bool)
