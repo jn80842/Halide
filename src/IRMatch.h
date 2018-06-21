@@ -2416,23 +2416,28 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
 
     std::ofstream assertfile;
     std::string filename = "assert" + std::to_string(rand()) + ".smt2";
-    // all this predicate stuff is super hacky, fix later
-    // we need to walk before and add to predicate every time we find a divisor
+
+    assertfile.open(filename);
+
+    // print rewrite rule as comments in smt2 file
+    assertfile << ";; Before: " << before << "\n";
+    assertfile << ";; After : " << after << "\n";
+    assertfile << ";; Pred  : " << pred << "\n\n";
+
+    // this is kinda hacky, fix later
     std::ostringstream pred_stream;
     pred_stream << pred;
-    std::string pred_string = pred_stream.str();
-    assertfile.open(filename);
-    if (pred_string == "1") {
-        assertfile << "(assert true)\n";
-    } else {
+    if (pred_stream.str() != "1") {
         assertfile << "(assert " << print_smt2(pred) << ")\n";
     }
+
+    // get assumptions that divisors and mod 2nd terms are non zero
     assertfile << predicate_to_smt2(before);
     assertfile << predicate_to_smt2(after);
-    assertfile << "(assert (not (= ";
-    assertfile << print_smt2(before) << " " << print_smt2(after) << ")))\n";
+
+    // verify that the solver cannot find a model in which the two sides of the rewrite rule are different
+    assertfile << "\n(assert (not (= " << print_smt2(before) << " " << print_smt2(after) << ")))\n";
     assertfile.close();
-    debug(0) << "(assert (not (= " << before << " " << after << ")))\n";
 }
 
 // Verify properties of each rewrite rule. Currently just fuzz tests them.
