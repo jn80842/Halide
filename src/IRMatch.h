@@ -224,15 +224,14 @@ inline std::ostream &operator<<(std::ostream &s, SpecificExpr e) {
     return s;
 }
 
-template<typename Predicate>
-std::string predicate_to_smt2(SpecificExpr e, Predicate &&pred, bool status) noexcept {
-    if (status) {
-        std::ostringstream pred_stream;
-        pred_stream << e;
-        return pred_stream.str();
-    } else {
-        return "";
-    }
+inline std::string print_smt2(SpecificExpr e) {
+    std::ostringstream s;
+    s << e;
+    return s.str();
+}
+
+inline std::string predicate_to_smt2(SpecificExpr e) {
+    return "";
 }
 
 template<int i>
@@ -285,15 +284,16 @@ std::ostream &operator<<(std::ostream &s, const WildConstInt<i> &c) {
     return s;
 }
 
-template<int i, typename Predicate>
-std::string predicate_to_smt2(const WildConstInt<i> &c, Predicate &&pred, bool status) noexcept {
-    if (status) {
-        std::ostringstream pred_stream;
-        pred_stream << c;
-        return pred_stream.str();
-    } else {
-        return "";
-    }
+template<int i>
+std::string print_smt2(const WildConstInt<i> &c) {
+    std::ostringstream s;
+    s << c;
+    return s.str();
+}
+
+template<int i>
+std::string predicate_to_smt2(const WildConstInt<i> &c) {
+    return "";
 }
 
 template<int i>
@@ -346,15 +346,16 @@ std::ostream &operator<<(std::ostream &s, const WildConstUInt<i> &c) {
     return s;
 }
 
-template<int i, typename Predicate>
-std::string predicate_to_smt2(const WildConstUInt<i> &c, Predicate &&pred, bool status) noexcept {
-    if (status) {
-        std::ostringstream pred_stream;
-        pred_stream << c;
-        return pred_stream.str();
-    } else {
-        return "";
-    }
+template<int i>
+std::string print_smt2(const WildConstUInt<i> &c) {
+    std::ostringstream s;
+    s << c;
+    return s.str();
+}
+
+template<int i>
+std::string predicate_to_smt2(const WildConstUInt<i> &c) {
+    return "";
 }
 
 template<int i>
@@ -408,15 +409,16 @@ std::ostream &operator<<(std::ostream &s, const WildConstFloat<i> &c) {
     return s;
 }
 
-template<int i, typename Predicate>
-std::string predicate_to_smt2(const WildConstFloat<i> &c, Predicate &&pred, bool status) noexcept {
-    if (status) {
-        std::ostringstream pred_stream;
-        pred_stream << c;
-        return pred_stream.str();
-    } else {
-        return "";
-    }
+template<int i>
+std::string print_smt2(const WildConstFloat<i> &c) {
+    std::ostringstream s;
+    s << c;
+    return s.str();
+}
+
+template<int i>
+std::string predicate_to_smt2(const WildConstFloat<i> &c) {
+    return "";
 }
 
 // Matches and binds to any constant Expr. Does not support constant-folding.
@@ -468,15 +470,16 @@ std::ostream &operator<<(std::ostream &s, const WildConst<i> &c) {
     return s;
 }
 
-template<int i, typename Predicate>
-std::string predicate_to_smt2(const WildConst<i> &c, Predicate &&pred, bool status) noexcept {
-    if (status) {
-        std::ostringstream pred_stream;
-        pred_stream << c;
-        return pred_stream.str();
-    } else {
-        return "";
-    }
+template<int i>
+std::string print_smt2(const WildConst<i> &c) {
+    std::ostringstream s;
+    s << c;
+    return s.str();
+}
+
+template<int i>
+std::string predicate_to_smt2(const WildConst<i> &c) {
+    return "";
 }
 
 // Matches and binds to any Expr
@@ -533,15 +536,16 @@ std::ostream &operator<<(std::ostream &s, const Wild<i> &op) {
     return s;
 }
 
-template<int i, typename Predicate>
-std::string predicate_to_smt2(const Wild<i> &op, Predicate &&pred, bool status) noexcept {
-    if (status) {
-        std::ostringstream pred_stream;
-        pred_stream << op.v;
-        return pred_stream.str();
-    } else {
-        return "";
-   }
+template<int i>
+std::string print_smt2(const Wild<i> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<int i>
+std::string predicate_to_smt2(const Wild<i> &op) {
+    return "";
 }
 
 // Matches a specific constant or broadcast of that constant. The
@@ -629,13 +633,13 @@ inline std::ostream &operator<<(std::ostream &s, const Const &op) {
     return s;
 }
 
-template<typename Predicate>
-std::string predicate_to_smt2(const Const &op, Predicate &&pred, bool status) noexcept {
-    if (status) {
-        std::ostringstream pred_stream;
-        pred_stream << op.v;
-        return pred_stream.str();
-    }
+inline std::string print_smt2(const Const &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+inline std::string predicate_to_smt2(const Const &op) {
     return "";
 }
 
@@ -840,201 +844,242 @@ struct CmpOp {
 // for later: bitwidths use bvadd, etc, not + etc
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
-    s << "(+ " << op.a << "  " << op.b << ")";
+    s << "(" << op.a << " + " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const BinOp<Add, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Add, A, B> &op) {
+    return "(+ " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const BinOp<Add, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Sub, A, B> &op) {
-    s << "(- " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " - " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const BinOp<Sub, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Sub, A, B> &op) {
+    return "(- " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const BinOp<Sub, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
-    s << "(* " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " * " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const BinOp<Mul, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Mul, A, B> &op) {
+    return "(* " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const BinOp<Mul, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
-    s << "(div " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " / " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const BinOp<Div, A, B> &op, Predicate && pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, true);
-    std::ostringstream pred_stream;
-    pred_stream << "(assert (not (= " << op.b << " 0)))\n" + a_pred + b_pred;
-    return pred_stream.str();
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Div, A, B> &op) {
+    return "(div " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const BinOp<Div, A, B> &op) noexcept {
+    return "(assert (not (= " + print_smt2(op.b) + " 0)))\n" + predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<And, A, B> &op) {
-    s << "(and " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " && " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const BinOp<And, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const BinOp<And, A, B> &op) {
+    return "(and " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const BinOp<And, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Or, A, B> &op) {
-    s << "(or " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " || " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const BinOp<Or, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Or, A, B> &op) {
+    return "(or " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const BinOp<Or, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Min, A, B> &op) {
-    s << "(ite (<=  " << op.a << " " << op.b << ") " << op.a << " " << op.b << ")";
+    s << "min(" << op.a << ", " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const BinOp<Min, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Min, A, B> &op) {
+    return "(ite (<=  " + print_smt2(op.a) + " " + print_smt2(op.b) + ") " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const BinOp<Min, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
-    s << "(ite (>=  " << op.a << " " << op.b << ") " << op.a << " " << op.b << ")";
+    s << "max(" << op.a << ", " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const BinOp<Max, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Max, A, B> &op) {
+    return "(ite (>=  " + print_smt2(op.a) + " " + print_smt2(op.b) + ") " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const BinOp<Max, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<LE, A, B> &op) {
-    s << "(<= " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " <= " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const CmpOp<LE, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + " " + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<LE, A, B> &op) {
+    return "(<= " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const CmpOp<LE, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<LT, A, B> &op) {
-    s << "(< " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " < " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const CmpOp<LT, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<LT, A, B> &op) {
+    return "(< " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const CmpOp<LT, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) +predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GE, A, B> &op) {
-    s << "(>= " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " >= " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const CmpOp<GE, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<GE, A, B> &op) {
+    return "(>= " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const CmpOp<GE, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
-    s << "(> " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " > " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const CmpOp<GT, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<GT, A, B> &op) {
+    return "(> " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const CmpOp<GT, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<EQ, A, B> &op) {
-    s << "(= " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " == " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const CmpOp<EQ, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<EQ, A, B> &op) {
+    return "(= " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const CmpOp<EQ, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
-    s << "(not (= " << op.a << " " << op.b << "))";
+    s << "(" << op.a << " != " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const CmpOp<NE, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, status);
-    return a_pred + b_pred;
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<NE, A, B> &op) {
+    return "(not (= " + print_smt2(op.a) + " " + print_smt2(op.b) + "))";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const CmpOp<NE, A, B> &op) noexcept {
+    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
-    s << "(mod " << op.a << " " << op.b << ")";
+    s << "(" << op.a << " % " << op.b << ")";
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const BinOp<Mod, A, B> &op, Predicate &&pred, bool status) noexcept {
-    std::string a_pred = predicate_to_smt2(op.a, pred, status);
-    std::string b_pred = predicate_to_smt2(op.b, pred, true);
-    std::ostringstream pred_stream;
-    pred_stream << "(assert (not (= " << op.b << " 0)))\n" + a_pred + b_pred;
-    return pred_stream.str();
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Mod, A, B> &op) {
+    return "(mod " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const BinOp<Mod, A, B> &op) noexcept {
+    return "(assert (not (= " + print_smt2(op.b) + " 0)))\n" + predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
@@ -1573,9 +1618,11 @@ std::ostream &operator<<(std::ostream &s, const Intrin<Args...> &op) {
     return s;
 }
 
-template<typename... Args, typename Predicate>
-std::string predicate_to_smt2(const Intrin<Args...> &op, Predicate &&pred, bool status) noexcept {
-    return "";
+template<typename... Args>
+std::string print_smt2(const Intrin<Args...> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
 }
 
 template<typename... Args>
@@ -1636,13 +1683,18 @@ auto not_op(A a) -> decltype(IRMatcher::operator!(a)) {return IRMatcher::operato
 
 template<typename A>
 inline std::ostream &operator<<(std::ostream &s, const NotOp<A> &op) {
-    s << "(not " << op.a << ")";
+    s << "!(" << op.a << ")";
     return s;
 }
 
-template<typename A, typename Predicate>
-std::string predicate_to_smt2(const NotOp<A> &op, Predicate &&pred, bool status) noexcept {
-    return predicate_to_smt2(op.a, pred, status);
+template<typename A>
+std::string print_smt2(const NotOp<A> &op) {
+    return "(not " + print_smt2(op.a) + ")";
+}
+
+template<typename A>
+std::string predicate_to_smt2(const NotOp<A> &op) noexcept {
+    return predicate_to_smt2(op.a);
 }
 
 template<typename C, typename T, typename F>
@@ -1697,16 +1749,18 @@ struct SelectOp {
 
 template<typename C, typename T, typename F>
 std::ostream &operator<<(std::ostream &s, const SelectOp<C, T, F> &op) {
-    s << "(ite (not (= " << op.c << " 0))" << op.t << " " << op.f << ")";
+    s << "select(" << op.c << ", " << op.t << ", " << op.f << ")";
     return s;
 }
 
-template<typename C, typename T, typename F, typename Predicate>
-std::string predicate_to_smt2(const SelectOp<C, T, F> &op, Predicate &&pred, bool status) noexcept {
-    std::string c_pred = predicate_to_smt2(op.c, pred, status);
-    std::string t_pred = predicate_to_smt2(op.t, pred, status);
-    std::string f_pred = predicate_to_smt2(op.f, pred, status);
-    return c_pred + t_pred + f_pred;
+template<typename C, typename T, typename F>
+std::string print_smt2(const SelectOp<C, T, F> &op) {
+    return "(ite (not (= " + print_smt2(op.c) + " 0))" + print_smt2(op.t) + " " + print_smt2(op.f) + ")";
+}
+
+template<typename C, typename T, typename F>
+std::string predicate_to_smt2(const SelectOp<C, T, F> &op) noexcept {
+    return predicate_to_smt2(op.c) + predicate_to_smt2(op.t) + predicate_to_smt2(op.f);
 }
 
 template<typename C, typename T, typename F>
@@ -1767,8 +1821,15 @@ inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, true> &op)
     return s;
 }
 
-template<typename A, typename Predicate>
-std::string predicate_to_smt2(const BroadcastOp<A, true> &op, Predicate &&pred, bool status) noexcept {
+template<typename A>
+std::string print_smt2(const BroadcastOp<A, true> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<typename A>
+std::string predicate_to_smt2(const BroadcastOp<A, true> &op) {
     return "";
 }
 
@@ -1778,8 +1839,15 @@ inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, false> &op
     return s;
 }
 
-template<typename A, typename Predicate>
-std::string predicate_to_smt2(const BroadcastOp<A, false> &op, Predicate &&pred, bool status) {
+template<typename A>
+std::string print_smt2(const BroadcastOp<A, false> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<typename A>
+std::string predicate_to_smt2(const BroadcastOp<A, false> &op) {
     return "";
 }
 
@@ -1852,8 +1920,15 @@ std::ostream &operator<<(std::ostream &s, const RampOp<A, B, true> &op) {
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const RampOp<A, B, true> &op, Predicate &&pred, bool status) {
+template<typename A, typename B>
+std::string print_smt2(const RampOp<A, B, true> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const RampOp<A, B, true> &op) {
     return "";
 }
 
@@ -1863,8 +1938,15 @@ std::ostream &operator<<(std::ostream &s, const RampOp<A, B, false> &op) {
     return s;
 }
 
-template<typename A, typename B, typename Predicate>
-std::string predicate_to_smt2(const RampOp<A, B, false> &op, Predicate &&pred, bool status) {
+template<typename A, typename B>
+std::string print_smt2(const RampOp<A, B, false> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<typename A, typename B>
+std::string predicate_to_smt2(const RampOp<A, B, false> &op) {
     return "";
 }
 
@@ -1943,13 +2025,18 @@ struct NegateOp {
 
 template<typename A>
 std::ostream &operator<<(std::ostream &s, const NegateOp<A> &op) {
-    s << "(- " << op.a << ")";
+    s << "-" << op.a;
     return s;
 }
 
-template<typename A, typename Predicate>
-std::string predicate_to_smt2(const NegateOp<A> &op, Predicate &&pred, bool status) {
-    return predicate_to_smt2(op.a, pred, status);
+template<typename A>
+std::string print_smt2(const NegateOp<A> &op) {
+    return "(- " + print_smt2(op.a) + ")";
+}
+
+template<typename A>
+std::string predicate_to_smt2(const NegateOp<A> &op) {
+    return predicate_to_smt2(op.a);
 }
 
 template<typename A>
@@ -2000,9 +2087,16 @@ std::ostream &operator<<(std::ostream &s, const CastOp<A> &op) {
     return s;
 }
 
-template<typename A, typename Predicate>
-std::string predicate_to_smt2(const CastOp<A> &op, Predicate &&pred, bool status) {
-    return predicate_to_smt2(op.a, pred, status);
+template<typename A>
+std::string print_smt2(const CastOp<A> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<typename A>
+std::string predicate_to_smt2(const CastOp<A> &op) {
+    return predicate_to_smt2(op.a);
 }
 
 template<typename A>
@@ -2041,17 +2135,23 @@ auto fold(A a) noexcept -> Fold<decltype(pattern_arg(a))> {
     return {pattern_arg(a)};
 }
 
-// fold doesn't mean anything for verification because constants are also symbolic variables
-// instead, fold only (potentially) changes order of operations, so we output nothing
+
 template<typename A>
 std::ostream &operator<<(std::ostream &s, const Fold<A> &op) {
-    s << op.a ;
+    s << "fold(" << op.a << ")";
     return s;
 }
 
-template<typename A, typename Predicate>
-std::string predicate_to_smt2(const Fold<A> &op, Predicate &&pred, bool status) {
-    return predicate_to_smt2(op.a, pred, status);
+// fold doesn't mean anything for verification because constants are also symbolic variables
+// instead, fold only (potentially) changes order of operations, so we output nothing
+template<typename A>
+std::string print_smt2(const Fold<A> &op) {
+    return print_smt2(op.a);
+}
+
+template<typename A>
+std::string predicate_to_smt2(const Fold<A> &op) {
+    return predicate_to_smt2(op.a);
 }
 
 template<typename A>
@@ -2086,8 +2186,15 @@ std::ostream &operator<<(std::ostream &s, const Overflows<A> &op) {
     return s;
 }
 
-template<typename A, typename Predicate>
-std::string predicate_to_smt2(const Overflows<A> &op, Predicate &&pred, bool status) {
+template<typename A>
+std::string print_smt2(const Overflows<A> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<typename A>
+std::string predicate_to_smt2(const Overflows<A> &op) {
     return "";
 }
 
@@ -2126,8 +2233,11 @@ inline std::ostream &operator<<(std::ostream &s, const Indeterminate &op) {
     return s;
 }
 
-template<typename Predicate>
-std::string predicate_to_smt2(const Indeterminate &op, Predicate &&pred, bool status) {
+inline std::string print_smt2(const Indeterminate &op) {
+    return "indeterminate()";
+}
+
+inline std::string predicate_to_smt2(const Indeterminate &op) {
     return "";
 }
 
@@ -2166,8 +2276,11 @@ inline std::ostream &operator<<(std::ostream &s, const Overflow &op) {
     return s;
 }
 
-template<typename Predicate>
-std::string predicate_to_smt2(const Overflow &op, Predicate &&pred, bool status) {
+inline std::string print_smt2(const Overflow &op) {
+    return "overflow()";
+}
+
+inline std::string predicate_to_smt2(const Overflow &op) {
     return "";
 }
 
@@ -2204,15 +2317,16 @@ std::ostream &operator<<(std::ostream &s, const IsConst<A> &op) {
     return s;
 }
 
-template<typename A, typename Predicate>
-std::string predicate_to_smt2(const IsConst<A> &op, Predicate &&pred, bool status) {
-    if (status) {
-        std::ostringstream pred_stream;
-        pred_stream << op.v;
-        return pred_stream.str();
-    } else {
-        return "";
-    }
+template<typename A>
+std::string print_smt2(const IsConst<A> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<typename A>
+std::string predicate_to_smt2(const IsConst<A> &op) {
+    return "";
 }
 
 template<typename A, typename Prover>
@@ -2248,8 +2362,15 @@ std::ostream &operator<<(std::ostream &s, const CanProve<A, Prover> &op) {
     return s;
 }
 
-template<typename A, typename Prover, typename Predicate>
-std::string predicate_to_smt2(const CanProve<A, Prover> &op, Predicate &&pred, bool status) {
+template<typename A, typename Prover>
+std::string print_smt2(const CanProve<A, Prover> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<typename A, typename Prover>
+std::string predicate_to_smt2(const CanProve<A, Prover> &op) {
     return "";
 }
 
@@ -2285,8 +2406,15 @@ std::ostream &operator<<(std::ostream &s, const IsFloat<A> &op) {
     return s;
 }
 
-template<typename A, typename Predicate>
-std::string predicate_to_smt2(const IsFloat<A> &op, Predicate &&pred, bool status) noexcept {
+template<typename A>
+std::string print_smt2(const IsFloat<A> &op) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<typename A>
+std::string predicate_to_smt2(const IsFloat<A> &op) noexcept {
     return "";
 }
 
@@ -2310,11 +2438,12 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     if (pred_string == "1") {
         assertfile << "(assert true)\n";
     } else {
-        assertfile << "(assert " << pred << ")\n";
+        assertfile << "(assert " << print_smt2(pred) << ")\n";
     }
-    assertfile << predicate_to_smt2(before, pred, false);
-    assertfile << predicate_to_smt2(after, pred, false);
-    assertfile << "(assert (not (= " << before << " " << after << ")))\n";
+    assertfile << predicate_to_smt2(before);
+    assertfile << predicate_to_smt2(after);
+    assertfile << "(assert (not (= ";
+    assertfile << print_smt2(before) << " " << print_smt2(after) << ")))\n";
     assertfile.close();
     debug(0) << "(assert (not (= " << before << " " << after << ")))\n";
 }
