@@ -231,7 +231,7 @@ inline std::string print_smt2(SpecificExpr e, halide_type_t type_hint) {
     return s.str();
 }
 
-inline std::string predicate_to_smt2(SpecificExpr e) {
+inline std::string get_smt2_assumptions(SpecificExpr e) {
     return "";
 }
 
@@ -293,7 +293,7 @@ std::string print_smt2(const WildConstInt<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-std::string predicate_to_smt2(const WildConstInt<i> &c) {
+std::string get_smt2_assumptions(const WildConstInt<i> &c) {
     return "";
 }
 
@@ -355,7 +355,7 @@ std::string print_smt2(const WildConstUInt<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-std::string predicate_to_smt2(const WildConstUInt<i> &c) {
+std::string get_smt2_assumptions(const WildConstUInt<i> &c) {
     return "";
 }
 
@@ -418,7 +418,7 @@ std::string print_smt2(const WildConstFloat<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-std::string predicate_to_smt2(const WildConstFloat<i> &c) {
+std::string get_smt2_assumptions(const WildConstFloat<i> &c) {
     return "";
 }
 
@@ -479,7 +479,7 @@ std::string print_smt2(const WildConst<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-std::string predicate_to_smt2(const WildConst<i> &c) {
+std::string get_smt2_assumptions(const WildConst<i> &c) {
     return "";
 }
 
@@ -549,7 +549,7 @@ std::string print_smt2(const Wild<i> &op, halide_type_t type_hint) {
 }
 
 template<int i>
-std::string predicate_to_smt2(const Wild<i> &op) {
+std::string get_smt2_assumptions(const Wild<i> &op) {
     return "";
 }
 
@@ -652,7 +652,7 @@ inline std::string print_smt2(const Const &op, halide_type_t type_hint) {
     }
 }
 
-inline std::string predicate_to_smt2(const Const &op) {
+inline std::string get_smt2_assumptions(const Const &op) {
     return "";
 }
 
@@ -867,8 +867,8 @@ std::string print_smt2(const BinOp<Add, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const BinOp<Add, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const BinOp<Add, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -883,8 +883,8 @@ std::string print_smt2(const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const BinOp<Sub, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const BinOp<Sub, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -899,8 +899,8 @@ std::string print_smt2(const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const BinOp<Mul, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const BinOp<Mul, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -915,8 +915,8 @@ std::string print_smt2(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const BinOp<Div, A, B> &op) noexcept {
-    return "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n" + predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const BinOp<Div, A, B> &op) noexcept {
+    return "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n" + get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -931,8 +931,8 @@ std::string print_smt2(const BinOp<And, A, B> &op, halide_type_t type_name) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const BinOp<And, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const BinOp<And, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -947,8 +947,8 @@ std::string print_smt2(const BinOp<Or, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const BinOp<Or, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const BinOp<Or, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -963,8 +963,8 @@ std::string print_smt2(const BinOp<Min, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const BinOp<Min, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const BinOp<Min, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -979,8 +979,8 @@ std::string print_smt2(const BinOp<Max, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const BinOp<Max, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const BinOp<Max, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -996,8 +996,8 @@ std::string print_smt2(const CmpOp<LE, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const CmpOp<LE, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const CmpOp<LE, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1012,8 +1012,8 @@ std::string print_smt2(const CmpOp<LT, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const CmpOp<LT, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) +predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const CmpOp<LT, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) +get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1028,8 +1028,8 @@ std::string print_smt2(const CmpOp<GE, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const CmpOp<GE, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const CmpOp<GE, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1044,8 +1044,8 @@ std::string print_smt2(const CmpOp<GT, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const CmpOp<GT, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const CmpOp<GT, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1060,8 +1060,8 @@ std::string print_smt2(const CmpOp<EQ, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const CmpOp<EQ, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const CmpOp<EQ, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1076,8 +1076,8 @@ std::string print_smt2(const CmpOp<NE, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const CmpOp<NE, A, B> &op) noexcept {
-    return predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const CmpOp<NE, A, B> &op) noexcept {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1092,8 +1092,8 @@ std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const BinOp<Mod, A, B> &op) noexcept {
-    return "(assert (not (= " + print_smt2(op.b, halide_type_of<bool>()) + " 0)))\n" + predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+std::string get_smt2_assumptions(const BinOp<Mod, A, B> &op) noexcept {
+    return "(assert (not (= " + print_smt2(op.b, halide_type_of<bool>()) + " 0)))\n" + get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1705,8 +1705,8 @@ std::string print_smt2(const NotOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string predicate_to_smt2(const NotOp<A> &op) noexcept {
-    return predicate_to_smt2(op.a);
+std::string get_smt2_assumptions(const NotOp<A> &op) noexcept {
+    return get_smt2_assumptions(op.a);
 }
 
 template<typename C, typename T, typename F>
@@ -1769,8 +1769,8 @@ std::string print_smt2(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
 }
 
 template<typename C, typename T, typename F>
-std::string predicate_to_smt2(const SelectOp<C, T, F> &op) noexcept {
-    return predicate_to_smt2(op.c) + predicate_to_smt2(op.t) + predicate_to_smt2(op.f);
+std::string get_smt2_assumptions(const SelectOp<C, T, F> &op) noexcept {
+    return get_smt2_assumptions(op.c) + get_smt2_assumptions(op.t) + get_smt2_assumptions(op.f);
 }
 
 template<typename C, typename T, typename F>
@@ -1839,7 +1839,7 @@ std::string print_smt2(const BroadcastOp<A, true> &op, halide_type_t type_hint) 
 }
 
 template<typename A>
-std::string predicate_to_smt2(const BroadcastOp<A, true> &op) {
+std::string get_smt2_assumptions(const BroadcastOp<A, true> &op) {
     return "";
 }
 
@@ -1857,7 +1857,7 @@ std::string print_smt2(const BroadcastOp<A, false> &op, halide_type_t type_hint)
 }
 
 template<typename A>
-std::string predicate_to_smt2(const BroadcastOp<A, false> &op) {
+std::string get_smt2_assumptions(const BroadcastOp<A, false> &op) {
     return "";
 }
 
@@ -1936,7 +1936,7 @@ std::string print_smt2(const RampOp<A, B, true> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const RampOp<A, B, true> &op) {
+std::string get_smt2_assumptions(const RampOp<A, B, true> &op) {
     return "";
 }
 
@@ -1954,7 +1954,7 @@ std::string print_smt2(const RampOp<A, B, false> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string predicate_to_smt2(const RampOp<A, B, false> &op) {
+std::string get_smt2_assumptions(const RampOp<A, B, false> &op) {
     return "";
 }
 
@@ -2041,8 +2041,8 @@ std::string print_smt2(const NegateOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string predicate_to_smt2(const NegateOp<A> &op) {
-    return predicate_to_smt2(op.a);
+std::string get_smt2_assumptions(const NegateOp<A> &op) {
+    return get_smt2_assumptions(op.a);
 }
 
 template<typename A>
@@ -2099,8 +2099,8 @@ std::string print_smt2(const CastOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string predicate_to_smt2(const CastOp<A> &op) {
-    return predicate_to_smt2(op.a);
+std::string get_smt2_assumptions(const CastOp<A> &op) {
+    return get_smt2_assumptions(op.a);
 }
 
 template<typename A>
@@ -2154,8 +2154,8 @@ std::string print_smt2(const Fold<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string predicate_to_smt2(const Fold<A> &op) {
-    return predicate_to_smt2(op.a);
+std::string get_smt2_assumptions(const Fold<A> &op) {
+    return get_smt2_assumptions(op.a);
 }
 
 template<typename A>
@@ -2198,7 +2198,7 @@ std::string print_smt2(const Overflows<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string predicate_to_smt2(const Overflows<A> &op) {
+std::string get_smt2_assumptions(const Overflows<A> &op) {
     return "";
 }
 
@@ -2239,7 +2239,7 @@ inline std::string print_smt2(const Indeterminate &op, halide_type_t type_hint) 
     return "indeterminate()";
 }
 
-inline std::string predicate_to_smt2(const Indeterminate &op) {
+inline std::string get_smt2_assumptions(const Indeterminate &op) {
     return "";
 }
 
@@ -2280,7 +2280,7 @@ inline std::string print_smt2(const Overflow &op, halide_type_t type_hint) {
     return "overflow()";
 }
 
-inline std::string predicate_to_smt2(const Overflow &op) {
+inline std::string get_smt2_assumptions(const Overflow &op) {
     return "";
 }
 
@@ -2325,7 +2325,7 @@ std::string print_smt2(const IsConst<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string predicate_to_smt2(const IsConst<A> &op) {
+std::string get_smt2_assumptions(const IsConst<A> &op) {
     return "";
 }
 
@@ -2370,7 +2370,7 @@ std::string print_smt2(const CanProve<A, Prover> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename Prover>
-std::string predicate_to_smt2(const CanProve<A, Prover> &op) {
+std::string get_smt2_assumptions(const CanProve<A, Prover> &op) {
     return "";
 }
 
@@ -2414,7 +2414,7 @@ std::string print_smt2(const IsFloat<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string predicate_to_smt2(const IsFloat<A> &op) noexcept {
+std::string get_smt2_assumptions(const IsFloat<A> &op) noexcept {
     return "";
 }
 
@@ -2445,8 +2445,8 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     }
 
     // get assumptions that divisors and mod 2nd terms are non zero
-    assertfile << predicate_to_smt2(before);
-    assertfile << predicate_to_smt2(after);
+    assertfile << get_smt2_assumptions(before);
+    assertfile << get_smt2_assumptions(after);
 
     // verify that the solver cannot find a model in which the two sides of the rewrite rule are different
     assertfile << "\n(assert (not (= " << print_smt2(before, wildcard_type) << " " << print_smt2(after, output_type) << ")))\n";
