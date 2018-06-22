@@ -6,3 +6,10 @@ for i in "${varnames[@]}"
 do
   echo "(declare-const $i Int)"
 done
+
+declare -a boolvarnames=("b0" "b1" "b2" "b3")
+
+for i in "${boolvarnames[@]}"
+do
+  echo "(declare-const $i Bool)"
+done

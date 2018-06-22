@@ -40,12 +40,13 @@ int main(int argc, char **argv) {
     Expr b1 = Variable::make(Bool(), "b1");
     Expr b2 = Variable::make(Bool(), "b2");
 
-    check(x + y, 3); // all rules verified
+    //check(x + y, 3); // all rules verified
     //check(x + x*y, x); // all rules verified except for those using division
     //check(b1 && b1, b1);
     //check(max(x, y + c0) + c1, max(x + c1, y)); // all rules verified except for those using division
     //check(select(b1, 0, y) == 0,f);
     //check(b1 && b2,b1);
+    check(x - y, 7);
 
     printf("Success!\n");
 

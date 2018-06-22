@@ -225,7 +225,7 @@ inline std::ostream &operator<<(std::ostream &s, SpecificExpr e) {
     return s;
 }
 
-inline std::string print_smt2(SpecificExpr e) {
+inline std::string print_smt2(SpecificExpr e, halide_type_t type_hint) {
     std::ostringstream s;
     s << e;
     return s.str();
@@ -286,7 +286,7 @@ std::ostream &operator<<(std::ostream &s, const WildConstInt<i> &c) {
 }
 
 template<int i>
-std::string print_smt2(const WildConstInt<i> &c) {
+std::string print_smt2(const WildConstInt<i> &c, halide_type_t type_hint) {
     std::ostringstream s;
     s << c;
     return s.str();
@@ -348,7 +348,7 @@ std::ostream &operator<<(std::ostream &s, const WildConstUInt<i> &c) {
 }
 
 template<int i>
-std::string print_smt2(const WildConstUInt<i> &c) {
+std::string print_smt2(const WildConstUInt<i> &c, halide_type_t type_hint) {
     std::ostringstream s;
     s << c;
     return s.str();
@@ -411,7 +411,7 @@ std::ostream &operator<<(std::ostream &s, const WildConstFloat<i> &c) {
 }
 
 template<int i>
-std::string print_smt2(const WildConstFloat<i> &c) {
+std::string print_smt2(const WildConstFloat<i> &c, halide_type_t type_hint) {
     std::ostringstream s;
     s << c;
     return s.str();
@@ -472,7 +472,7 @@ std::ostream &operator<<(std::ostream &s, const WildConst<i> &c) {
 }
 
 template<int i>
-std::string print_smt2(const WildConst<i> &c) {
+std::string print_smt2(const WildConst<i> &c, halide_type_t type_hint) {
     std::ostringstream s;
     s << c;
     return s.str();
@@ -538,9 +538,13 @@ std::ostream &operator<<(std::ostream &s, const Wild<i> &op) {
 }
 
 template<int i>
-std::string print_smt2(const Wild<i> &op) {
+std::string print_smt2(const Wild<i> &op, halide_type_t type_hint) {
     std::ostringstream s;
-    s << op;
+    if (type_hint.code == halide_type_uint && type_hint.bits == 1) {
+        s << "b" << i;
+    } else {
+        s << op;
+    }
     return s.str();
 }
 
@@ -634,10 +638,18 @@ inline std::ostream &operator<<(std::ostream &s, const Const &op) {
     return s;
 }
 
-inline std::string print_smt2(const Const &op) {
-    std::ostringstream s;
-    s << op;
-    return s.str();
+inline std::string print_smt2(const Const &op, halide_type_t type_hint) {
+    if (type_hint.code == halide_type_uint && type_hint.bits == 1) {
+        if (op.v == 0) {
+            return "false";
+        } else {
+            return "true";
+        }
+    } else {
+        std::ostringstream s;
+        s << op;
+        return s.str();
+    }
 }
 
 inline std::string predicate_to_smt2(const Const &op) {
@@ -850,8 +862,8 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const BinOp<Add, A, B> &op) {
-    return "(+ " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const BinOp<Add, A, B> &op, halide_type_t type_hint) {
+    return "(+ " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -866,8 +878,8 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Sub, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const BinOp<Sub, A, B> &op) {
-    return "(- " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
+    return "(- " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -882,8 +894,8 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const BinOp<Mul, A, B> &op) {
-    return "(* " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
+    return "(* " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -898,13 +910,13 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const BinOp<Div, A, B> &op) {
-    return "(div " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
+    return "(div " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
 std::string predicate_to_smt2(const BinOp<Div, A, B> &op) noexcept {
-    return "(assert (not (= " + print_smt2(op.b) + " 0)))\n" + predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+    return "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n" + predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
@@ -914,8 +926,8 @@ std::ostream &operator<<(std::ostream &s, const BinOp<And, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const BinOp<And, A, B> &op) {
-    return "(and " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const BinOp<And, A, B> &op, halide_type_t type_name) {
+    return "(and " + print_smt2(op.a, halide_type_of<bool>()) + " " + print_smt2(op.b, halide_type_of<bool>()) + ")";
 }
 
 template<typename A, typename B>
@@ -930,8 +942,8 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Or, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const BinOp<Or, A, B> &op) {
-    return "(or " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const BinOp<Or, A, B> &op, halide_type_t type_hint) {
+    return "(or " + print_smt2(op.a, halide_type_of<bool>()) + " " + print_smt2(op.b, halide_type_of<bool>()) + ")";
 }
 
 template<typename A, typename B>
@@ -946,8 +958,8 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Min, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const BinOp<Min, A, B> &op) {
-    return "(ite (<=  " + print_smt2(op.a) + " " + print_smt2(op.b) + ") " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const BinOp<Min, A, B> &op, halide_type_t type_hint) {
+    return "(ite (<=  " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ") " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -962,8 +974,8 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const BinOp<Max, A, B> &op) {
-    return "(ite (>=  " + print_smt2(op.a) + " " + print_smt2(op.b) + ") " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const BinOp<Max, A, B> &op, halide_type_t type_hint) {
+    return "(ite (>=  " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ") " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -977,9 +989,10 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<LE, A, B> &op) {
     return s;
 }
 
+// print_smt2 for CmpOp currently assumes both terms are type Int in z3
 template<typename A, typename B>
-std::string print_smt2(const CmpOp<LE, A, B> &op) {
-    return "(<= " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const CmpOp<LE, A, B> &op, halide_type_t type_hint) {
+    return "(<= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -994,8 +1007,8 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<LT, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const CmpOp<LT, A, B> &op) {
-    return "(< " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const CmpOp<LT, A, B> &op, halide_type_t type_hint) {
+    return "(< " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1010,8 +1023,8 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GE, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const CmpOp<GE, A, B> &op) {
-    return "(>= " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const CmpOp<GE, A, B> &op, halide_type_t type_hint) {
+    return "(>= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1026,8 +1039,8 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const CmpOp<GT, A, B> &op) {
-    return "(> " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const CmpOp<GT, A, B> &op, halide_type_t type_hint) {
+    return "(> " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1042,8 +1055,8 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<EQ, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const CmpOp<EQ, A, B> &op) {
-    return "(= " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const CmpOp<EQ, A, B> &op, halide_type_t type_hint) {
+    return "(= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1058,8 +1071,8 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const CmpOp<NE, A, B> &op) {
-    return "(not (= " + print_smt2(op.a) + " " + print_smt2(op.b) + "))";
+std::string print_smt2(const CmpOp<NE, A, B> &op, halide_type_t type_hint) {
+    return "(not (= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + "))";
 }
 
 template<typename A, typename B>
@@ -1074,13 +1087,13 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const BinOp<Mod, A, B> &op) {
-    return "(mod " + print_smt2(op.a) + " " + print_smt2(op.b) + ")";
+std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
+    return "(mod " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
 std::string predicate_to_smt2(const BinOp<Mod, A, B> &op) noexcept {
-    return "(assert (not (= " + print_smt2(op.b) + " 0)))\n" + predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
+    return "(assert (not (= " + print_smt2(op.b, halide_type_of<bool>()) + " 0)))\n" + predicate_to_smt2(op.a) + predicate_to_smt2(op.b);
 }
 
 template<typename A, typename B>
@@ -1620,7 +1633,7 @@ std::ostream &operator<<(std::ostream &s, const Intrin<Args...> &op) {
 }
 
 template<typename... Args>
-std::string print_smt2(const Intrin<Args...> &op) {
+std::string print_smt2(const Intrin<Args...> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
@@ -1687,8 +1700,8 @@ inline std::ostream &operator<<(std::ostream &s, const NotOp<A> &op) {
 }
 
 template<typename A>
-std::string print_smt2(const NotOp<A> &op) {
-    return "(not " + print_smt2(op.a) + ")";
+std::string print_smt2(const NotOp<A> &op, halide_type_t type_hint) {
+    return "(not " + print_smt2(op.a, halide_type_of<bool>()) + ")";
 }
 
 template<typename A>
@@ -1751,8 +1764,8 @@ std::ostream &operator<<(std::ostream &s, const SelectOp<C, T, F> &op) {
 }
 
 template<typename C, typename T, typename F>
-std::string print_smt2(const SelectOp<C, T, F> &op) {
-    return "(ite (not (= " + print_smt2(op.c) + " 0))" + print_smt2(op.t) + " " + print_smt2(op.f) + ")";
+std::string print_smt2(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
+    return "(ite " + print_smt2(op.c, halide_type_of<bool>()) + " " + print_smt2(op.t, type_hint) + " " + print_smt2(op.f, type_hint) + ")";
 }
 
 template<typename C, typename T, typename F>
@@ -1819,7 +1832,7 @@ inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, true> &op)
 }
 
 template<typename A>
-std::string print_smt2(const BroadcastOp<A, true> &op) {
+std::string print_smt2(const BroadcastOp<A, true> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
@@ -1837,7 +1850,7 @@ inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, false> &op
 }
 
 template<typename A>
-std::string print_smt2(const BroadcastOp<A, false> &op) {
+std::string print_smt2(const BroadcastOp<A, false> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
@@ -1916,7 +1929,7 @@ std::ostream &operator<<(std::ostream &s, const RampOp<A, B, true> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const RampOp<A, B, true> &op) {
+std::string print_smt2(const RampOp<A, B, true> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
@@ -1934,7 +1947,7 @@ std::ostream &operator<<(std::ostream &s, const RampOp<A, B, false> &op) {
 }
 
 template<typename A, typename B>
-std::string print_smt2(const RampOp<A, B, false> &op) {
+std::string print_smt2(const RampOp<A, B, false> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
@@ -2023,8 +2036,8 @@ std::ostream &operator<<(std::ostream &s, const NegateOp<A> &op) {
 }
 
 template<typename A>
-std::string print_smt2(const NegateOp<A> &op) {
-    return "(- " + print_smt2(op.a) + ")";
+std::string print_smt2(const NegateOp<A> &op, halide_type_t type_hint) {
+    return "(- " + print_smt2(op.a, type_hint) + ")";
 }
 
 template<typename A>
@@ -2079,7 +2092,7 @@ std::ostream &operator<<(std::ostream &s, const CastOp<A> &op) {
 }
 
 template<typename A>
-std::string print_smt2(const CastOp<A> &op) {
+std::string print_smt2(const CastOp<A> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
@@ -2136,8 +2149,8 @@ std::ostream &operator<<(std::ostream &s, const Fold<A> &op) {
 // fold doesn't mean anything for verification because constants are also symbolic variables
 // instead, fold only (potentially) changes order of operations, so we output nothing
 template<typename A>
-std::string print_smt2(const Fold<A> &op) {
-    return print_smt2(op.a);
+std::string print_smt2(const Fold<A> &op, halide_type_t type_hint) {
+    return print_smt2(op.a, type_hint);
 }
 
 template<typename A>
@@ -2178,7 +2191,7 @@ std::ostream &operator<<(std::ostream &s, const Overflows<A> &op) {
 }
 
 template<typename A>
-std::string print_smt2(const Overflows<A> &op) {
+std::string print_smt2(const Overflows<A> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
@@ -2222,7 +2235,7 @@ inline std::ostream &operator<<(std::ostream &s, const Indeterminate &op) {
     return s;
 }
 
-inline std::string print_smt2(const Indeterminate &op) {
+inline std::string print_smt2(const Indeterminate &op, halide_type_t type_hint) {
     return "indeterminate()";
 }
 
@@ -2263,7 +2276,7 @@ inline std::ostream &operator<<(std::ostream &s, const Overflow &op) {
     return s;
 }
 
-inline std::string print_smt2(const Overflow &op) {
+inline std::string print_smt2(const Overflow &op, halide_type_t type_hint) {
     return "overflow()";
 }
 
@@ -2305,7 +2318,7 @@ std::ostream &operator<<(std::ostream &s, const IsConst<A> &op) {
 }
 
 template<typename A>
-std::string print_smt2(const IsConst<A> &op) {
+std::string print_smt2(const IsConst<A> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
@@ -2350,7 +2363,7 @@ std::ostream &operator<<(std::ostream &s, const CanProve<A, Prover> &op) {
 }
 
 template<typename A, typename Prover>
-std::string print_smt2(const CanProve<A, Prover> &op) {
+std::string print_smt2(const CanProve<A, Prover> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
@@ -2394,7 +2407,7 @@ std::ostream &operator<<(std::ostream &s, const IsFloat<A> &op) {
 }
 
 template<typename A>
-std::string print_smt2(const IsFloat<A> &op) {
+std::string print_smt2(const IsFloat<A> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
@@ -2428,7 +2441,7 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     std::ostringstream pred_stream;
     pred_stream << pred;
     if (pred_stream.str() != "1") {
-        assertfile << "(assert " << print_smt2(pred) << ")\n";
+        assertfile << "(assert " << print_smt2(pred, wildcard_type) << ")\n";
     }
 
     // get assumptions that divisors and mod 2nd terms are non zero
@@ -2436,7 +2449,7 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     assertfile << predicate_to_smt2(after);
 
     // verify that the solver cannot find a model in which the two sides of the rewrite rule are different
-    assertfile << "\n(assert (not (= " << print_smt2(before) << " " << print_smt2(after) << ")))\n";
+    assertfile << "\n(assert (not (= " << print_smt2(before, wildcard_type) << " " << print_smt2(after, output_type) << ")))\n";
     assertfile.close();
 }
 
