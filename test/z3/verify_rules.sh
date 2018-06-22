@@ -1,8 +1,8 @@
 #!/bin/bash
 
 regex='\(assert \(not (.*)\)\)'
-unsatregex='unsat'
-unknownregex='unknown'
+unsatregex='^unsat'
+unknownregex='^unknown'
 
 show_passing='true'
 show_failing='true'
@@ -15,10 +15,6 @@ while getopts "fpu" flag ; do
     u) show_passing='false' ; show_failing='false' ;;
   esac
 done
-
-echo "passing? $show_passing"
-echo "failing? $show_failing"
-echo "unknown? $show_unknown"
 
 for filename in ../../bin/build/tmp/*.smt2; do
   ASSERTION=`cat ${filename}`
