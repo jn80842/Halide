@@ -1093,7 +1093,7 @@ std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
 
 template<typename A, typename B>
 std::string get_smt2_assumptions(const BinOp<Mod, A, B> &op) noexcept {
-    return "(assert (not (= " + print_smt2(op.b, halide_type_of<bool>()) + " 0)))\n" + get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
+    return "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n" + get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
