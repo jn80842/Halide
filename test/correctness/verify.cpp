@@ -59,8 +59,9 @@ int main(int argc, char **argv) {
     //check(select(Expr(broadcast(b1, 2)), y, z), select(b1, y, z));
     //check(Broadcast::make(x,3) + Broadcast::make(y,3), Broadcast::make(x + y, 3));
     //check(ramp(x, y,10) + ramp(z, w,10), ramp(x + z, y + w, 10));
-    check(broadcast(x,3) + broadcast(y,3), broadcast(x + 7, 3));
+    //check(broadcast(x,3) + broadcast(y,3), broadcast(x + 7, 3));
     //check(ramp(x, y, 3) + broadcast(z, 3), ramp(x + z, y, 3));
+    check(x - max(x,y), min(0,x-y));
     printf("Success!\n");
 
     return 0;

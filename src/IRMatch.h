@@ -1936,9 +1936,7 @@ std::ostream &operator<<(std::ostream &s, const RampOp<A, B, true> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const RampOp<A, B, true> &op, halide_type_t type_hint) {
-    std::ostringstream s;
-    s << op;
-    return s.str();
+    return "(+ " + print_smt2(op.a,type_hint) + " (* " + print_smt2(op.b,type_hint) + " lanes))";
 }
 
 template<typename A, typename B>
@@ -1954,9 +1952,7 @@ std::ostream &operator<<(std::ostream &s, const RampOp<A, B, false> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const RampOp<A, B, false> &op, halide_type_t type_hint) {
-    std::ostringstream s;
-    s << op;
-    return s.str();
+    return "(+ " + print_smt2(op.a,type_hint) + " (* " + print_smt2(op.b,type_hint) + " lanes))";
 }
 
 template<typename A, typename B>

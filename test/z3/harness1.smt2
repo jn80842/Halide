@@ -11,3 +11,5 @@
 (declare-const b1 Bool)
 (declare-const b2 Bool)
 (declare-const b3 Bool)
+(declare-const lanes Int)
+(assert (<= 0 lanes))
