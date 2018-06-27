@@ -13,3 +13,6 @@ for i in "${boolvarnames[@]}"
 do
   echo "(declare-const $i Bool)"
 done
+
+echo "(declare-const lanes Int)"
+echo "(assert (<= 0 lanes))"
