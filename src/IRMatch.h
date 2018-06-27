@@ -1639,6 +1639,11 @@ std::string print_smt2(const Intrin<Args...> &op, halide_type_t type_hint) {
 }
 
 template<typename... Args>
+std::string get_smt2_assumptions(const Intrin<Args...> &op) {
+    return "";
+}
+
+template<typename... Args>
 HALIDE_ALWAYS_INLINE
 auto intrin(Call::ConstString name, Args... args) noexcept -> Intrin<decltype(pattern_arg(args))...> {
     return {name, pattern_arg(args)...};
@@ -1836,9 +1841,7 @@ inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, true> &op)
 
 template<typename A>
 std::string print_smt2(const BroadcastOp<A, true> &op, halide_type_t type_hint) {
-    std::ostringstream s;
-    s << op;
-    return s.str();
+   return print_smt2(op.a, type_hint);
 }
 
 template<typename A>
@@ -1854,9 +1857,7 @@ inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, false> &op
 
 template<typename A>
 std::string print_smt2(const BroadcastOp<A, false> &op, halide_type_t type_hint) {
-    std::ostringstream s;
-    s << op;
-    return s.str();
+    return print_smt2(op.a, type_hint);
 }
 
 template<typename A>
@@ -2433,9 +2434,7 @@ std::string get_smt2_assumptions(const IsFloat<A> &op) noexcept {
 
 template<typename Before,
          typename After,
-         typename Predicate,
-         typename = typename std::enable_if<std::remove_reference<Before>::type::foldable &&
-                                            std::remove_reference<After>::type::foldable>::type>
+         typename Predicate>
 HALIDE_NEVER_INLINE
 void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred,
                                 halide_type_t wildcard_type, halide_type_t output_type) noexcept {
@@ -2590,17 +2589,6 @@ void fuzz_test_rule(Before &&before, After &&after, Predicate &&pred,
             internal_error;
         }
     }
-}
-
-template<typename Before,
-         typename After,
-         typename Predicate,
-         typename = typename std::enable_if<!(std::remove_reference<Before>::type::foldable &&
-                                              std::remove_reference<After>::type::foldable)>::type>
-HALIDE_ALWAYS_INLINE
-void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred,
-                   halide_type_t, halide_type_t, int dummy = 0) noexcept {
-    // We can't verify rewrite rules that can't be constant-folded.
 }
 
 template<typename Before,
