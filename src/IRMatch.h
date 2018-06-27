@@ -2316,9 +2316,8 @@ std::ostream &operator<<(std::ostream &s, const IsConst<A> &op) {
 
 template<typename A>
 std::string print_smt2(const IsConst<A> &op, halide_type_t type_hint) {
-    std::ostringstream s;
-    s << op;
-    return s.str();
+    // this is a bit of a cheat, would be better to prune this out altogether
+    return "(or (> " + print_smt2(op.a,halide_type_of<int64_t>()) + " 0) (<= " + print_smt2(op.a,halide_type_of<int64_t>()) + " 0))";
 }
 
 template<typename A>
@@ -2405,9 +2404,11 @@ std::ostream &operator<<(std::ostream &s, const IsFloat<A> &op) {
 
 template<typename A>
 std::string print_smt2(const IsFloat<A> &op, halide_type_t type_hint) {
-    std::ostringstream s;
-    s << op;
-    return s.str();
+    if (type_hint.code == halide_type_float) {
+        return "true";
+    } else {
+        return "false";
+    }
 }
 
 template<typename A>
