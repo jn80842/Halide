@@ -979,6 +979,11 @@ int get_const_variable_count(int count, const BinOp<Op, A, B> &op, halide_type_t
     return std::max(get_const_variable_count(count, op.a, type_hint), get_const_variable_count(count, op.b, type_hint));
 }
 
+template<typename Op, typename A, typename B>
+std::string get_smt2_assumptions(const CmpOp<Op, A, B> &op) {
+    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
+}
+
 // for later: bitwidths use bvadd, etc, not + etc
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
@@ -1201,11 +1206,6 @@ std::string print_smt2(const CmpOp<LE, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string get_smt2_assumptions(const CmpOp<LE, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
-}
-
-template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<LT, A, B> &op) {
     s << "(" << op.a << " < " << op.b << ")";
     return s;
@@ -1214,11 +1214,6 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<LT, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<LT, A, B> &op, halide_type_t type_hint) {
     return "(< " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const CmpOp<LT, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) +get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1233,11 +1228,6 @@ std::string print_smt2(const CmpOp<GE, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string get_smt2_assumptions(const CmpOp<GE, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
-}
-
-template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
     s << "(" << op.a << " > " << op.b << ")";
     return s;
@@ -1246,11 +1236,6 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<GT, A, B> &op, halide_type_t type_hint) {
     return "(> " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const CmpOp<GT, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1265,11 +1250,6 @@ std::string print_smt2(const CmpOp<EQ, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string get_smt2_assumptions(const CmpOp<EQ, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
-}
-
-template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
     s << "(" << op.a << " != " << op.b << ")";
     return s;
@@ -1278,11 +1258,6 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<NE, A, B> &op, halide_type_t type_hint) {
     return "(not (= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + "))";
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const CmpOp<NE, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
