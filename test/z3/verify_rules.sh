@@ -20,7 +20,7 @@ for filename in ../../bin/build/tmp/*.smt2; do
   ASSERTION=`cat ${filename}`
   [[ $ASSERTION =~ $regex ]]
   RELATION=${BASH_REMATCH[1]}
-  OUTPUT=`time cat harness1.smt2 ${filename} harness2.smt2 | z3 -smt2 -in`
+  OUTPUT=`time cat ${filename} | z3 -smt2 -in`
   if [[ $OUTPUT =~ $unsatregex ]] 
   then
     if [[ "$show_passing" == 'true' ]] ; then
