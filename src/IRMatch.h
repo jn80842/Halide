@@ -2329,8 +2329,12 @@ std::ostream &operator<<(std::ostream &s, const IsConst<A> &op) {
 
 template<typename A>
 std::string print_smt2(const IsConst<A> &op, halide_type_t type_hint) {
-    // this is a bit of a cheat, would be better to prune this out altogether
-    return "(or (> " + print_smt2(op.a,halide_type_of<int64_t>()) + " 0) (<= " + print_smt2(op.a,halide_type_of<int64_t>()) + " 0))";
+    std::string a = print_smt2(op.a,type_hint);
+    if (!a.empty() && a[0] == 'c') {
+        return "true";
+    } else {
+        return "false";
+    }
 }
 
 template<typename A>
