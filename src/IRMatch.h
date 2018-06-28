@@ -2377,9 +2377,7 @@ std::ostream &operator<<(std::ostream &s, const CanProve<A, Prover> &op) {
 
 template<typename A, typename Prover>
 std::string print_smt2(const CanProve<A, Prover> &op, halide_type_t type_hint) {
-    std::ostringstream s;
-    s << op;
-    return s.str();
+    return print_smt2(op.a,type_hint);
 }
 
 template<typename A, typename Prover>
