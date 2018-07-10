@@ -740,7 +740,7 @@ inline std::string print_smt2(const Const &op, halide_type_t type_hint) {
     } else {
         std::ostringstream s;
         s << op;
-        return s.str();
+        return "(make-H-Int false " + s.str() + ")";
     }
 }
 
@@ -992,7 +992,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Add, A, B> &op, halide_type_t type_hint) {
-    return "(+ " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(halide-add " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -1018,7 +1018,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Sub, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
-    return "(- " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(halide-sub " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -1044,7 +1044,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
-    return "(* " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(halide-mul " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -1070,7 +1070,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
-    return "(div " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(halide-div " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -1148,7 +1148,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Min, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Min, A, B> &op, halide_type_t type_hint) {
-    return "(ite (<=  " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ") " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(halide-min " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -1174,7 +1174,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Max, A, B> &op, halide_type_t type_hint) {
-    return "(ite (>=  " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ") " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(halide-max " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -1198,10 +1198,10 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<LE, A, B> &op) {
     return s;
 }
 
-// print_smt2 for CmpOp currently assumes both terms are type Int in z3
+// print_smt2 for CmpOp currently assumes both terms are type H-Int in z3
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<LE, A, B> &op, halide_type_t type_hint) {
-    return "(<= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+    return "(halide-le " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1212,7 +1212,7 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<LT, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<LT, A, B> &op, halide_type_t type_hint) {
-    return "(< " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+    return "(halide-lt " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1223,7 +1223,7 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GE, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<GE, A, B> &op, halide_type_t type_hint) {
-    return "(>= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+    return "(halide-ge " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1234,7 +1234,7 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<GT, A, B> &op, halide_type_t type_hint) {
-    return "(> " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+    return "(halide-gt " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1245,7 +1245,7 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<EQ, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<EQ, A, B> &op, halide_type_t type_hint) {
-    return "(= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+    return "(halide-eq " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1256,7 +1256,7 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<NE, A, B> &op, halide_type_t type_hint) {
-    return "(not (= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + "))";
+    return "(halide-ne " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1267,7 +1267,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
-    return "(mod " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(halide-mod " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -2201,7 +2201,7 @@ int get_int_variable_count(int count, const RampOp<A, B, known_lanes> &op, halid
 
 template<typename A, typename B>
 std::string print_smt2(const RampOp<A, B, true> &op, halide_type_t type_hint) {
-    return "(+ " + print_smt2(op.a,type_hint) + " (* " + print_smt2(op.b,type_hint) + " lanes))";
+    return "(halide-add " + print_smt2(op.a,type_hint) + " (halide-mul " + print_smt2(op.b,type_hint) + " lanes))";
 }
 
 template<typename A, typename B>
@@ -2306,7 +2306,7 @@ std::ostream &operator<<(std::ostream &s, const NegateOp<A> &op) {
 
 template<typename A>
 std::string print_smt2(const NegateOp<A> &op, halide_type_t type_hint) {
-    return "(- " + print_smt2(op.a, type_hint) + ")";
+    return "(halide-negate " + print_smt2(op.a, type_hint) + ")";
 }
 
 template<typename A>
@@ -2569,7 +2569,7 @@ inline std::ostream &operator<<(std::ostream &s, const Indeterminate &op) {
 }
 
 inline std::string print_smt2(const Indeterminate &op, halide_type_t type_hint) {
-    return "indeterminate()";
+    return "indeterminate";
 }
 
 inline int get_bool_variable_count(int count, const Indeterminate &op, halide_type_t type_hint) {
@@ -2842,22 +2842,90 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     assertfile << ";; After : " << after << "\n";
     assertfile << ";; Pred  : " << pred << "\n\n";
 
+    assertfile << "(declare-datatypes (T1 T2)\n"
+                "  ((H-Int (make-H-Int (indet-flag T1) (val T2)))))\n\n"
+                "(define-fun indeterminate () (H-Int Bool Int)\n"
+                "  (make-H-Int true 0)\n"
+                ")\n\n";
+    assertfile << "(define-fun halide-add ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
+                  "  (if (or (indet-flag a) (indet-flag b))\n"
+                  "    indeterminate\n"
+                  "    (make-H-Int false (+ (val a) (val b)))\n"
+                  "  )\n"
+                  ")\n\n";
+    assertfile << "(define-fun halide-sub ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
+                  "  (if (or (indet-flag a) (indet-flag b))\n"
+                  "    indeterminate\n"
+                  "    (make-H-Int false (- (val a) (val b)))\n"
+                  "  )\n"
+                  ")\n\n";
+    assertfile << "(define-fun halide-mul ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
+                  "  (if (or (indet-flag a) (indet-flag b))\n"
+                  "    indeterminate\n"
+                  "    (make-H-Int false (* (val a) (val b)))\n"
+                  "  )\n"
+                  ")\n\n";
+    assertfile << "(define-fun halide-div ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
+                  "  (if (or (or (indet-flag a) (indet-flag b)) (= (val b) 0))\n"
+                  "    indeterminate\n"
+                  "    (make-H-Int false (div (val a) (val b)))\n"
+                  "  )\n"
+                  ")\n\n";
+    assertfile << "(define-fun halide-mod ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
+                  "  (if (or (or (indet-flag a) (indet-flag b)) (= (val b) 0))\n"
+                  "    indeterminate\n"
+                  "    (make-H-Int false (mod (val a) (val b)))\n"
+                  "  )\n"
+                  ")\n\n";
+    assertfile << "(define-fun halide-max ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
+                  "  (if (or (indet-flag a) (indet-flag b))\n"
+                  "    indeterminate\n"
+                  "    (ite (>= (val a) (val b)) a b)\n"
+                  "  )\n"
+                  ")\n\n";
+    assertfile << "(define-fun halide-min ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
+                  "  (if (or (indet-flag a) (indet-flag b))\n"
+                  "    indeterminate\n"
+                  "    (ite (<= (val a) (val b)) a b)\n"
+                  "  )\n"
+                  ")\n\n";
+    assertfile << "(define-fun halide-negate ((a (H-Int Bool Int))) (H-Int Bool Int)\n"
+                  "  (if (indet-flag a)\n"
+                  "    indeterminate\n"
+                  "    (make-H-Int false (- (val a)))\n"
+                  "  )\n"
+                  ")\n\n";
+    assertfile << "(define-fun halide-eq ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
+                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (= (val a) (val b))))\n\n";
+    assertfile << "(define-fun halide-ne ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
+                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (not (= (val a) (val b)))))\n\n";
+    assertfile << "(define-fun halide-le ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
+                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (<= (val a) (val b))))\n\n";
+    assertfile << "(define-fun halide-lt ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
+                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (< (val a) (val b))))\n\n";
+    assertfile << "(define-fun halide-ge ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
+                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (>= (val a) (val b))))\n\n";
+    assertfile << "(define-fun halide-gt ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
+                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (> (val a) (val b))))\n\n";
     //assertfile << get_variable_declarations(before, wildcard_type);
 
     int var_count = get_int_variable_count(-1, before, wildcard_type);
     for (int i = 0; i <= var_count; i++) {
-        assertfile << "(declare-const _"  << i << " Int)\n";
+        assertfile << "(declare-const _"  << i << " (H-Int Bool Int))\n";
+        assertfile << "(assert (not (indet-flag _" << i << ")))\n";
     }
     int const_count = get_const_variable_count(-1, before, wildcard_type);
     for (int i = 0; i <= const_count; i++) {
-        assertfile << "(declare-const c" << i << " Int)\n";
+        assertfile << "(declare-const c" << i << " (H-Int Bool Int))\n";
+        assertfile << "(assert (not (indet-flag c" << i << ")))\n";
     }
     int bool_var_count = get_bool_variable_count(-1, before, wildcard_type);
     for (int i = 0; i <= bool_var_count; i++) {
         assertfile << "(declare-const b" << i << " Bool)\n";
     }
     // all broadcasts/ramps in the same expression share the same number of lanes
-    assertfile << "(declare-const lanes Int)\n\n";
+    assertfile << "(declare-const lanes (H-Int Bool Int))\n";
+    assertfile << "(assert (not (indet-flag lanes)))\n\n";
 
     // this is kinda hacky, fix later
     std::ostringstream pred_stream;
@@ -2867,8 +2935,8 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     }
 
     // get assumptions that divisors and mod 2nd terms are non zero
-    assertfile << get_smt2_assumptions(before);
-    assertfile << get_smt2_assumptions(after);
+    //assertfile << get_smt2_assumptions(before);
+    //assertfile << get_smt2_assumptions(after);
 
     // verify that the solver cannot find a model in which the two sides of the rewrite rule are different
     assertfile << "\n(assert (not (= " << print_smt2(before, wildcard_type) << " " << print_smt2(after, output_type) << ")))\n";

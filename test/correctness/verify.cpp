@@ -47,7 +47,9 @@ int main(int argc, char **argv) {
     Expr t = const_true(), f = const_false();
     Expr b1 = Variable::make(Bool(), "b1");
     Expr b2 = Variable::make(Bool(), "b2");
+    Expr ci = int32(x);
 
+//(((fold(((c0 + c1) - 1)) - _1) - ((_0 + fold((c1 % c0))) % c0)) / c0)
     //check(x + y, 3); // all rules verified
     //check(x + x*y, x); // all rules verified except for those using division
     //check(b1 && b1, b1);
@@ -61,7 +63,10 @@ int main(int argc, char **argv) {
     //check(ramp(x, y,10) + ramp(z, w,10), ramp(x + z, y + w, 10));
     //check(broadcast(x,3) + broadcast(y,3), broadcast(x + 7, 3));
     //check(ramp(x, y, 3) + broadcast(z, 3), ramp(x + z, y, 3));
-    check(x - max(x,y), min(0,x-y));
+    //check(x - max(x,y), min(0,x-y));
+    //check(x / y, x);
+    //check(x + c0, c0 + x);
+    check((x + ci) + y, (x + y) + ci);
     printf("Success!\n");
 
     return 0;
