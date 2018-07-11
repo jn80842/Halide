@@ -2199,8 +2199,8 @@ int get_int_variable_count(int count, const RampOp<A, B, known_lanes> &op, halid
     return std::max(get_int_variable_count(count, op.a, type_hint), get_int_variable_count(count, op.b, type_hint));
 }
 
-template<typename A, typename B>
-std::string print_smt2(const RampOp<A, B, true> &op, halide_type_t type_hint) {
+template<typename A, typename B, bool known_lanes>
+std::string print_smt2(const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
     return "(halide-add " + print_smt2(op.a,type_hint) + " (halide-mul " + print_smt2(op.b,type_hint) + " lanes))";
 }
 
@@ -2213,11 +2213,6 @@ template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const RampOp<A, B, false> &op) {
     s << "ramp(" << op.a << ", " << op.b << ")";
     return s;
-}
-
-template<typename A, typename B>
-std::string print_smt2(const RampOp<A, B, false> &op, halide_type_t type_hint) {
-    return "(+ " + print_smt2(op.a,type_hint) + " (* " + print_smt2(op.b,type_hint) + " lanes))";
 }
 
 template<typename A, typename B>
@@ -3101,8 +3096,8 @@ bool evaluate_predicate(Pattern p, MatcherState &state) {
 // #defines for testing
 
 // Print all successful or failed matches
-#define HALIDE_DEBUG_MATCHED_RULES 0
-#define HALIDE_DEBUG_UNMATCHED_RULES 0
+#define HALIDE_DEBUG_MATCHED_RULES 1
+#define HALIDE_DEBUG_UNMATCHED_RULES 1
 
 // Set to true if you want to fuzz test every rewrite passed to
 // operator() to ensure the input and the output have the same value
