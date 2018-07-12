@@ -966,7 +966,7 @@ int get_bool_variable_count(int count, const CmpOp<Op,A,B> &op, halide_type_t ty
 
 template<typename Op, typename A, typename B>
 int get_const_variable_count(int count, const CmpOp<Op,A,B> &op, halide_type_t type_hint) {
-    return std::max(get_const_variable_count(count, op.a, type_hint), get_const_variable_count(count, op.b, type_hint));
+    return std::max(get_const_variable_count(count, op.a, halide_type_of<int64_t>()), get_const_variable_count(count, op.b, halide_type_of<int64_t>()));
 }
 
 template<typename Op, typename A, typename B>
@@ -1916,17 +1916,17 @@ std::string print_smt2(const NotOp<A> &op, halide_type_t type_hint) {
 
 template<typename A>
 int get_bool_variable_count(int count, const NotOp<A> &op, halide_type_t type_hint) {
-    return get_bool_variable_count(count, op.a, type_hint);
+    return get_bool_variable_count(count, op.a, halide_type_of<bool>());
 }
 
 template<typename A>
 int get_const_variable_count(int count, const NotOp<A> &op, halide_type_t type_hint) {
-    return get_const_variable_count(count, op.a, type_hint);
+    return get_const_variable_count(count, op.a, halide_type_of<bool>());
 }
 
 template<typename A>
 int get_int_variable_count(int count, const NotOp<A> &op, halide_type_t type_hint) {
-    return get_int_variable_count(count, op.a, type_hint);
+    return get_int_variable_count(count, op.a, halide_type_of<bool>());
 }
 
 template<typename A>
@@ -2907,7 +2907,9 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     }
     // all broadcasts/ramps in the same expression share the same number of lanes
     assertfile << "(declare-const lanes (H-Int Bool Int))\n";
-    assertfile << "(assert (not (indet-flag lanes)))\n\n";
+    assertfile << "(assert (not (indet-flag lanes)))\n";
+    // lanes must be greater than 0
+    assertfile << "(assert (> (val lanes) 0))\n\n";
 
     // this is kinda hacky, fix later
     std::ostringstream pred_stream;
