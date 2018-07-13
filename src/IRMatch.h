@@ -2494,9 +2494,8 @@ std::ostream &operator<<(std::ostream &s, const Overflows<A> &op) {
 
 template<typename A>
 std::string print_smt2(const Overflows<A> &op, halide_type_t type_hint) {
-    std::ostringstream s;
-    s << op;
-    return s.str();
+    // as we currently assume all numbers are infinite precision integers, they cannot overflow
+    return "false";
 }
 
 template<typename A>
