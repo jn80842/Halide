@@ -2365,9 +2365,7 @@ std::ostream &operator<<(std::ostream &s, const CastOp<A> &op) {
 
 template<typename A>
 std::string print_smt2(const CastOp<A> &op, halide_type_t type_hint) {
-    std::ostringstream s;
-    s << op;
-    return s.str();
+    return print_smt2(op.a, op.t);
 }
 
 template<typename A>
@@ -2819,9 +2817,7 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     assertfile.open(filename);
 
     // print rewrite rule as comments in smt2 file
-    assertfile << ";; Before: " << before << "\n";
-    assertfile << ";; After : " << after << "\n";
-    assertfile << ";; Pred  : " << pred << "\n\n";
+    assertfile << ";; Before: " << before << " After : " << after <<  ";; Pred  : " << pred << "\n\n";
 
     assertfile << "(declare-datatypes (T1 T2)\n"
                 "  ((H-Int (make-H-Int (indet-flag T1) (val T2)))))\n\n"
