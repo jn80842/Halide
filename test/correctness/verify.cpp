@@ -47,26 +47,24 @@ int main(int argc, char **argv) {
     Expr t = const_true(), f = const_false();
     Expr b1 = Variable::make(Bool(), "b1");
     Expr b2 = Variable::make(Bool(), "b2");
-    Expr ci = int32(x);
+    Expr b3 = Variable::make(Bool(), "b3");
 
-//(((fold(((c0 + c1) - 1)) - _1) - ((_0 + fold((c1 % c0))) % c0)) / c0)
-    //check(x + y, 3); // all rules verified
-    //check(x + x*y, x); // all rules verified except for those using division
-    //check(b1 && b1, b1);
-    //check(max(x, y + c0) + c1, max(x + c1, y)); // all rules verified except for those using division
-    //check(select(b1, 0, y) == 0,f);
-    //check(b1 && b2,b1);
-    //heck(x - y, 7);
-    //check(select(broadcast(x), y, z), select(x, y, z));
-    //check(select(Expr(broadcast(b1, 2)), y, z), select(b1, y, z));
-    //check(Broadcast::make(x,3) + Broadcast::make(y,3), Broadcast::make(x + y, 3));
-    //check(ramp(x, y,10) + ramp(z, w,10), ramp(x + z, y + w, 10));
-    //check(broadcast(x,3) + broadcast(y,3), broadcast(x + 7, 3));
-    //check(ramp(x, y, 3) + broadcast(z, 3), ramp(x + z, y, 3));
-    //check(x - max(x,y), min(0,x-y));
-    //check(x / y, x);
-    //check(x + c0, c0 + x);
-    check((x + ci) + y, (x + y) + ci);
+    // check(x + y, 5);
+    // check(b1 && b2, 5);
+    // check(x / y, 5);
+    // check(xf / c0, 5);
+    // check(x == false, true);
+    // check(b1 == b2, false);
+    // check(x < y, false);
+    // check(xf < yf, false);
+    check(max(x,y), 5);
+    // check(min(x,y),5);
+    // check(x * y, 5);
+    // check(!b1, false);
+    // check(b1 || b2, false);
+    // check(select(b1,x,y),3);
+    // check(select(b1,b2,b3),false);
+    // check(x - y, 5);
     printf("Success!\n");
 
     return 0;
