@@ -21,7 +21,7 @@ for filename in ../../bin/build/tmp/*.smt2; do
   [[ $ASSERTION =~ $regex ]]
   RELATION=${BASH_REMATCH[1]}
   echo ${filename}
-  OUTPUT=`time cat ${filename} | z3 -smt2 -in`
+  OUTPUT=`time cat ${filename} | z3 -smt2 -in -T:60 -memory:2000`
   if [[ $OUTPUT =~ $unsatregex ]] 
   then
     if [[ "$show_passing" == 'true' ]] ; then
