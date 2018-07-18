@@ -46,6 +46,7 @@ Expr Simplify::visit(const Select *op, ExprInfo *bounds) {
 
              rewrite(select(x, y, IRMatcher::Indeterminate()), y) ||
              rewrite(select(x, IRMatcher::Indeterminate(), y), y))) {
+
             return rewrite.result;
         }
 

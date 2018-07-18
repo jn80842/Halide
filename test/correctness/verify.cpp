@@ -59,6 +59,7 @@ int main(int argc, char **argv) {
     // check(xf < yf, false);
     check(max(x,y), 5);
     // check(min(x,y),5);
+    // check(x % y, 5);
     // check(x * y, 5);
     // check(!b1, false);
     // check(b1 || b2, false);
