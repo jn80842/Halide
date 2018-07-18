@@ -26,9 +26,12 @@ Expr Simplify::visit(const Or *op, ConstBounds *bounds) {
     auto rewrite = IRMatcher::rewriter(IRMatcher::or_op(a, b), op->type);
 
     if (EVAL_IN_LAMBDA
-        (rewrite(x || true, b) ||
-         rewrite(x || false, a) ||
-         rewrite(x || x, a) ||
+        (// rewrite(x || true, b) ||
+         rewrite(x || true, true) ||
+         // rewrite(x || false, a) ||
+         rewrite(x || false, x) ||
+         // rewrite(x || x, a) ||
+         rewrite(x || x, x) ||
          rewrite(x != y || x == y, true) ||
          rewrite(x != y || y == x, true) ||
          rewrite((z || x != y) || x == y, true) ||
