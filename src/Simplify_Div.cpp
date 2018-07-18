@@ -55,7 +55,7 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
             rewrite(x / 1, x) ||
             (!op->type.is_float() &&
              rewrite(x / 0, IRMatcher::Indeterminate())) ||
-            rewrite(0 / x, 0) ||
+            rewrite(0 / x, 0, can_prove(x != 0, this)) ||
             rewrite(x / x, 1) ||
             rewrite(c0 / c1, fold(c0 / c1))) {
             return rewrite.result;
@@ -68,7 +68,7 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
               (// Fold repeated division
                rewrite((x / c0) / c2, x / fold(c0 * c2),                          c0 > 0 && c2 > 0 && !overflows(c0 * c2)) ||
                rewrite((x / c0 + c1) / c2, (x + fold(c1 * c0)) / fold(c0 * c2),   c0 > 0 && c2 > 0 && !overflows(c0 * c2) && !overflows(c0 * c1)) ||
-               rewrite((x * c0) / c1, x / fold(c1 / c0),                          c1 % c0 == 0 && c0 > 0 && c1 / c0 != 0) ||
+               rewrite((x * c0) / c1, x / fold(c1 / c0),                          c1 % c0 == 0 && c0 > 0) ||
                // Pull out terms that are a multiple of the denominator
                rewrite((x * c0) / c1, x * fold(c0 / c1),                          c0 % c1 == 0 && c1 > 0) ||
 
@@ -116,8 +116,8 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
                rewrite(((y + x) + z)/x, (y + z)/x + 1) ||
                rewrite((z + (x + y))/x, (z + y)/x + 1) ||
                rewrite((z + (y + x))/x, (z + y)/x + 1) ||
-               rewrite((x*y)/x, y) ||
-               rewrite((y*x)/x, y) ||
+               rewrite((x*y)/x, y, can_prove(x != 0, this)) ||
+               rewrite((y*x)/x, y, can_prove(x != 0, this)) ||
                rewrite((x*y + z)/x, y + z/x) ||
                rewrite((y*x + z)/x, y + z/x) ||
                rewrite((z + x*y)/x, z/x + y) ||
@@ -134,7 +134,11 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
                        can_prove((x % c1 + c0 * (lanes - 1)) / c1 == 0, this)))) ||
              (no_overflow_scalar_int(op->type) &&
               (rewrite(x / -1, -x) ||
+<<<<<<< HEAD
                rewrite(c0 / y, select(y < 0, fold(-c0), c0), c0 == -1 ) ||
+=======
+               rewrite(c0 / y, select(y < 0, fold(-c0), c0), c0 == -1 && can_prove(y != 0, this)) ||
+>>>>>>> guard rules against division by zero
                rewrite((x * c0 + c1) / c2,
                        (x + fold(c1 / c0)) / fold(c2 / c0),
                        c2 > 0 && c0 > 0 && c2 % c0 == 0) ||
