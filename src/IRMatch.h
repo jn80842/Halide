@@ -230,6 +230,10 @@ inline std::string print_smt2(SpecificExpr e, halide_type_t type_hint) {
     return s.str();
 }
 
+inline halide_type_t typecheck(SpecificExpr e, halide_type_t type_hint) {
+    return type_hint;
+}
+
 inline int get_int_variable_count(int count, SpecificExpr e, halide_type_t type_hint) {
     return count;
 }
@@ -299,6 +303,11 @@ std::string print_smt2(const WildConstInt<i> &c, halide_type_t type_hint) {
     std::ostringstream s;
     s << c;
     return s.str();
+}
+
+template<int i>
+halide_type_t typecheck(const WildConstInt<i> &c, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
 }
 
 template<int i>
@@ -376,6 +385,15 @@ std::string print_smt2(const WildConstUInt<i> &c, halide_type_t type_hint) {
     std::ostringstream s;
     s << c;
     return s.str();
+}
+
+template<int i>
+halide_type_t typecheck(const WildConstUInt<i> &c, halide_type_t type_hint) {
+    if (type_hint.bits == 1) {
+        return halide_type_of<bool>();
+    } else {
+        return halide_type_of<int64_t>();
+    }
 }
 
 template<int i>
@@ -457,6 +475,11 @@ std::string print_smt2(const WildConstFloat<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
+halide_type_t typecheck(const WildConstFloat<i> &c, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
+}
+
+template<int i>
 int get_bool_variable_count(int count, const WildConstFloat<i> &c, halide_type_t type_hint) {
     return count;
 }
@@ -530,6 +553,11 @@ std::string print_smt2(const WildConst<i> &c, halide_type_t type_hint) {
     std::ostringstream s;
     s << c;
     return s.str();
+}
+
+template<int i>
+halide_type_t typecheck(const WildConst<i> &c, halide_type_t type_hint) {
+    return type_hint;
 }
 
 template<int i>
@@ -615,6 +643,11 @@ std::string print_smt2(const Wild<i> &op, halide_type_t type_hint) {
         s << op;
     }
     return s.str();
+}
+
+template<int i>
+halide_type_t typecheck(const Wild<i> &op, halide_type_t type_hint) {
+    return type_hint;
 }
 
 template<int i>
@@ -742,6 +775,10 @@ inline std::string print_smt2(const Const &op, halide_type_t type_hint) {
         s << op;
         return "(make-H-Int false " + s.str() + ")";
     }
+}
+
+inline halide_type_t typecheck(const Const &op, halide_type_t type_hint) {
+    return type_hint;
 }
 
 inline int get_bool_variable_count(int count, const Const &op, halide_type_t type_hint) {
@@ -983,6 +1020,11 @@ std::string get_smt2_assumptions(const CmpOp<Op, A, B> &op) {
     return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
+template<typename Op, typename A, typename B>
+halide_type_t typecheck(const CmpOp<Op, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<bool>();
+}
+
 // for later: bitwidths use bvadd, etc, not + etc
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
@@ -993,6 +1035,11 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Add, A, B> &op, halide_type_t type_hint) {
     return "(halide-add " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+halide_type_t typecheck(const BinOp<Add, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
 }
 
 template<typename A, typename B>
@@ -1022,6 +1069,11 @@ std::string print_smt2(const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
+halide_type_t typecheck(const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
+}
+
+template<typename A, typename B>
 int get_bool_variable_count(int count, const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
     return std::max(get_bool_variable_count(count, op.a, halide_type_of<int64_t>()), get_bool_variable_count(count, op.b, halide_type_of<int64_t>()));
 }
@@ -1045,6 +1097,11 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
     return "(halide-mul " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+halide_type_t typecheck(const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
 }
 
 template<typename A, typename B>
@@ -1074,6 +1131,11 @@ std::string print_smt2(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
+halide_type_t typecheck(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
+}
+
+template<typename A, typename B>
 int get_bool_variable_count(int count, const BinOp<Div, A, B> &op, halide_type_t type_hint) {
     return std::max(get_bool_variable_count(count, op.a, halide_type_of<int64_t>()), get_bool_variable_count(count, op.b, halide_type_of<int64_t>()));
 }
@@ -1097,6 +1159,11 @@ std::ostream &operator<<(std::ostream &s, const BinOp<And, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const BinOp<And, A, B> &op, halide_type_t type_name) {
     return "(and " + print_smt2(op.a, halide_type_of<bool>()) + " " + print_smt2(op.b, halide_type_of<bool>()) + ")";
+}
+
+template<typename A, typename B>
+halide_type_t typecheck(const BinOp<And, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<bool>();
 }
 
 template<typename A, typename B>
@@ -1126,6 +1193,11 @@ std::string print_smt2(const BinOp<Or, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
+halide_type_t typecheck(const BinOp<Or, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<bool>();
+}
+
+template<typename A, typename B>
 int get_bool_variable_count(int count, const BinOp<Or, A, B> &op, halide_type_t type_hint) {
     return std::max(get_bool_variable_count(count, op.a, halide_type_of<bool>()), get_bool_variable_count(count, op.b, halide_type_of<bool>()));
 }
@@ -1152,6 +1224,11 @@ std::string print_smt2(const BinOp<Min, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
+halide_type_t typecheck(const BinOp<Min, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
+}
+
+template<typename A, typename B>
 int get_bool_variable_count(int count, const BinOp<Min, A, B> &op, halide_type_t type_hint) {
     return std::max(get_bool_variable_count(count, op.a, halide_type_of<int64_t>()), get_bool_variable_count(count, op.b, halide_type_of<int64_t>()));
 }
@@ -1175,6 +1252,11 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Max, A, B> &op, halide_type_t type_hint) {
     return "(halide-max " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+halide_type_t typecheck(const BinOp<Max, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
 }
 
 template<typename A, typename B>
@@ -1268,6 +1350,11 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
     return "(halide-mod " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+halide_type_t typecheck(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
 }
 
 template<typename A, typename B>
@@ -1829,6 +1916,11 @@ std::string print_smt2(const Intrin<Args...> &op, halide_type_t type_hint) {
 }
 
 template<typename... Args>
+halide_type_t typecheck(const Intrin<Args...> &op, halide_type_t type_hint) {
+    return type_hint;
+}
+
+template<typename... Args>
 int get_bool_variable_count(int count, const Intrin<Args...> &op, halide_type_t type_hint) {
     return count;
 }
@@ -1916,6 +2008,11 @@ std::string print_smt2(const NotOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+halide_type_t typecheck(const NotOp<A> &op, halide_type_t type_hint) {
+    return halide_type_of<bool>();
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const NotOp<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, halide_type_of<bool>());
 }
@@ -1994,6 +2091,17 @@ std::ostream &operator<<(std::ostream &s, const SelectOp<C, T, F> &op) {
 template<typename C, typename T, typename F>
 std::string print_smt2(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
     return "(ite " + print_smt2(op.c, halide_type_of<bool>()) + " " + print_smt2(op.t, type_hint) + " " + print_smt2(op.f, type_hint) + ")";
+}
+
+template<typename C, typename T, typename F>
+halide_type_t typecheck(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
+    halide_type_t term_t_type = typecheck(op.t, type_hint);
+    halide_type_t term_f_type = typecheck(op.f, type_hint);
+    if (term_t_type == Bool() || term_f_type == Bool()) {
+        return halide_type_of<bool>();
+    } else {
+        return halide_type_of<int64_t>();
+    }
 }
 
 template<typename C, typename T, typename F>
@@ -2095,6 +2203,11 @@ std::string print_smt2(const BroadcastOp<A, true> &op, halide_type_t type_hint) 
 }
 
 template<typename A>
+halide_type_t typecheck(const BroadcastOp<A, true> &op, halide_type_t type_hint) {
+    return typecheck(op.a, type_hint);
+}
+
+template<typename A>
 std::string get_smt2_assumptions(const BroadcastOp<A, true> &op) {
     return "";
 }
@@ -2108,6 +2221,11 @@ inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, false> &op
 template<typename A>
 std::string print_smt2(const BroadcastOp<A, false> &op, halide_type_t type_hint) {
     return print_smt2(op.a, type_hint);
+}
+
+template<typename A>
+halide_type_t typecheck(const BroadcastOp<A, false> &op, halide_type_t type_hint) {
+    return typecheck(op.a, type_hint);
 }
 
 template<typename A>
@@ -2202,6 +2320,11 @@ int get_int_variable_count(int count, const RampOp<A, B, known_lanes> &op, halid
 template<typename A, typename B, bool known_lanes>
 std::string print_smt2(const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
     return "(halide-add " + print_smt2(op.a,type_hint) + " (halide-mul " + print_smt2(op.b,type_hint) + " lanes))";
+}
+
+template<typename A, typename B, bool known_lanes>
+halide_type_t typecheck(const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
+    return typecheck(op.a, type_hint);
 }
 
 template<typename A, typename B>
@@ -2305,6 +2428,11 @@ std::string print_smt2(const NegateOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+halide_type_t typecheck(const NegateOp<A> &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const NegateOp<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, type_hint);
 }
@@ -2378,6 +2506,11 @@ std::string print_smt2(const CastOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+halide_type_t typecheck(const CastOp<A> &op, halide_type_t type_hint) {
+    return typecheck(op.a, type_hint);
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const CastOp<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, type_hint);
 }
@@ -2448,6 +2581,11 @@ std::string print_smt2(const Fold<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+halide_type_t typecheck(const Fold<A> &op, halide_type_t type_hint) {
+    return typecheck(op.a, type_hint);
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const Fold<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, type_hint);
 }
@@ -2503,6 +2641,11 @@ template<typename A>
 std::string print_smt2(const Overflows<A> &op, halide_type_t type_hint) {
     // as we currently assume all numbers are infinite precision integers, they cannot overflow
     return "false";
+}
+
+template<typename A>
+halide_type_t typecheck(const Overflows<A> &op, halide_type_t type_hint) {
+    return halide_type_of<bool>();
 }
 
 template<typename A>
@@ -2564,6 +2707,10 @@ inline std::string print_smt2(const Indeterminate &op, halide_type_t type_hint) 
     return "indeterminate";
 }
 
+inline halide_type_t typecheck(const Indeterminate &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
+}
+
 inline int get_bool_variable_count(int count, const Indeterminate &op, halide_type_t type_hint) {
     return count;
 }
@@ -2617,6 +2764,10 @@ inline std::ostream &operator<<(std::ostream &s, const Overflow &op) {
 
 inline std::string print_smt2(const Overflow &op, halide_type_t type_hint) {
     return "overflow()";
+}
+
+inline halide_type_t typecheck(const Overflow &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
 }
 
 inline int get_bool_variable_count(int count, const Overflow &op, halide_type_t type_hint) {
@@ -2679,6 +2830,11 @@ std::string print_smt2(const IsConst<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+halide_type_t typecheck(const IsConst<A> &op, halide_type_t type_hint) {
+    return halide_type_of<bool>();
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const IsConst<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, type_hint);
 }
@@ -2734,6 +2890,11 @@ std::ostream &operator<<(std::ostream &s, const CanProve<A, Prover> &op) {
 template<typename A, typename Prover>
 std::string print_smt2(const CanProve<A, Prover> &op, halide_type_t type_hint) {
     return print_smt2(op.a,type_hint);
+}
+
+template<typename A, typename Prover>
+halide_type_t typecheck(const CanProve<A, Prover> &op, halide_type_t type_hint) {
+    return halide_type_of<bool>();
 }
 
 template<typename A, typename Prover>
@@ -2798,6 +2959,11 @@ std::string print_smt2(const IsFloat<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+halide_type_t typecheck(const IsFloat<A> &op, halide_type_t type_hint) {
+    return halide_type_of<bool>();
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const IsFloat<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, type_hint);
 }
@@ -2823,6 +2989,13 @@ template<typename Before,
 HALIDE_NEVER_INLINE
 void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred,
                                 halide_type_t wildcard_type, halide_type_t output_type) noexcept {
+
+    halide_type_t before_type = typecheck(before, wildcard_type);
+    halide_type_t after_type = typecheck(after, wildcard_type);
+    halide_type_t hint_type = before_type;
+
+    if (before_type != Int(64) && before_type != Bool())
+        hint_type = after_type;
 
     std::ofstream assertfile;
     std::string filename = "assert" + std::to_string(rand()) + ".smt2";
@@ -2899,20 +3072,21 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
                   "  (and (and (not (indet-flag a)) (not (indet-flag b))) (> (val a) (val b))))\n\n";
     //assertfile << get_variable_declarations(before, wildcard_type);
 
-    int var_count = get_int_variable_count(-1, before, wildcard_type);
+    int var_count = get_int_variable_count(-1, before, hint_type);
     for (int i = 0; i <= var_count; i++) {
         assertfile << "(declare-const _"  << i << " (H-Int Bool Int))\n";
         assertfile << "(assert (not (indet-flag _" << i << ")))\n";
     }
-    int const_count = get_const_variable_count(-1, before, wildcard_type);
+    int bool_var_count = get_bool_variable_count(-1, before, hint_type);
+    for (int i = 0; i <= bool_var_count; i++) {
+        assertfile << "(declare-const b" << i << " Bool)\n";
+    }
+    int const_count = get_const_variable_count(-1, before, hint_type);
     for (int i = 0; i <= const_count; i++) {
         assertfile << "(declare-const c" << i << " (H-Int Bool Int))\n";
         assertfile << "(assert (not (indet-flag c" << i << ")))\n";
     }
-    int bool_var_count = get_bool_variable_count(-1, before, wildcard_type);
-    for (int i = 0; i <= bool_var_count; i++) {
-        assertfile << "(declare-const b" << i << " Bool)\n";
-    }
+
     // all broadcasts/ramps in the same expression share the same number of lanes
     assertfile << "(declare-const lanes (H-Int Bool Int))\n";
     assertfile << "(assert (not (indet-flag lanes)))\n";
@@ -2923,7 +3097,7 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     std::ostringstream pred_stream;
     pred_stream << pred;
     if (pred_stream.str() != "1") {
-        assertfile << "(assert " << print_smt2(pred, wildcard_type) << ")\n";
+        assertfile << "(assert " << print_smt2(pred, hint_type) << ")\n";
     }
 
     // get assumptions that divisors and mod 2nd terms are non zero
@@ -2931,7 +3105,7 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     //assertfile << get_smt2_assumptions(after);
 
     // verify that the solver cannot find a model in which the two sides of the rewrite rule are different
-    assertfile << "\n(assert (not (= " << print_smt2(before, wildcard_type) << " " << print_smt2(after, output_type) << ")))\n";
+    assertfile << "\n(assert (not (= " << print_smt2(before, hint_type) << " " << print_smt2(after, hint_type) << ")))\n";
     
     assertfile << "\n\n(check-sat)\n(get-model)";
     assertfile.close();

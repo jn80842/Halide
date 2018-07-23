@@ -53,7 +53,9 @@ int main(int argc, char **argv) {
     // check(b1 && b2, 5);
     // check(x / y, 5);
     // check(xf / c0, 5);
-    // check(x == false, true);
+    // check(x == 1, true);
+    //check(b1 == 1, true);
+    // check(select(b1,0,0) == 0, true);
     // check(b1 == b2, false);
     // check(x < y, false);
     // check(xf < yf, false);
@@ -63,9 +65,12 @@ int main(int argc, char **argv) {
     // check(x * y, 5);
     // check(!b1, false);
     // check(b1 || b2, false);
-    // check(select(b1,x,y),3);
+    check(select(b1,x,y),3);
     // check(select(b1,b2,b3),false);
     // check(x - y, 5);
+    // check(x > y, true);
+    // check(x + (y + (c0 - x)/c1)*c1, 5);
+
     printf("Success!\n");
 
     return 0;
