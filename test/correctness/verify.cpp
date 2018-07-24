@@ -49,11 +49,11 @@ int main(int argc, char **argv) {
     Expr b2 = Variable::make(Bool(), "b2");
     Expr b3 = Variable::make(Bool(), "b3");
 
-    // check(x + y, 5);
-    // check(b1 && b2, 5);
-    // check(x / y, 5);
-    // check(xf / c0, 5);
-    // check(x == 1, true);
+     //check(x + y, 5);
+     //check(b1 && b2, 5);
+     //check(x / y, 5);
+     //check(xf / c0, 5);
+     //check(x == y, true);
     //check(b1 == 1, true);
     // check(select(b1,0,0) == 0, true);
     // check(b1 == b2, false);

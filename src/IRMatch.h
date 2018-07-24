@@ -234,6 +234,14 @@ inline halide_type_t typecheck(SpecificExpr e, halide_type_t type_hint) {
     return type_hint;
 }
 
+inline int get_ast_size(SpecificExpr e) {
+    return 1;
+}
+
+inline int get_leaf_count(SpecificExpr e) {
+    return 1;
+}
+
 inline int get_int_variable_count(int count, SpecificExpr e, halide_type_t type_hint) {
     return count;
 }
@@ -308,6 +316,16 @@ std::string print_smt2(const WildConstInt<i> &c, halide_type_t type_hint) {
 template<int i>
 halide_type_t typecheck(const WildConstInt<i> &c, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
+}
+
+template<int i>
+int get_ast_size(const WildConstInt<i> &c) {
+    return 1;
+}
+
+template<int i>
+int get_leaf_count(const WildConstInt<i> &c) {
+    return 1;
 }
 
 template<int i>
@@ -397,6 +415,16 @@ halide_type_t typecheck(const WildConstUInt<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
+int get_ast_size(const WildConstUInt<i> &c) {
+    return 1;
+}
+
+template<int i>
+int get_leaf_count(const WildConstUInt<i> &c) {
+    return 1;
+}
+
+template<int i>
 int get_bool_variable_count(int count, const WildConstUInt<i> &c, halide_type_t type_hint) {
     return count;
 }
@@ -480,6 +508,16 @@ halide_type_t typecheck(const WildConstFloat<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
+int get_ast_size(const WildConstFloat<i> &c) {
+    return 1;
+}
+
+template<int i>
+int get_leaf_count(const WildConstFloat<i> &c) {
+    return 1;
+}
+
+template<int i>
 int get_bool_variable_count(int count, const WildConstFloat<i> &c, halide_type_t type_hint) {
     return count;
 }
@@ -558,6 +596,16 @@ std::string print_smt2(const WildConst<i> &c, halide_type_t type_hint) {
 template<int i>
 halide_type_t typecheck(const WildConst<i> &c, halide_type_t type_hint) {
     return type_hint;
+}
+
+template<int i>
+int get_ast_size(const WildConst<i> &c) {
+    return 1;
+}
+
+template<int i>
+int get_leaf_count(const WildConst<i> &c) {
+    return 1;
 }
 
 template<int i>
@@ -648,6 +696,16 @@ std::string print_smt2(const Wild<i> &op, halide_type_t type_hint) {
 template<int i>
 halide_type_t typecheck(const Wild<i> &op, halide_type_t type_hint) {
     return type_hint;
+}
+
+template<int i>
+int get_ast_size(const Wild<i> &op) {
+    return 1;
+}
+
+template<int i>
+int get_leaf_count(const Wild<i> &op) {
+    return 1;
 }
 
 template<int i>
@@ -779,6 +837,14 @@ inline std::string print_smt2(const Const &op, halide_type_t type_hint) {
 
 inline halide_type_t typecheck(const Const &op, halide_type_t type_hint) {
     return type_hint;
+}
+
+inline int get_ast_size(const Const &op) {
+    return 1;
+}
+
+inline int get_leaf_count(const Const &op) {
+    return 1;
 }
 
 inline int get_bool_variable_count(int count, const Const &op, halide_type_t type_hint) {
@@ -1023,6 +1089,26 @@ std::string get_smt2_assumptions(const CmpOp<Op, A, B> &op) {
 template<typename Op, typename A, typename B>
 halide_type_t typecheck(const CmpOp<Op, A, B> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
+}
+
+template<typename Op, typename A, typename B>
+int get_ast_size(const CmpOp<Op, A, B> &op) {
+    return 1 + get_ast_size(op.a) + get_ast_size(op.b);
+}
+
+template<typename Op, typename A, typename B>
+int get_leaf_count(const CmpOp<Op, A, B> &op) {
+    return get_leaf_count(op.a) + get_leaf_count(op.b);
+}
+
+template<typename Op, typename A, typename B>
+int get_ast_size(const BinOp<Op, A, B> &op) {
+    return 1 + get_ast_size(op.a) + get_ast_size(op.b);
+}
+
+template<typename Op, typename A, typename B>
+int get_leaf_count(const BinOp<Op, A, B> &op) {
+    return get_leaf_count(op.a) + get_leaf_count(op.b);
 }
 
 // for later: bitwidths use bvadd, etc, not + etc
@@ -1921,6 +2007,16 @@ halide_type_t typecheck(const Intrin<Args...> &op, halide_type_t type_hint) {
 }
 
 template<typename... Args>
+int get_ast_size(const Intrin<Args...> &op) {
+    return 1;
+}
+
+template<typename... Args>
+int get_leaf_count(const Intrin<Args...> &op) {
+    return 1;
+}
+
+template<typename... Args>
 int get_bool_variable_count(int count, const Intrin<Args...> &op, halide_type_t type_hint) {
     return count;
 }
@@ -2013,6 +2109,16 @@ halide_type_t typecheck(const NotOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+int get_ast_size(const NotOp<A> &op) {
+    return 1 + get_ast_size(op.a);
+}
+
+template<typename A>
+int get_leaf_count(const NotOp<A> &op) {
+    return get_leaf_count(op.a);
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const NotOp<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, halide_type_of<bool>());
 }
@@ -2102,6 +2208,16 @@ halide_type_t typecheck(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
     } else {
         return halide_type_of<int64_t>();
     }
+}
+
+template<typename C, typename T, typename F>
+int get_ast_size(const SelectOp<C, T, F> &op) {
+    return 1 + get_ast_size(op.c) + get_ast_size(op.t) + get_ast_size(op.f);
+}
+
+template<typename C, typename T, typename F>
+int get_leaf_count(const SelectOp<C, T, F> &op) {
+    return get_leaf_count(op.c) + get_leaf_count(op.t) + get_leaf_count(op.f);
 }
 
 template<typename C, typename T, typename F>
@@ -2205,6 +2321,16 @@ std::string print_smt2(const BroadcastOp<A, true> &op, halide_type_t type_hint) 
 template<typename A>
 halide_type_t typecheck(const BroadcastOp<A, true> &op, halide_type_t type_hint) {
     return typecheck(op.a, type_hint);
+}
+
+template<typename A, bool known_lanes>
+int get_ast_size(const BroadcastOp<A, known_lanes> &op) {
+    return 1 + get_ast_size(op.a);
+}
+
+template<typename A, bool known_lanes>
+int get_leaf_count(const BroadcastOp<A, known_lanes> &op) {
+    return get_leaf_count(op.a);
 }
 
 template<typename A>
@@ -2327,6 +2453,16 @@ halide_type_t typecheck(const RampOp<A, B, known_lanes> &op, halide_type_t type_
     return typecheck(op.a, type_hint);
 }
 
+template<typename A, typename B, bool known_lanes>
+int get_ast_size(const RampOp<A, B, known_lanes> &op) {
+    return 1 + get_ast_size(op.a) + get_ast_size(op.b);
+}
+
+template<typename A, typename B, bool known_lanes>
+int get_leaf_count(const RampOp<A, B, known_lanes> &op) {
+    return get_leaf_count(op.a) + get_leaf_count(op.b);
+}
+
 template<typename A, typename B>
 std::string get_smt2_assumptions(const RampOp<A, B, true> &op) {
     return "";
@@ -2433,6 +2569,16 @@ halide_type_t typecheck(const NegateOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+int get_ast_size(const NegateOp<A> &op) {
+    return 1 + get_ast_size(op.a);
+}
+
+template<typename A>
+int get_leaf_count(const NegateOp<A> &op) {
+    return get_leaf_count(op.a);
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const NegateOp<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, type_hint);
 }
@@ -2511,6 +2657,16 @@ halide_type_t typecheck(const CastOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+int get_ast_size(const CastOp<A> &op) {
+    return 1 + get_ast_size(op.a);
+}
+
+template<typename A>
+int get_leaf_count(const CastOp<A> &op) {
+    return get_leaf_count(op.a);
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const CastOp<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, type_hint);
 }
@@ -2586,6 +2742,16 @@ halide_type_t typecheck(const Fold<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+int get_ast_size(const Fold<A> &op) {
+    return 1 + get_ast_size(op.a);
+}
+
+template<typename A>
+int get_leaf_count(const Fold<A> &op) {
+    return get_leaf_count(op.a);
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const Fold<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, type_hint);
 }
@@ -2646,6 +2812,16 @@ std::string print_smt2(const Overflows<A> &op, halide_type_t type_hint) {
 template<typename A>
 halide_type_t typecheck(const Overflows<A> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
+}
+
+template<typename A>
+int get_ast_size(const Overflows<A> &op) {
+    return 1 + get_ast_size(op.a);
+}
+
+template<typename A>
+int get_leaf_count(const Overflows<A> &op) {
+    return get_leaf_count(op.a);
 }
 
 template<typename A>
@@ -2711,6 +2887,14 @@ inline halide_type_t typecheck(const Indeterminate &op, halide_type_t type_hint)
     return halide_type_of<int64_t>();
 }
 
+inline int get_ast_size(const Indeterminate &op) {
+    return 1;
+}
+
+inline int get_leaf_count(const Indeterminate &op) {
+    return 1;
+}
+
 inline int get_bool_variable_count(int count, const Indeterminate &op, halide_type_t type_hint) {
     return count;
 }
@@ -2768,6 +2952,14 @@ inline std::string print_smt2(const Overflow &op, halide_type_t type_hint) {
 
 inline halide_type_t typecheck(const Overflow &op, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
+}
+
+inline int get_ast_size(const Overflow &op) {
+    return 1;
+}
+
+inline int get_leaf_count(const Overflow &op) {
+    return 1;
 }
 
 inline int get_bool_variable_count(int count, const Overflow &op, halide_type_t type_hint) {
@@ -2835,6 +3027,16 @@ halide_type_t typecheck(const IsConst<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+int get_ast_size(const IsConst<A> &op) {
+    return 1 + get_ast_size(op.a);
+}
+
+template<typename A>
+int get_leaf_count(const IsConst<A> &op) {
+    return get_leaf_count(op.a);
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const IsConst<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, type_hint);
 }
@@ -2895,6 +3097,16 @@ std::string print_smt2(const CanProve<A, Prover> &op, halide_type_t type_hint) {
 template<typename A, typename Prover>
 halide_type_t typecheck(const CanProve<A, Prover> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
+}
+
+template<typename A, typename Prover>
+int get_ast_size(const CanProve<A, Prover> &op) {
+    return 0;
+}
+
+template<typename A, typename Prover>
+int get_leaf_count(const CanProve<A, Prover> &op) {
+    return 0;
 }
 
 template<typename A, typename Prover>
@@ -2964,6 +3176,16 @@ halide_type_t typecheck(const IsFloat<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+int get_ast_size(const IsFloat<A> &op) {
+    return 1 + get_ast_size(op.a);
+}
+
+template<typename A>
+int get_leaf_count(const IsFloat<A> &op) {
+    return get_leaf_count(op.a);
+}
+
+template<typename A>
 int get_bool_variable_count(int count, const IsFloat<A> &op, halide_type_t type_hint) {
     return get_bool_variable_count(count, op.a, type_hint);
 }
@@ -2989,6 +3211,16 @@ template<typename Before,
 HALIDE_NEVER_INLINE
 void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred,
                                 halide_type_t wildcard_type, halide_type_t output_type) noexcept {
+
+    int before_ast_size = get_ast_size(before);
+    int before_leaf_count = get_leaf_count(before);
+    int after_ast_size = get_ast_size(after);
+    int after_leaf_count = get_leaf_count(after);
+
+    debug(0) << "Before AST size: " << before_ast_size << " , leaf count " << before_leaf_count << " ";
+    debug(0) << "After AST size: " << after_ast_size << " , leaf count " << after_leaf_count << " ";
+    debug(0) << before << " ";
+    debug(0) << after << "\n";
 
     halide_type_t before_type = typecheck(before, wildcard_type);
     halide_type_t after_type = typecheck(after, wildcard_type);
