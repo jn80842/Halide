@@ -249,20 +249,6 @@ inline void build_variable_map(SpecificExpr e, variable_map &varmap, halide_type
     return;
 }
 
-inline int get_int_variable_count(int count, SpecificExpr e, halide_type_t type_hint) {
-    return count;
-}
-inline int get_const_variable_count(int count, SpecificExpr e, halide_type_t type_hint) {
-    return count;
-}
-inline int get_bool_variable_count(int count, SpecificExpr e, halide_type_t type_hint) {
-    return count;
-}
-
-inline std::string get_smt2_assumptions(SpecificExpr e) {
-    return "";
-}
-
 template<int i>
 struct WildConstInt {
     struct pattern_tag {};
@@ -339,26 +325,6 @@ template<int i>
 void build_variable_map(const WildConstInt<i> &c, variable_map &varmap, halide_type_t type_hint) {
     debug(0) << print_smt2(c, type_hint) << " given type of int64\n";
     varmap.insert({print_smt2(c, type_hint), halide_type_of<int64_t>()});
-}
-
-template<int i>
-int get_bool_variable_count(int count, const WildConstInt<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-int get_const_variable_count(int count, const WildConstInt<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-int get_int_variable_count(int count, const WildConstInt<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-std::string get_smt2_assumptions(const WildConstInt<i> &c) {
-    return "";
 }
 
 template<int i>
@@ -443,26 +409,6 @@ void build_variable_map(const WildConstUInt<i> &c, variable_map &varmap, halide_
 }
 
 template<int i>
-int get_bool_variable_count(int count, const WildConstUInt<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-int get_const_variable_count(int count, const WildConstUInt<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-int get_int_variable_count(int count, const WildConstUInt<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-std::string get_smt2_assumptions(const WildConstUInt<i> &c) {
-    return "";
-}
-
-template<int i>
 struct WildConstFloat {
     struct pattern_tag {};
 
@@ -538,26 +484,6 @@ int get_leaf_count(const WildConstFloat<i> &c) {
 template<int i>
 void build_variable_map(const WildConstFloat<i> &c, variable_map &varmap, halide_type_t type_hint) {
     varmap.insert({print_smt2(c, type_hint), typecheck(c, type_hint)});
-}
-
-template<int i>
-int get_bool_variable_count(int count, const WildConstFloat<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-int get_const_variable_count(int count, const WildConstFloat<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-int get_int_variable_count(int count, const WildConstFloat<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-std::string get_smt2_assumptions(const WildConstFloat<i> &c) {
-    return "";
 }
 
 // Matches and binds to any constant Expr. Does not support constant-folding.
@@ -655,26 +581,6 @@ void build_variable_map(const WildConst<i> &c, variable_map &varmap, halide_type
         varmap.insert({varname, t});
         debug(0) << print_smt2(c, type_hint) << " given type " << type_string << "\n";
     }
-}
-
-template<int i>
-int get_bool_variable_count(int count, const WildConst<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-int get_const_variable_count(int count, const WildConst<i> &c, halide_type_t type_hint) {
-    return std::max(i,count);
-}
-
-template<int i>
-int get_int_variable_count(int count, const WildConst<i> &c, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-std::string get_smt2_assumptions(const WildConst<i> &c) {
-    return "";
 }
 
 // Matches and binds to any Expr
@@ -777,34 +683,6 @@ void build_variable_map(const Wild<i> &c, variable_map &varmap, halide_type_t ty
         varmap[varname] = t;
         debug(0) << print_smt2(c, type_hint) << " given type " << type_string << "\n";
     //}
-}
-
-template<int i>
-int get_bool_variable_count(int count, const Wild<i> &op, halide_type_t type_hint) {
-    if (type_hint.code == halide_type_uint && type_hint.bits == 1) {
-        return std::max(i, count);
-    } else {
-        return count;
-    }
-}
-
-template<int i>
-int get_const_variable_count(int count, const Wild<i> &op, halide_type_t type_hint) {
-    return count;
-}
-
-template<int i>
-int get_int_variable_count(int count, const Wild<i> &op, halide_type_t type_hint) {
-    if (type_hint.code == halide_type_uint && type_hint.bits == 1) {
-        return count;
-    } else  {
-        return std::max(i,count);
-    }
-}
-
-template<int i>
-std::string get_smt2_assumptions(const Wild<i> &op) {
-    return "";
 }
 
 // Matches a specific constant or broadcast of that constant. The
@@ -920,22 +798,6 @@ inline int get_leaf_count(const Const &op) {
 
 inline void build_variable_map(const Const &op, variable_map &varmap, halide_type_t type_hint) {
     return;
-}
-
-inline int get_bool_variable_count(int count, const Const &op, halide_type_t type_hint) {
-    return count;
-}
-
-inline int get_const_variable_count(int count, const Const &op, halide_type_t type_hint) {
-    return count;
-}
-
-inline int get_int_variable_count(int count, const Const &op, halide_type_t type_hint) {
-    return count;
-}
-
-inline std::string get_smt2_assumptions(const Const &op) {
-    return "";
 }
 
 template<typename Op>
@@ -1137,31 +999,6 @@ struct CmpOp {
 };
 
 template<typename Op, typename A, typename B>
-int get_bool_variable_count(int count, const CmpOp<Op,A,B> &op, halide_type_t type_hint) {
-    return std::max(get_bool_variable_count(count, op.a, halide_type_of<int64_t>()), get_bool_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename Op, typename A, typename B>
-int get_const_variable_count(int count, const CmpOp<Op,A,B> &op, halide_type_t type_hint) {
-    return std::max(get_const_variable_count(count, op.a, halide_type_of<int64_t>()), get_const_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename Op, typename A, typename B>
-int get_int_variable_count(int count, const CmpOp<Op,A,B> &op, halide_type_t type_hint) {
-    return std::max(get_int_variable_count(count, op.a, halide_type_of<int64_t>()),get_int_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename Op, typename A, typename B>
-int get_const_variable_count(int count, const BinOp<Op, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_const_variable_count(count, op.a, type_hint), get_const_variable_count(count, op.b, type_hint));
-}
-
-template<typename Op, typename A, typename B>
-std::string get_smt2_assumptions(const CmpOp<Op, A, B> &op) {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
-}
-
-template<typename Op, typename A, typename B>
 halide_type_t typecheck(const CmpOp<Op, A, B> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -1210,21 +1047,6 @@ void build_variable_map(const BinOp<Add, A, B> &op, variable_map &varmap, halide
 }
 
 template<typename A, typename B>
-int get_bool_variable_count(int count, const BinOp<Add, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_bool_variable_count(count,op.a,halide_type_of<int64_t>()), get_bool_variable_count(count,op.b,halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-int get_int_variable_count(int count, const BinOp<Add, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_int_variable_count(count, op.a, halide_type_of<int64_t>()), get_int_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const BinOp<Add, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
-}
-
-template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Sub, A, B> &op) {
     s << "(" << op.a << " - " << op.b << ")";
     return s;
@@ -1244,21 +1066,6 @@ template<typename A, typename B>
 void build_variable_map(const BinOp<Sub, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
-}
-
-template<typename A, typename B>
-int get_bool_variable_count(int count, const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_bool_variable_count(count, op.a, halide_type_of<int64_t>()), get_bool_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-int get_int_variable_count(int count, const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_int_variable_count(count, op.a, halide_type_of<int64_t>()), get_int_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const BinOp<Sub, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1284,21 +1091,6 @@ void build_variable_map(const BinOp<Mul, A, B> &op, variable_map &varmap, halide
 }
 
 template<typename A, typename B>
-int get_bool_variable_count(int count, const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_bool_variable_count(count, op.a, halide_type_of<int64_t>()),get_bool_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-int get_int_variable_count(int count, const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_int_variable_count(count, op.a, halide_type_of<int64_t>()), get_int_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const BinOp<Mul, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
-}
-
-template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
     s << "(" << op.a << " / " << op.b << ")";
     return s;
@@ -1318,21 +1110,6 @@ template<typename A, typename B>
 void build_variable_map(const BinOp<Div, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
-}
-
-template<typename A, typename B>
-int get_bool_variable_count(int count, const BinOp<Div, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_bool_variable_count(count, op.a, halide_type_of<int64_t>()), get_bool_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-int get_int_variable_count(int count, const BinOp<Div, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_int_variable_count(count, op.a, halide_type_of<int64_t>()), get_int_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const BinOp<Div, A, B> &op) noexcept {
-    return "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n" + get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1358,21 +1135,6 @@ void build_variable_map(const BinOp<And, A, B> &op, variable_map &varmap, halide
 }
 
 template<typename A, typename B>
-int get_bool_variable_count(int count, const BinOp<And, A, B> &op, halide_type_t type_name) {
-    return std::max(get_bool_variable_count(count, op.a, halide_type_of<bool>()), get_bool_variable_count(count, op.b, halide_type_of<bool>()));
-}
-
-template<typename A, typename B>
-int get_int_variable_count(int count, const BinOp<And, A, B> &op, halide_type_t type_name) {
-    return std::max(get_int_variable_count(count, op.a, halide_type_of<bool>()), get_int_variable_count(count, op.b, halide_type_of<bool>()));
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const BinOp<And, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
-}
-
-template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Or, A, B> &op) {
     s << "(" << op.a << " || " << op.b << ")";
     return s;
@@ -1392,21 +1154,6 @@ template<typename A, typename B>
 void build_variable_map(const BinOp<Or, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<bool>());
     build_variable_map(op.b, varmap, halide_type_of<bool>());
-}
-
-template<typename A, typename B>
-int get_bool_variable_count(int count, const BinOp<Or, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_bool_variable_count(count, op.a, halide_type_of<bool>()), get_bool_variable_count(count, op.b, halide_type_of<bool>()));
-}
-
-template<typename A, typename B>
-int get_int_variable_count(int count, const BinOp<Or, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_int_variable_count(count, op.a, halide_type_of<bool>()), get_int_variable_count(count, op.b, halide_type_of<bool>()));
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const BinOp<Or, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1432,21 +1179,6 @@ void build_variable_map(const BinOp<Min, A, B> &op, variable_map &varmap, halide
 }
 
 template<typename A, typename B>
-int get_bool_variable_count(int count, const BinOp<Min, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_bool_variable_count(count, op.a, halide_type_of<int64_t>()), get_bool_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-int get_int_variable_count(int count, const BinOp<Min, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_int_variable_count(count, op.a, halide_type_of<int64_t>()), get_int_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const BinOp<Min, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
-}
-
-template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
     s << "max(" << op.a << ", " << op.b << ")";
     return s;
@@ -1466,21 +1198,6 @@ template<typename A, typename B>
 void build_variable_map(const BinOp<Max, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
-}
-
-template<typename A, typename B>
-int get_bool_variable_count(int count, const BinOp<Max, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_bool_variable_count(count, op.a, halide_type_of<int64_t>()), get_bool_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-int get_int_variable_count(int count, const BinOp<Max, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_int_variable_count(count, op.a, halide_type_of<int64_t>()), get_int_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const BinOp<Max, A, B> &op) noexcept {
-    return get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -1644,21 +1361,6 @@ template<typename A, typename B>
 void build_variable_map(const BinOp<Mod, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
-}
-
-template<typename A, typename B>
-int get_bool_variable_count(int count, const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_bool_variable_count(count, op.a, halide_type_of<int64_t>()), get_bool_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-int get_int_variable_count(int count, const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
-    return std::max(get_int_variable_count(count, op.a, halide_type_of<int64_t>()), get_int_variable_count(count, op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const BinOp<Mod, A, B> &op) noexcept {
-    return "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n" + get_smt2_assumptions(op.a) + get_smt2_assumptions(op.b);
 }
 
 template<typename A, typename B>
@@ -2225,26 +1927,6 @@ void build_variable_map(const Intrin<Args...> &op, variable_map &varmap, halide_
 }
 
 template<typename... Args>
-int get_bool_variable_count(int count, const Intrin<Args...> &op, halide_type_t type_hint) {
-    return count;
-}
-
-template<typename... Args>
-int get_const_variable_count(int count, const Intrin<Args...> &op, halide_type_t type_hint) {
-    return count;
-}
-
-template<typename... Args>
-int get_int_variable_count(int count, const Intrin<Args...> &op, halide_type_t type_hint) {
-    return count;
-}
-
-template<typename... Args>
-std::string get_smt2_assumptions(const Intrin<Args...> &op) {
-    return "";
-}
-
-template<typename... Args>
 HALIDE_ALWAYS_INLINE
 auto intrin(Call::ConstString name, Args... args) noexcept -> Intrin<decltype(pattern_arg(args))...> {
     return {name, pattern_arg(args)...};
@@ -2327,26 +2009,6 @@ int get_leaf_count(const NotOp<A> &op) {
 template<typename A>
 void build_variable_map(const NotOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<bool>());
-}
-
-template<typename A>
-int get_bool_variable_count(int count, const NotOp<A> &op, halide_type_t type_hint) {
-    return get_bool_variable_count(count, op.a, halide_type_of<bool>());
-}
-
-template<typename A>
-int get_const_variable_count(int count, const NotOp<A> &op, halide_type_t type_hint) {
-    return get_const_variable_count(count, op.a, halide_type_of<bool>());
-}
-
-template<typename A>
-int get_int_variable_count(int count, const NotOp<A> &op, halide_type_t type_hint) {
-    return get_int_variable_count(count, op.a, halide_type_of<bool>());
-}
-
-template<typename A>
-std::string get_smt2_assumptions(const NotOp<A> &op) noexcept {
-    return get_smt2_assumptions(op.a);
 }
 
 template<typename C, typename T, typename F>
@@ -2440,26 +2102,6 @@ void build_variable_map(const SelectOp<C, T, F> &op, variable_map &varmap, halid
 }
 
 template<typename C, typename T, typename F>
-int get_bool_variable_count(int count, const SelectOp<C,T,F> &op, halide_type_t type_hint) {
-    return std::max(std::max(get_bool_variable_count(count,op.c,halide_type_of<bool>()),get_bool_variable_count(count,op.t,type_hint)),get_bool_variable_count(count,op.f,type_hint));
-}
-
-template<typename C, typename T, typename F>
-int get_const_variable_count(int count, const SelectOp<C,T,F> &op, halide_type_t type_hint) {
-    return std::max(std::max(get_const_variable_count(count,op.c,type_hint),get_const_variable_count(count,op.t,type_hint)),get_const_variable_count(count,op.f, type_hint));
-}
-
-template<typename C, typename T, typename F>
-int get_int_variable_count(int count, const SelectOp<C,T,F> &op, halide_type_t type_hint) {
-    return std::max(std::max(get_int_variable_count(count,op.c,halide_type_of<bool>()),get_int_variable_count(count,op.t,type_hint)), get_int_variable_count(count,op.f,type_hint));
-}
-
-template<typename C, typename T, typename F>
-std::string get_smt2_assumptions(const SelectOp<C, T, F> &op) noexcept {
-    return get_smt2_assumptions(op.c) + get_smt2_assumptions(op.t) + get_smt2_assumptions(op.f);
-}
-
-template<typename C, typename T, typename F>
 HALIDE_ALWAYS_INLINE
 auto select(C c, T t, F f) noexcept -> SelectOp<decltype(pattern_arg(c)), decltype(pattern_arg(t)), decltype(pattern_arg(f))> {
     return {pattern_arg(c), pattern_arg(t), pattern_arg(f)};
@@ -2517,21 +2159,6 @@ inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, true> &op)
     return s;
 }
 
-template<typename A, bool known_lanes>
-int get_bool_variable_count(int count, const BroadcastOp<A,known_lanes> &op, halide_type_t type_hint) {
-    return get_bool_variable_count(count, op.a, type_hint);
-}
-
-template<typename A, bool known_lanes>
-int get_const_variable_count(int count, const BroadcastOp<A,known_lanes> &op, halide_type_t type_hint) {
-    return get_const_variable_count(count, op.a, type_hint);
-}
-
-template<typename A, bool known_lanes>
-int get_int_variable_count(int count, const BroadcastOp<A,known_lanes> &op, halide_type_t type_hint) {
-    return get_int_variable_count(count, op.a, type_hint);
-}
-
 template<typename A>
 std::string print_smt2(const BroadcastOp<A, true> &op, halide_type_t type_hint) {
    return print_smt2(op.a, type_hint);
@@ -2558,11 +2185,6 @@ void build_variable_map(const BroadcastOp<A, true> &op, variable_map &varmap, ha
 }
 
 template<typename A>
-std::string get_smt2_assumptions(const BroadcastOp<A, true> &op) {
-    return "";
-}
-
-template<typename A>
 inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, false> &op) {
     s << "broadcast(" << op.a << ")";
     return s;
@@ -2581,11 +2203,6 @@ halide_type_t typecheck(const BroadcastOp<A, false> &op, halide_type_t type_hint
 template<typename A>
 void build_variable_map(const BroadcastOp<A, false> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
-}
-
-template<typename A>
-std::string get_smt2_assumptions(const BroadcastOp<A, false> &op) {
-    return "";
 }
 
 template<typename A>
@@ -2656,21 +2273,6 @@ std::ostream &operator<<(std::ostream &s, const RampOp<A, B, true> &op) {
 }
 
 template<typename A, typename B, bool known_lanes>
-int get_bool_variable_count(int count, const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
-    return std::max(get_bool_variable_count(count, op.a, type_hint), get_bool_variable_count(count, op.b, type_hint));
-}
-
-template<typename A, typename B, bool known_lanes>
-int get_const_variable_count(int count, const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
-    return std::max(get_const_variable_count(count, op.a, type_hint), get_const_variable_count(count, op.b, type_hint));
-}
-
-template<typename A, typename B, bool known_lanes>
-int get_int_variable_count(int count, const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
-    return std::max(get_int_variable_count(count, op.a, type_hint), get_int_variable_count(count, op.b, type_hint));
-}
-
-template<typename A, typename B, bool known_lanes>
 std::string print_smt2(const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
     return "(halide-add " + print_smt2(op.a,type_hint) + " (halide-mul " + print_smt2(op.b,type_hint) + " lanes))";
 }
@@ -2697,19 +2299,9 @@ int get_leaf_count(const RampOp<A, B, known_lanes> &op) {
 }
 
 template<typename A, typename B>
-std::string get_smt2_assumptions(const RampOp<A, B, true> &op) {
-    return "";
-}
-
-template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const RampOp<A, B, false> &op) {
     s << "ramp(" << op.a << ", " << op.b << ")";
     return s;
-}
-
-template<typename A, typename B>
-std::string get_smt2_assumptions(const RampOp<A, B, false> &op) {
-    return "";
 }
 
 template<typename A, typename B>
@@ -2815,26 +2407,6 @@ void build_variable_map(const NegateOp<A> &op, variable_map &varmap, halide_type
 }
 
 template<typename A>
-int get_bool_variable_count(int count, const NegateOp<A> &op, halide_type_t type_hint) {
-    return get_bool_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_const_variable_count(int count, const NegateOp<A> &op, halide_type_t type_hint) {
-    return get_const_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_int_variable_count(int count, const NegateOp<A> &op, halide_type_t type_hint) {
-    return get_int_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-std::string get_smt2_assumptions(const NegateOp<A> &op) {
-    return get_smt2_assumptions(op.a);
-}
-
-template<typename A>
 HALIDE_ALWAYS_INLINE
 auto operator-(A a) noexcept -> NegateOp<decltype(pattern_arg(a))> {
     return {pattern_arg(a)};
@@ -2903,26 +2475,6 @@ int get_leaf_count(const CastOp<A> &op) {
 template<typename A>
 void build_variable_map(const CastOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
-}
-
-template<typename A>
-int get_bool_variable_count(int count, const CastOp<A> &op, halide_type_t type_hint) {
-    return get_bool_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_const_variable_count(int count, const CastOp<A> &op, halide_type_t type_hint) {
-    return get_const_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_int_variable_count(int count, const CastOp<A> &op, halide_type_t type_hint) {
-    return get_int_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-std::string get_smt2_assumptions(const CastOp<A> &op) {
-    return get_smt2_assumptions(op.a);
 }
 
 template<typename A>
@@ -2996,26 +2548,6 @@ void build_variable_map(const Fold<A> &op, variable_map &varmap, halide_type_t t
 }
 
 template<typename A>
-int get_bool_variable_count(int count, const Fold<A> &op, halide_type_t type_hint) {
-    return get_bool_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_const_variable_count(int count, const Fold<A> &op, halide_type_t type_hint) {
-    return get_const_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_int_variable_count(int count, const Fold<A> &op, halide_type_t type_hint) {
-    return get_int_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-std::string get_smt2_assumptions(const Fold<A> &op) {
-    return get_smt2_assumptions(op.a);
-}
-
-template<typename A>
 struct Overflows {
     struct pattern_tag {};
     A a;
@@ -3066,26 +2598,6 @@ int get_ast_size(const Overflows<A> &op) {
 template<typename A>
 int get_leaf_count(const Overflows<A> &op) {
     return get_leaf_count(op.a);
-}
-
-template<typename A>
-int get_bool_variable_count(int count, const Overflows<A> &op, halide_type_t type_hint) {
-    return get_bool_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_const_variable_count(int count, const Overflows<A> &op, halide_type_t type_hint) {
-    return get_const_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_int_variable_count(int count, const Overflows<A> &op, halide_type_t type_hint) {
-    return get_int_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-std::string get_smt2_assumptions(const Overflows<A> &op) {
-    return "";
 }
 
 struct Indeterminate {
@@ -3141,22 +2653,6 @@ inline void build_variable_map(const Indeterminate &op, variable_map &varmap, ha
     return;
 }
 
-inline int get_bool_variable_count(int count, const Indeterminate &op, halide_type_t type_hint) {
-    return count;
-}
-
-inline int get_const_variable_count(int count, const Indeterminate &op, halide_type_t type_hint) {
-    return count;
-}
-
-inline int get_int_variable_count(int count, const Indeterminate &op, halide_type_t type_hint) {
-    return count;
-}
-
-inline std::string get_smt2_assumptions(const Indeterminate &op) {
-    return "";
-}
-
 struct Overflow {
     struct pattern_tag {};
 
@@ -3208,22 +2704,6 @@ inline int get_leaf_count(const Overflow &op) {
 
 inline void build_variable_map(const Overflow &op, variable_map &varmap, halide_type_t type_hint) {
     return;
-}
-
-inline int get_bool_variable_count(int count, const Overflow &op, halide_type_t type_hint) {
-    return count;
-}
-
-inline int get_const_variable_count(int count, const Overflow &op, halide_type_t type_hint) {
-    return count;
-}
-
-inline int get_int_variable_count(int count, const Overflow &op, halide_type_t type_hint) {
-    return count;
-}
-
-inline std::string get_smt2_assumptions(const Overflow &op) {
-    return "";
 }
 
 template<typename A>
@@ -3290,26 +2770,6 @@ void build_variable_map(const IsConst<A> &op, variable_map &varmap, halide_type_
     build_variable_map(op.a, varmap, fresh_type_hint);
 }
 
-template<typename A>
-int get_bool_variable_count(int count, const IsConst<A> &op, halide_type_t type_hint) {
-    return get_bool_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_const_variable_count(int count, const IsConst<A> &op, halide_type_t type_hint) {
-    return get_const_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_int_variable_count(int count, const IsConst<A> &op, halide_type_t type_hint) {
-    return get_int_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-std::string get_smt2_assumptions(const IsConst<A> &op) {
-    return "";
-}
-
 template<typename A, typename Prover>
 struct CanProve {
     struct pattern_tag {};
@@ -3367,26 +2827,6 @@ template<typename A, typename Prover>
 void build_variable_map(const CanProve<A, Prover> &op, variable_map &varmap, halide_type_t type_hint) {
     halide_type_t fresh_type_hint;
     build_variable_map(op.a, varmap, fresh_type_hint);
-}
-
-template<typename A, typename Prover>
-int get_bool_variable_count(int count, const CanProve<A, Prover> &op, halide_type_t type_hint) {
-    return get_bool_variable_count(count, op.a, type_hint);
-}
-
-template<typename A, typename Prover>
-int get_const_variable_count(int count, const CanProve<A, Prover> &op, halide_type_t type_hint) {
-    return get_const_variable_count(count, op.a, type_hint);
-}
-
-template<typename A, typename Prover>
-int get_int_variable_count(int count, const CanProve<A, Prover> &op, halide_type_t type_hint) {
-    return get_int_variable_count(count, op.a, type_hint);
-}
-
-template<typename A, typename Prover>
-std::string get_smt2_assumptions(const CanProve<A, Prover> &op) {
-    return "";
 }
 
 template<typename A>
@@ -3449,26 +2889,6 @@ template<typename A>
 void build_variable_map(const IsFloat<A> &op, variable_map &varmap, halide_type_t type_hint) {
     halide_type_t fresh_type_hint;
     build_variable_map(op.a, varmap, fresh_type_hint);
-}
-
-template<typename A>
-int get_bool_variable_count(int count, const IsFloat<A> &op, halide_type_t type_hint) {
-    return get_bool_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_const_variable_count(int count, const IsFloat<A> &op, halide_type_t type_hint) {
-    return get_const_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-int get_int_variable_count(int count, const IsFloat<A> &op, halide_type_t type_hint) {
-    return get_int_variable_count(count, op.a, type_hint);
-}
-
-template<typename A>
-std::string get_smt2_assumptions(const IsFloat<A> &op) noexcept {
-    return "";
 }
 
 template<typename Before,
@@ -3596,10 +3016,6 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     if (pred_stream.str() != "1") {
         assertfile << "(assert " << print_smt2(pred, hint_type) << ")\n";
     }
-
-    // get assumptions that divisors and mod 2nd terms are non zero
-    //assertfile << get_smt2_assumptions(before);
-    //assertfile << get_smt2_assumptions(after);
 
     // verify that the solver cannot find a model in which the two sides of the rewrite rule are different
     assertfile << "\n(assert (not (= " << print_smt2(before, hint_type) << " " << print_smt2(after, hint_type) << ")))\n";
