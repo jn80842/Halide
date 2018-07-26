@@ -285,6 +285,68 @@ bool expr_match(Expr pattern, Expr expr, map<string, Expr> &matches) {
 
 namespace IRMatcher {
 
+void increment_term(IRNodeType node_type, term_map &m) {
+    if (m.count(node_type) == 0) {
+        m[node_type] = 1;
+    } else {
+        m[node_type] = m[node_type] + 1;
+    }
+}
+
+bool term_map_gt(term_map &m1, term_map &m2) {
+    if (m1[IRNodeType::Ramp] != m2[IRNodeType::Ramp]) {
+        return m1[IRNodeType::Ramp] > m2[IRNodeType::Ramp];
+    } else if (m1[IRNodeType::Select] != m2[IRNodeType::Select]) {
+        return m1[IRNodeType::Select] > m2[IRNodeType::Select];
+    } else if (m1[IRNodeType::Not] != m2[IRNodeType::Not]) {
+        return m1[IRNodeType::Not] > m2[IRNodeType::Not];
+    } else if (m1[IRNodeType::Or] != m2[IRNodeType::Or]) {
+        return m1[IRNodeType::Or] > m2[IRNodeType::Or];
+    } else if (m1[IRNodeType::And] != m2[IRNodeType::And]) {
+        return m1[IRNodeType::And] > m2[IRNodeType::And];
+    } else if (m1[IRNodeType::GE] != m2[IRNodeType::GE]) {
+        return m1[IRNodeType::GE] > m2[IRNodeType::GE];
+    } else if (m1[IRNodeType::GT] != m2[IRNodeType::GT]) {
+        return m1[IRNodeType::GT] > m2[IRNodeType::GT];
+    } else if (m1[IRNodeType::LE] != m2[IRNodeType::LE]) {
+        return m1[IRNodeType::LE] > m2[IRNodeType::LE];
+    } else if (m1[IRNodeType::LT] != m2[IRNodeType::LT]) {
+        return m1[IRNodeType::LT] > m2[IRNodeType::LT];
+    } else if (m1[IRNodeType::NE] != m2[IRNodeType::NE]) {
+        return m1[IRNodeType::NE] > m2[IRNodeType::NE];
+    } else if (m1[IRNodeType::EQ] != m2[IRNodeType::EQ]) {
+        return m1[IRNodeType::EQ] > m2[IRNodeType::EQ];
+    } else if (m1[IRNodeType::Max] != m2[IRNodeType::Max]) {
+        return m1[IRNodeType::Max] > m2[IRNodeType::Max];
+    } else if (m1[IRNodeType::Min] != m2[IRNodeType::Min]) {
+        return m1[IRNodeType::Min] > m2[IRNodeType::Min];
+    } else if (m1[IRNodeType::Div] != m2[IRNodeType::Div]) {
+        return m1[IRNodeType::Div] > m2[IRNodeType::Div];
+    } else if (m1[IRNodeType::Mul] != m2[IRNodeType::Mul]) {
+        return m1[IRNodeType::Mul] > m2[IRNodeType::Mul];
+    } else if (m1[IRNodeType::Mod] != m2[IRNodeType::Mod]) {
+        return m1[IRNodeType::Mod] > m2[IRNodeType::Mod];
+    } else if (m1[IRNodeType::Sub] != m2[IRNodeType::Sub]) {
+        return m1[IRNodeType::Sub] > m2[IRNodeType::Sub];
+    } else if (m1[IRNodeType::Add] != m2[IRNodeType::Add]) {
+        return m1[IRNodeType::Add] > m2[IRNodeType::Add];
+ //   } else if (m1[IRNodeType::Variable] != m2[IRNodeType::Variable]) {
+ //       return m1[IRNodeType::Variable] > m2[IRNodeType::Variable];
+    } else if (m1[IRNodeType::Cast] != m2[IRNodeType::Cast]) {
+        return m1[IRNodeType::Cast] > m2[IRNodeType::Cast];
+    } else if (m1[IRNodeType::Broadcast] != m2[IRNodeType::Broadcast]) {
+        return m1[IRNodeType::Broadcast] > m2[IRNodeType::Broadcast];
+    } else if (m1[IRNodeType::FloatImm] != m2[IRNodeType::FloatImm]) {
+        return m1[IRNodeType::FloatImm] > m2[IRNodeType::FloatImm];
+    } else if (m1[IRNodeType::UIntImm] != m2[IRNodeType::UIntImm]) {
+        return m1[IRNodeType::UIntImm] > m2[IRNodeType::UIntImm];
+    } else if (m1[IRNodeType::IntImm] != m2[IRNodeType::IntImm]) {
+        return m1[IRNodeType::IntImm] > m2[IRNodeType::IntImm];
+    } else {
+        return false; // two histograms are equiv
+    }
+}
+
 HALIDE_ALWAYS_INLINE
 bool equal_helper(const Expr &a, const Expr &b) {
     return equal(*a.get(), *b.get());

@@ -22,7 +22,7 @@ void check(const Expr &a, const Expr &b) {
             << "Input: " << a << '\n'
             << "Output: " << simpler << '\n'
             << "Expected output: " << b << '\n';
-        abort();
+   //     abort();
     }
 }
 
@@ -35,7 +35,7 @@ void check(const Stmt &a, const Stmt &b) {
             << "Input: " << a << '\n'
             << "Output: " << simpler << '\n'
             << "Expected output: " << b << '\n';
-        abort();
+    //    abort();
     }
 }
 
@@ -49,25 +49,25 @@ int main(int argc, char **argv) {
     Expr b2 = Variable::make(Bool(), "b2");
     Expr b3 = Variable::make(Bool(), "b3");
 
-    // check(x + y, 5);
+    check(x + y, 5);
     check(b1 && b2, 5);
-    // check(x / y, 5);
-    // check(xf / c0, 5);
-    // check(x == 1, true);
-    // check(b1 == b2, true);
-    // check(x < y, false);
-    // check(xf < yf, false);
-    // check(max(x,y),4);
-    // check(min(x,y),4);
-    // check(x % y, 5);
-    // check(x * y, 5);
-    // check(!b1, false);
-    // check(b1 || b2, false);
-    // check(select(b1,x,y),3);
-    // check(select(b1,b2,b3),false);
-    // check(x - y, 5);
-    // check(x > y, true);
-    // check(x + (y + (c0 - x)/c1)*c1, 5);
+    check(x / y, 5);
+    check(xf / c0, 5);
+    check(x == 1, true);
+    check(b1 == b2, true);
+    check(x < y, false);
+    check(xf < yf, false);
+    check(max(x,y),4);
+    check(min(x,y),4);
+    check(x % y, 5);
+    check(x * y, 5);
+    check(!b1, false);
+    check(b1 || b2, false);
+    check(select(b1,x,y),3);
+    check(select(b1,b2,b3),false);
+    check(x - y, 5);
+    check(x > y, true);
+    check(x + (y + (c0 - x)/c1)*c1, 5);
 
     printf("Success!\n");
 
