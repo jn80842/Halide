@@ -279,6 +279,18 @@ Stmt add_image_checks(Stmt s,
                                  (type_lanes == type.lanes()), error));
         }
 
+        // Check the dimensions matches the internally-understood dimensions
+        {
+            string dimensions_name = name + ".dimensions";
+            Expr dimensions_given = Variable::make(Int(32), dimensions_name, image, param, rdom);
+            Expr error = Call::make(Int(32), "halide_error_bad_dimensions",
+                                    {error_name,
+                                     dimensions_given, make_const(Int(32), dimensions)},
+                                    Call::Extern);
+            asserts_elem_size.push_back(
+                AssertStmt::make(dimensions_given == dimensions, error));
+        }
+
         if (touched.maybe_unused()) {
             debug(3) << "Image " << name << " is only used when " << touched.used << "\n";
         }
@@ -531,9 +543,12 @@ Stmt add_image_checks(Stmt s,
 
             lets_constrained.push_back({ name + ".constrained", constraints[i].second });
 
-            Expr error = Call::make(Int(32), "halide_error_constraint_violated",
-                                    {name, var, constrained_var_str, constrained_var},
-                                    Call::Extern);
+            Expr error = 0;
+            if (!no_asserts) {
+                error = Call::make(Int(32), "halide_error_constraint_violated",
+                                   {name, var, constrained_var_str, constrained_var},
+                                   Call::Extern);
+            }
 
             // Check the var passed in equals the constrained version (when not in inference mode)
             asserts_constrained.push_back(AssertStmt::make(var == constrained_var, error));
@@ -593,12 +608,14 @@ Stmt add_image_checks(Stmt s,
     // all in reverse order compared to execution, as we incrementally
     // prepending code.
 
-    if (!no_asserts) {
-        // Inject the code that checks the constraints are correct.
-        for (size_t i = asserts_constrained.size(); i > 0; i--) {
-            s = Block::make(asserts_constrained[i-1], s);
-        }
+    // Inject the code that checks the constraints are correct. We
+    // need these regardless of how NoAsserts is set, because they are
+    // what gets Halide to actually exploit the constraint.
+    for (size_t i = asserts_constrained.size(); i > 0; i--) {
+        s = Block::make(asserts_constrained[i-1], s);
+    }
 
+    if (!no_asserts) {
         // Inject the code that checks for out-of-bounds access to the buffers.
         for (size_t i = asserts_required.size(); i > 0; i--) {
             s = Block::make(asserts_required[i-1], s);

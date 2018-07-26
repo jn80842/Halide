@@ -432,6 +432,7 @@ SOURCE_FILES = \
   Prefetch.cpp \
   PrintLoopNest.cpp \
   Profiling.cpp \
+  PurifyIndexMath.cpp \
   PythonExtensionGen.cpp \
   Qualify.cpp \
   Random.cpp \
@@ -599,6 +600,7 @@ HEADER_FILES = \
   Pipeline.h \
   Prefetch.h \
   Profiling.h \
+  PurifyIndexMath.h \
   PythonExtensionGen.h \
   Qualify.h \
   Random.h \
@@ -1604,6 +1606,7 @@ TEST_APPS=\
 	local_laplacian \
 	nl_means \
 	resize \
+	stencil_chain \
 	wavelet \
 
 .PHONY: test_apps
@@ -1637,7 +1640,6 @@ test_python2: distrib $(BIN_DIR)/host/runtime.a
 		-f $(ROOT_DIR)/python_bindings/Makefile \
 		test \
 		HALIDE_PATH=$(ROOT_DIR) \
-		HALIDE_RUNTIME=$(CURDIR)/$(BIN_DIR)/host/runtime.a \
 		HALIDE_DISTRIB_PATH=$(CURDIR)/$(DISTRIB_DIR) \
 		BIN=$(CURDIR)/$(BIN_DIR)/python2_bindings \
 		PYTHON=python \
@@ -1649,7 +1651,6 @@ test_python: distrib $(BIN_DIR)/host/runtime.a
 		-f $(ROOT_DIR)/python_bindings/Makefile \
 		test \
 		HALIDE_PATH=$(ROOT_DIR) \
-		HALIDE_RUNTIME=$(CURDIR)/$(BIN_DIR)/host/runtime.a \
 		HALIDE_DISTRIB_PATH=$(CURDIR)/$(DISTRIB_DIR) \
 		BIN=$(CURDIR)/$(BIN_DIR)/python3_bindings \
 		PYTHON=python3 \

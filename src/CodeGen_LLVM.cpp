@@ -1529,22 +1529,6 @@ void CodeGen_LLVM::visit(const Not *op) {
 
 
 void CodeGen_LLVM::visit(const Select *op) {
-    // Check for a select guarding an indeterminate expression
-    if (op->type.lanes() == 1) {
-        const Call *c_t = op->true_value.as<Call>();
-        const Call *c_f = op->false_value.as<Call>();
-        if (c_t && c_t->is_intrinsic(Call::indeterminate_expression)) {
-            codegen(select(!op->condition, op->false_value, op->true_value));
-            return;
-        }
-        if (c_f && c_f->is_intrinsic(Call::indeterminate_expression)) {
-            Expr err = Call::make(Int(32), "halide_error_integer_division_by_zero", {}, Call::Extern);
-            create_assertion(codegen(op->condition), err);
-            codegen(op->true_value);
-            return;
-        }
-    }
-
     if (op->type == Int(32)) {
         // llvm has a performance bug inside of loop strength
         // reduction that barfs on long chains of selects. To avoid
@@ -2738,6 +2722,24 @@ void CodeGen_LLVM::visit(const Call *op) {
             " Halide.\n";
     } else if (op->is_intrinsic(Call::indeterminate_expression)) {
         user_error << "Indeterminate expression occurred during constant-folding.\n";
+    } else if (op->is_intrinsic(Call::quiet_div)) {
+        internal_assert(op->args.size() == 2);
+        if (is_zero(op->args[1])) {
+            value = UndefValue::get(llvm_type_of(op->type));
+        } else {
+            Expr equiv = Call::make(op->type, Call::if_then_else, {op->args[1] == 0, undef(op->type), op->args[0] / op->args[1]}, Call::Intrinsic);
+            equiv.accept(this);
+        }
+    } else if (op->is_intrinsic(Call::quiet_mod)) {
+        internal_assert(op->args.size() == 2);
+        if (is_zero(op->args[1])) {
+            value = UndefValue::get(llvm_type_of(op->type));
+        } else {
+            Expr equiv = Call::make(op->type, Call::if_then_else, {op->args[1] == 0, undef(op->type), op->args[0] % op->args[1]}, Call::Intrinsic);
+            equiv.accept(this);
+        }
+    } else if (op->is_intrinsic(Call::undef)) {
+        value = UndefValue::get(llvm_type_of(op->type));
     } else if (op->is_intrinsic(Call::size_of_halide_buffer_t)) {
         llvm::DataLayout d(module.get());
         value = ConstantInt::get(i32_t, (int)d.getTypeAllocSize(buffer_t_type));

@@ -517,12 +517,15 @@ struct Call : public ExprNode<Call> {
         extract_mask_element,
         require,
         size_of_halide_buffer_t,
-        strict_float;
+        strict_float,
+        quiet_div,
+        quiet_mod;
 
     // We also declare some symbolic names for some of the runtime
     // functions that we want to construct Call nodes to here to avoid
     // magic string constants and the potential risk of typos.
     HALIDE_EXPORT static ConstString
+        buffer_get_dimensions,
         buffer_get_min,
         buffer_get_extent,
         buffer_get_stride,
