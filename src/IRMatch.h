@@ -72,6 +72,10 @@ namespace IRMatcher {
 constexpr int max_wild = 6;
 
 typedef std::map<std::string, halide_type_t> variable_map;
+typedef std::map<IRNodeType, int> term_map;
+
+void increment_term(IRNodeType node_type, term_map &m);
+bool term_map_gt(term_map &m1, term_map &m2);
 
 /** To save stack space, the matcher objects are largely stateless and
  * immutable. This state object is built up during matching and then
@@ -236,12 +240,16 @@ inline halide_type_t typecheck(SpecificExpr e, halide_type_t type_hint) {
     return type_hint;
 }
 
-inline int get_ast_size(SpecificExpr e) {
+inline int get_leaf_count(SpecificExpr e) {
     return 1;
 }
 
-inline int get_leaf_count(SpecificExpr e) {
+inline int get_nonconst_leaf_count(SpecificExpr e) {
     return 1;
+}
+
+inline void count_terms(SpecificExpr e, term_map &m) {
+    return;
 }
 
 inline void build_variable_map(SpecificExpr e, variable_map &varmap, halide_type_t type_hint) {
@@ -311,18 +319,23 @@ halide_type_t typecheck(const WildConstInt<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-int get_ast_size(const WildConstInt<i> &c) {
-    return 1;
-}
-
-template<int i>
 int get_leaf_count(const WildConstInt<i> &c) {
     return 1;
 }
 
 template<int i>
+int get_nonconst_leaf_count(const WildConstInt<i> &c) {
+    return 0;
+}
+
+template<int i>
+void count_terms(const WildConstInt<i> &c, term_map &m) {
+    increment_term(IRNodeType::IntImm, m);
+}
+
+template<int i>
 void build_variable_map(const WildConstInt<i> &c, variable_map &varmap, halide_type_t type_hint) {
-    debug(0) << print_smt2(c, type_hint) << " given type of int64\n";
+    // debug(0) << print_smt2(c, type_hint) << " given type of int64\n";
     varmap.insert({print_smt2(c, type_hint), halide_type_of<int64_t>()});
 }
 
@@ -393,13 +406,18 @@ halide_type_t typecheck(const WildConstUInt<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-int get_ast_size(const WildConstUInt<i> &c) {
+int get_leaf_count(const WildConstUInt<i> &c) {
     return 1;
 }
 
 template<int i>
-int get_leaf_count(const WildConstUInt<i> &c) {
-    return 1;
+int get_nonconst_leaf_count(const WildConstUInt<i> &c) {
+    return 0;
+}
+
+template<int i>
+void count_terms(const WildConstUInt<i> & c, term_map &m) {
+    increment_term(IRNodeType::UIntImm, m);
 }
 
 template<int i>
@@ -471,13 +489,18 @@ halide_type_t typecheck(const WildConstFloat<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-int get_ast_size(const WildConstFloat<i> &c) {
+int get_leaf_count(const WildConstFloat<i> &c) {
     return 1;
 }
 
 template<int i>
-int get_leaf_count(const WildConstFloat<i> &c) {
-    return 1;
+int get_nonconst_leaf_count(const WildConstFloat<i> &c) {
+    return 0;
+}
+
+template<int i>
+void count_terms(const WildConstFloat<i> &c, term_map &m) {
+    increment_term(IRNodeType::FloatImm, m);
 }
 
 template<int i>
@@ -547,13 +570,19 @@ halide_type_t typecheck(const WildConst<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-int get_ast_size(const WildConst<i> &c) {
+int get_leaf_count(const WildConst<i> &c) {
     return 1;
 }
 
 template<int i>
-int get_leaf_count(const WildConst<i> &c) {
-    return 1;
+int get_nonconst_leaf_count(const WildConst<i> &c) {
+    return 0;
+}
+
+// since numeric type is unknown here, choose the strongest term
+template<int i>
+void count_terms(const WildConst<i> &c, term_map &m) {
+    increment_term(IRNodeType::UIntImm, m);
 }
 
 template<int i>
@@ -569,16 +598,16 @@ void build_variable_map(const WildConst<i> &c, variable_map &varmap, halide_type
     }
     auto search = varmap.find(varname);
     if (search != varmap.end() && search->second != t) {
-        if (search->second == Bool()) {
+        /*if (search->second == Bool()) {
             debug(0) << varname << " previously had type bool\n";
         }
         if (search->second == Int(64)) {
             debug(0) << varname << " previously had type int64\n";
-        }
+        }*/
     }
     if (t == Bool() || t == Int(64)) {
         varmap.insert({varname, t});
-        debug(0) << print_smt2(c, type_hint) << " given type " << type_string << "\n";
+       // debug(0) << print_smt2(c, type_hint) << " given type " << type_string << "\n";
     }
 }
 
@@ -649,13 +678,20 @@ halide_type_t typecheck(const Wild<i> &op, halide_type_t type_hint) {
 }
 
 template<int i>
-int get_ast_size(const Wild<i> &op) {
+int get_leaf_count(const Wild<i> &op) {
     return 1;
 }
 
 template<int i>
-int get_leaf_count(const Wild<i> &op) {
+int get_nonconst_leaf_count(const Wild<i> &op) {
     return 1;
+}
+
+// Wild terms aren't used in lexico ordering
+// as non constant leaves are used for ordering before lexico
+template<int i>
+void count_terms(const Wild<i> &op, term_map &m) {
+    return;
 }
 
 template<int i>
@@ -671,16 +707,16 @@ void build_variable_map(const Wild<i> &c, variable_map &varmap, halide_type_t ty
     }
     auto search = varmap.find(varname);
     if (search != varmap.end() && search->second != t) {
-        if (search->second == Bool()) {
+      /*  if (search->second == Bool()) {
             debug(0) << varname << " previously had type bool\n";
         }
         if (search->second == Int(64)) {
             debug(0) << varname << " previously had type int64\n";
-        }
+        }*/
     }
     //if (t == Bool() || t == Int(64)) {
         varmap[varname] = t;
-        debug(0) << print_smt2(c, type_hint) << " given type " << type_string << "\n";
+       // debug(0) << print_smt2(c, type_hint) << " given type " << type_string << "\n";
     //}
 }
 
@@ -787,12 +823,17 @@ inline halide_type_t typecheck(const Const &op, halide_type_t type_hint) {
     return type_hint;
 }
 
-inline int get_ast_size(const Const &op) {
+inline int get_leaf_count(const Const &op) {
     return 1;
 }
 
-inline int get_leaf_count(const Const &op) {
-    return 1;
+inline int get_nonconst_leaf_count(const Const &op) {
+    return 0;
+}
+
+// since type is not known, choose strongest term type
+inline void count_terms(const Const &op, term_map &m) {
+    increment_term(IRNodeType::UIntImm, m);
 }
 
 inline void build_variable_map(const Const &op, variable_map &varmap, halide_type_t type_hint) {
@@ -1003,23 +1044,23 @@ halide_type_t typecheck(const CmpOp<Op, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename Op, typename A, typename B>
-int get_ast_size(const CmpOp<Op, A, B> &op) {
-    return 1 + get_ast_size(op.a) + get_ast_size(op.b);
-}
-
-template<typename Op, typename A, typename B>
 int get_leaf_count(const CmpOp<Op, A, B> &op) {
     return get_leaf_count(op.a) + get_leaf_count(op.b);
 }
 
 template<typename Op, typename A, typename B>
-int get_ast_size(const BinOp<Op, A, B> &op) {
-    return 1 + get_ast_size(op.a) + get_ast_size(op.b);
+int get_nonconst_leaf_count(const CmpOp<Op, A, B> &op) {
+    return get_nonconst_leaf_count(op.a) + get_nonconst_leaf_count(op.b);
 }
 
 template<typename Op, typename A, typename B>
 int get_leaf_count(const BinOp<Op, A, B> &op) {
     return get_leaf_count(op.a) + get_leaf_count(op.b);
+}
+
+template<typename Op, typename A, typename B>
+int get_nonconst_leaf_count(const BinOp<Op, A, B> &op) {
+    return get_nonconst_leaf_count(op.a) + get_nonconst_leaf_count(op.b);
 }
 
 // for later: bitwidths use bvadd, etc, not + etc
@@ -1046,6 +1087,13 @@ void build_variable_map(const BinOp<Add, A, B> &op, variable_map &varmap, halide
 }
 
 template<typename A, typename B>
+void count_terms(const BinOp<Add, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Add, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Sub, A, B> &op) {
     s << "(" << op.a << " - " << op.b << ")";
     return s;
@@ -1065,6 +1113,13 @@ template<typename A, typename B>
 void build_variable_map(const BinOp<Sub, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
+}
+
+template<typename A, typename B>
+void count_terms(const BinOp<Sub, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Sub, m);
 }
 
 template<typename A, typename B>
@@ -1090,6 +1145,13 @@ void build_variable_map(const BinOp<Mul, A, B> &op, variable_map &varmap, halide
 }
 
 template<typename A, typename B>
+void count_terms(const BinOp<Mul, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Mul, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
     s << "(" << op.a << " / " << op.b << ")";
     return s;
@@ -1109,6 +1171,13 @@ template<typename A, typename B>
 void build_variable_map(const BinOp<Div, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
+}
+
+template<typename A, typename B>
+void count_terms(const BinOp<Div, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Div, m);
 }
 
 template<typename A, typename B>
@@ -1134,6 +1203,13 @@ void build_variable_map(const BinOp<And, A, B> &op, variable_map &varmap, halide
 }
 
 template<typename A, typename B>
+void count_terms(const BinOp<And, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::And, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Or, A, B> &op) {
     s << "(" << op.a << " || " << op.b << ")";
     return s;
@@ -1153,6 +1229,13 @@ template<typename A, typename B>
 void build_variable_map(const BinOp<Or, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<bool>());
     build_variable_map(op.b, varmap, halide_type_of<bool>());
+}
+
+template<typename A, typename B>
+void count_terms(const BinOp<Or, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Or, m);
 }
 
 template<typename A, typename B>
@@ -1178,6 +1261,13 @@ void build_variable_map(const BinOp<Min, A, B> &op, variable_map &varmap, halide
 }
 
 template<typename A, typename B>
+void count_terms(const BinOp<Min, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Min, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
     s << "max(" << op.a << ", " << op.b << ")";
     return s;
@@ -1200,6 +1290,13 @@ void build_variable_map(const BinOp<Max, A, B> &op, variable_map &varmap, halide
 }
 
 template<typename A, typename B>
+void count_terms(const BinOp<Max, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Max, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<LE, A, B> &op) {
     s << "(" << op.a << " <= " << op.b << ")";
     return s;
@@ -1215,6 +1312,13 @@ template<typename A, typename B>
 void build_variable_map(const CmpOp<LE, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
+}
+
+template<typename A, typename B>
+void count_terms(const CmpOp<LE, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::LE, m);
 }
 
 template<typename A, typename B>
@@ -1235,6 +1339,13 @@ void build_variable_map(const CmpOp<LT, A, B> &op, variable_map &varmap, halide_
 }
 
 template<typename A, typename B>
+void count_terms(const CmpOp<LT, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::LT, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GE, A, B> &op) {
     s << "(" << op.a << " >= " << op.b << ")";
     return s;
@@ -1252,6 +1363,13 @@ void build_variable_map(const CmpOp<GE, A, B> &op, variable_map &varmap, halide_
 }
 
 template<typename A, typename B>
+void count_terms(const CmpOp<GE, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::GE, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
     s << "(" << op.a << " > " << op.b << ")";
     return s;
@@ -1266,6 +1384,13 @@ template<typename A, typename B>
 void build_variable_map(const CmpOp<GT, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
+}
+
+template<typename A, typename B>
+void count_terms(const CmpOp<GT, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::GT, m);
 }
 
 template<typename A, typename B>
@@ -1306,6 +1431,13 @@ void build_variable_map(const CmpOp<EQ, A, B> &op, variable_map &varmap, halide_
 }
 
 template<typename A, typename B>
+void count_terms(const CmpOp<EQ, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::EQ, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
     s << "(" << op.a << " != " << op.b << ")";
     return s;
@@ -1341,6 +1473,13 @@ void build_variable_map(const CmpOp<NE, A, B> &op, variable_map &varmap, halide_
 }
 
 template<typename A, typename B>
+void count_terms(const CmpOp<NE, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::NE, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
     s << "(" << op.a << " % " << op.b << ")";
     return s;
@@ -1360,6 +1499,13 @@ template<typename A, typename B>
 void build_variable_map(const BinOp<Mod, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
+}
+
+template<typename A, typename B>
+void count_terms(const BinOp<Mod, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Mod, m);
 }
 
 template<typename A, typename B>
@@ -1911,17 +2057,22 @@ halide_type_t typecheck(const Intrin<Args...> &op, halide_type_t type_hint) {
 }
 
 template<typename... Args>
-int get_ast_size(const Intrin<Args...> &op) {
-    return 1;
-}
-
-template<typename... Args>
 int get_leaf_count(const Intrin<Args...> &op) {
     return 1;
 }
 
 template<typename... Args>
+int get_nonconst_leaf_count(const Intrin<Args...> &op) {
+    return 1;
+}
+
+template<typename... Args>
 void build_variable_map(const Intrin<Args...> &op, variable_map &varmap, halide_type_t type_hint) {
+    return;
+}
+
+template<typename... Args>
+void count_terms(const Intrin<Args...> &op, term_map &m) {
     return;
 }
 
@@ -1998,18 +2149,24 @@ halide_type_t typecheck(const NotOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_ast_size(const NotOp<A> &op) {
-    return 1 + get_ast_size(op.a);
-}
-
-template<typename A>
 int get_leaf_count(const NotOp<A> &op) {
     return get_leaf_count(op.a);
 }
 
 template<typename A>
+int get_nonconst_leaf_count(const NotOp<A> &op) {
+    return get_nonconst_leaf_count(op.a);
+}
+
+template<typename A>
 void build_variable_map(const NotOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<bool>());
+}
+
+template<typename A>
+void count_terms(const NotOp<A> &op, term_map &m) {
+    count_terms(op.a, m);
+    increment_term(IRNodeType::Not, m);
 }
 
 template<typename C, typename T, typename F>
@@ -2087,13 +2244,13 @@ halide_type_t typecheck(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
 }
 
 template<typename C, typename T, typename F>
-int get_ast_size(const SelectOp<C, T, F> &op) {
-    return 1 + get_ast_size(op.c) + get_ast_size(op.t) + get_ast_size(op.f);
+int get_leaf_count(const SelectOp<C, T, F> &op) {
+    return get_leaf_count(op.c) + get_leaf_count(op.t) + get_leaf_count(op.f);
 }
 
 template<typename C, typename T, typename F>
-int get_leaf_count(const SelectOp<C, T, F> &op) {
-    return get_leaf_count(op.c) + get_leaf_count(op.t) + get_leaf_count(op.f);
+int get_nonconst_leaf_count(const SelectOp<C, T, F> &op) {
+    return get_nonconst_leaf_count(op.c) + get_nonconst_leaf_count(op.t) + get_nonconst_leaf_count(op.f);
 }
 
 template<typename C, typename T, typename F>
@@ -2102,6 +2259,14 @@ void build_variable_map(const SelectOp<C, T, F> &op, variable_map &varmap, halid
     build_variable_map(op.c, varmap, halide_type_of<bool>());
     build_variable_map(op.t, varmap, type_hint);
     build_variable_map(op.f, varmap, type_hint);
+}
+
+template<typename C, typename T, typename F>
+void count_terms(const SelectOp<C, T, F> &op, term_map &m) {
+    count_terms(op.c, m);
+    count_terms(op.t, m);
+    count_terms(op.f, m);
+    increment_term(IRNodeType::Select, m);
 }
 
 template<typename C, typename T, typename F>
@@ -2173,18 +2338,24 @@ halide_type_t typecheck(const BroadcastOp<A, true> &op, halide_type_t type_hint)
 }
 
 template<typename A, bool known_lanes>
-int get_ast_size(const BroadcastOp<A, known_lanes> &op) {
-    return 1 + get_ast_size(op.a);
+int get_leaf_count(const BroadcastOp<A, known_lanes> &op) {
+    return get_leaf_count(op.a);
 }
 
 template<typename A, bool known_lanes>
-int get_leaf_count(const BroadcastOp<A, known_lanes> &op) {
-    return get_leaf_count(op.a);
+int get_nonconst_leaf_count(const BroadcastOp<A, known_lanes> &op) {
+    return get_nonconst_leaf_count(op.a);
 }
 
 template<typename A>
 void build_variable_map(const BroadcastOp<A, true> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
+}
+
+template<typename A, bool known_lanes>
+void count_terms(const BroadcastOp<A, known_lanes> &op, term_map &m) {
+    count_terms(op.a, m);
+    increment_term(IRNodeType::Broadcast, m);
 }
 
 template<typename A>
@@ -2294,13 +2465,20 @@ void build_variable_map(const RampOp<A, B, known_lanes> &op, variable_map &varma
 }
 
 template<typename A, typename B, bool known_lanes>
-int get_ast_size(const RampOp<A, B, known_lanes> &op) {
-    return 1 + get_ast_size(op.a) + get_ast_size(op.b);
+void count_terms(const RampOp<A, B, known_lanes> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Ramp, m);
 }
 
 template<typename A, typename B, bool known_lanes>
 int get_leaf_count(const RampOp<A, B, known_lanes> &op) {
     return get_leaf_count(op.a) + get_leaf_count(op.b);
+}
+
+template<typename A, typename B, bool known_lanes>
+int get_nonconst_leaf_count(const RampOp<A, B, known_lanes> &op) {
+    return get_nonconst_leaf_count(op.a) + get_nonconst_leaf_count(op.b);
 }
 
 template<typename A, typename B>
@@ -2399,18 +2577,24 @@ halide_type_t typecheck(const NegateOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_ast_size(const NegateOp<A> &op) {
-    return 1 + get_ast_size(op.a);
-}
-
-template<typename A>
 int get_leaf_count(const NegateOp<A> &op) {
     return get_leaf_count(op.a);
 }
 
 template<typename A>
+int get_nonconst_leaf_count(const NegateOp<A> &op) {
+    return get_nonconst_leaf_count(op.a);
+}
+
+template<typename A>
 void build_variable_map(const NegateOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
+}
+
+template<typename A>
+void count_terms(const NegateOp<A> &op, term_map &m) {
+    count_terms(op.a,m);
+    increment_term(IRNodeType::Sub, m);
 }
 
 template<typename A>
@@ -2472,18 +2656,24 @@ halide_type_t typecheck(const CastOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_ast_size(const CastOp<A> &op) {
-    return 1 + get_ast_size(op.a);
-}
-
-template<typename A>
 int get_leaf_count(const CastOp<A> &op) {
     return get_leaf_count(op.a);
 }
 
 template<typename A>
+int get_nonconst_leaf_count(const CastOp<A> &op) {
+    return get_nonconst_leaf_count(op.a);
+}
+
+template<typename A>
 void build_variable_map(const CastOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
+}
+
+template<typename A>
+void count_terms(const CastOp<A> & op, term_map &m) {
+    count_terms(op.a, m);
+    increment_term(IRNodeType::Cast, m);
 }
 
 template<typename A>
@@ -2542,18 +2732,24 @@ halide_type_t typecheck(const Fold<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_ast_size(const Fold<A> &op) {
-    return 1 + get_ast_size(op.a);
+int get_leaf_count(const Fold<A> &op) {
+    return 1;
 }
 
 template<typename A>
-int get_leaf_count(const Fold<A> &op) {
-    return get_leaf_count(op.a);
+int get_nonconst_leaf_count(const Fold<A> &op) {
+    return 0;
 }
 
 template<typename A>
 void build_variable_map(const Fold<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
+}
+
+// folds are constants; choose strongest possible constant
+template<typename A>
+void count_terms(const Fold<A> &op, term_map &m) {
+    increment_term(IRNodeType::UIntImm, m);
 }
 
 template<typename A>
@@ -2600,13 +2796,13 @@ halide_type_t typecheck(const Overflows<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_ast_size(const Overflows<A> &op) {
-    return 1 + get_ast_size(op.a);
+int get_leaf_count(const Overflows<A> &op) {
+    return get_leaf_count(op.a);
 }
 
 template<typename A>
-int get_leaf_count(const Overflows<A> &op) {
-    return get_leaf_count(op.a);
+int get_nonconst_leaf_count(const Overflows<A> &op) {
+    return get_nonconst_leaf_count(op.a);
 }
 
 struct Indeterminate {
@@ -2652,16 +2848,20 @@ inline halide_type_t typecheck(const Indeterminate &op, halide_type_t type_hint)
     return halide_type_of<int64_t>();
 }
 
-inline int get_ast_size(const Indeterminate &op) {
+inline int get_leaf_count(const Indeterminate &op) {
     return 1;
 }
 
-inline int get_leaf_count(const Indeterminate &op) {
+inline int get_nonconst_leaf_count(const Indeterminate &op) {
     return 1;
 }
 
 inline void build_variable_map(const Indeterminate &op, variable_map &varmap, halide_type_t type_hint) {
     return;
+}
+
+inline void count_terms(const Indeterminate &op, term_map &m) {
+    increment_term(IRNodeType::Variable, m);
 }
 
 struct Overflow {
@@ -2707,16 +2907,20 @@ inline halide_type_t typecheck(const Overflow &op, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
 
-inline int get_ast_size(const Overflow &op) {
+inline int get_leaf_count(const Overflow &op) {
     return 1;
 }
 
-inline int get_leaf_count(const Overflow &op) {
+inline int get_nonconst_leaf_count(const Overflow &op) {
     return 1;
 }
 
 inline void build_variable_map(const Overflow &op, variable_map &varmap, halide_type_t type_hint) {
     return;
+}
+
+inline void count_terms(const Overflow &op, term_map &m) {
+    increment_term(IRNodeType::Variable, m);
 }
 
 template<typename A>
@@ -2768,19 +2972,25 @@ halide_type_t typecheck(const IsConst<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_ast_size(const IsConst<A> &op) {
-    return 1 + get_ast_size(op.a);
+int get_leaf_count(const IsConst<A> &op) {
+    return get_leaf_count(op.a);
 }
 
 template<typename A>
-int get_leaf_count(const IsConst<A> &op) {
-    return get_leaf_count(op.a);
+int get_nonconst_leaf_count(const IsConst<A> &op) {
+    return get_nonconst_leaf_count(op.a);
 }
 
 template<typename A>
 void build_variable_map(const IsConst<A> &op, variable_map &varmap, halide_type_t type_hint) {
     halide_type_t fresh_type_hint;
     build_variable_map(op.a, varmap, fresh_type_hint);
+}
+
+// don't think this can occur in before/after terms (?)
+template<typename A>
+void count_terms(const IsConst<A> &op, term_map &m) {
+    increment_term(IRNodeType::Variable, m);
 }
 
 template<typename A, typename Prover>
@@ -2827,12 +3037,12 @@ halide_type_t typecheck(const CanProve<A, Prover> &op, halide_type_t type_hint) 
 }
 
 template<typename A, typename Prover>
-int get_ast_size(const CanProve<A, Prover> &op) {
+int get_leaf_count(const CanProve<A, Prover> &op) {
     return 0;
 }
 
 template<typename A, typename Prover>
-int get_leaf_count(const CanProve<A, Prover> &op) {
+int get_nonconst_leaf_count(const CanProve<A, Prover> &op) {
     return 0;
 }
 
@@ -2840,6 +3050,12 @@ template<typename A, typename Prover>
 void build_variable_map(const CanProve<A, Prover> &op, variable_map &varmap, halide_type_t type_hint) {
     halide_type_t fresh_type_hint;
     build_variable_map(op.a, varmap, fresh_type_hint);
+}
+
+// can't occur in before/after terms (can't or doesn't?)
+template<typename A, typename Prover>
+void count_terms(const CanProve<A, Prover> &op, term_map &m) {
+    return;
 }
 
 template<typename A>
@@ -2889,19 +3105,25 @@ halide_type_t typecheck(const IsFloat<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_ast_size(const IsFloat<A> &op) {
-    return 1 + get_ast_size(op.a);
+int get_leaf_count(const IsFloat<A> &op) {
+    return get_leaf_count(op.a);
 }
 
 template<typename A>
-int get_leaf_count(const IsFloat<A> &op) {
-    return get_leaf_count(op.a);
+int get_nonconst_leaf_count(const IsFloat<A> &op) {
+    return get_nonconst_leaf_count(op.a);
 }
 
 template<typename A>
 void build_variable_map(const IsFloat<A> &op, variable_map &varmap, halide_type_t type_hint) {
     halide_type_t fresh_type_hint;
     build_variable_map(op.a, varmap, fresh_type_hint);
+}
+
+// can't (or doesn't?) appear in before/after terms
+template<typename A>
+void count_terms(const IsFloat<A> &op, term_map &m) {
+    return;
 }
 
 template<typename Before,
@@ -2911,16 +3133,48 @@ HALIDE_NEVER_INLINE
 void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred,
                                 halide_type_t wildcard_type, halide_type_t output_type) noexcept {
 
-    int before_ast_size = get_ast_size(before);
     int before_leaf_count = get_leaf_count(before);
-    int after_ast_size = get_ast_size(after);
+    int before_nonconst_leaf_count = get_nonconst_leaf_count(before);
     int after_leaf_count = get_leaf_count(after);
+    int after_nonconst_leaf_count = get_nonconst_leaf_count(after);
 
-    debug(0) << "Before AST size: " << before_ast_size << " , leaf count " << before_leaf_count << " ";
-    debug(0) << "After AST size: " << after_ast_size << " , leaf count " << after_leaf_count << " ";
-    debug(0) << before << " ";
-    debug(0) << after << "\n";
+    term_map before_terms;
+    term_map after_terms;
 
+    count_terms(before, before_terms);
+    count_terms(after, after_terms);
+
+    if (before_nonconst_leaf_count < after_nonconst_leaf_count) {
+        debug(0) << "FAILED NC_LEAF COUNT: " << before_nonconst_leaf_count << " " << after_nonconst_leaf_count << " " << before << " rewrites to " << after << "\n";
+    } else if (before_nonconst_leaf_count == after_nonconst_leaf_count && term_map_gt(after_terms,before_terms)) {
+        debug(0) << "FAILED LEXICO: " << before << " rewrites to " << after << "\n";
+    } else if (before_nonconst_leaf_count == after_nonconst_leaf_count && before_terms == after_terms && before_leaf_count < after_leaf_count) {
+        debug(0) << "FAILED LEAF COUNT: " << before_leaf_count << " " << after_leaf_count << " " << before << " rewrites to " << after << "\n";
+    } else if (before_nonconst_leaf_count == after_nonconst_leaf_count && before_terms == after_terms && before_leaf_count == after_leaf_count) {
+        debug(0) << "PERFECTLY EQUAL: " << before << " " << after << "\n";
+    }
+
+/*
+    if (after_leaf_count > before_leaf_count) {
+        debug(0) << "FAILED ORDERING 1: ";
+        debug(0) << "Before leaf count: " << before_leaf_count << " , nonconst leaf count " << before_nonconst_leaf_count << " ";
+        debug(0) << "After leaf count: " << after_leaf_count << " , nonconst leaf count " << after_nonconst_leaf_count << " ";
+        debug(0) << before << " rewrites to ";
+        debug(0) << after << "\n";
+    } else if (after_leaf_count == before_leaf_count && after_nonconst_leaf_count > before_nonconst_leaf_count) {
+        debug(0) << "FAILED ORDERING 2: ";
+        debug(0) << "Before leaf count: " << before_leaf_count << " , nonconst leaf count " << before_nonconst_leaf_count << " ";
+        debug(0) << "After leaf count: " << after_leaf_count << " , nonconst leaf count " << after_nonconst_leaf_count << " ";
+        debug(0) << before << " rewrites to ";
+        debug(0) << after << "\n";
+    } else if (after_leaf_count == before_leaf_count && after_nonconst_leaf_count == before_nonconst_leaf_count) {
+        debug(0) << "PERFECT TIE: ";
+        debug(0) << "Before leaf count: " << before_leaf_count << " , nonconst leaf count " << before_nonconst_leaf_count << " ";
+        debug(0) << "After leaf count: " << after_leaf_count << " , nonconst leaf count " << after_nonconst_leaf_count << " ";
+        debug(0) << before << " rewrites to ";
+        debug(0) << after << "\n";
+    }
+*/
     halide_type_t before_type = typecheck(before, wildcard_type);
     halide_type_t after_type = typecheck(after, wildcard_type);
     halide_type_t hint_type = before_type;
@@ -3012,9 +3266,9 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
         } else if (it->second == Int(64)) {
             assertfile << "(declare-const " << it->first << " (H-Int Bool Int))\n";
             assertfile << "(assert (not (indet-flag " << it->first << ")))\n";
-        } else {
+        }/* else {
             debug(0) << "variable " << it->first << " has unknown type\n";
-        }
+        }*/
     }
 
     // all broadcasts/ramps in the same expression share the same number of lanes
@@ -3193,8 +3447,8 @@ bool evaluate_predicate(Pattern p, MatcherState &state) {
 // #defines for testing
 
 // Print all successful or failed matches
-#define HALIDE_DEBUG_MATCHED_RULES 1
-#define HALIDE_DEBUG_UNMATCHED_RULES 1
+#define HALIDE_DEBUG_MATCHED_RULES 0
+#define HALIDE_DEBUG_UNMATCHED_RULES 0
 
 // Set to true if you want to fuzz test every rewrite passed to
 // operator() to ensure the input and the output have the same value
