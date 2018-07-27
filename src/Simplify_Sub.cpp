@@ -24,7 +24,6 @@ Expr Simplify::visit(const Sub *op, ConstBounds *bounds) {
         const int lanes = op->type.lanes();
 
         if (rewrite(c0 - c1, fold(c0 - c1)) ||
-<<<<<<< HEAD
             // rewrite(IRMatcher::Indeterminate() - x, a) ||
             rewrite(IRMatcher::Indeterminate() - x, IRMatcher::Indeterminate()) ||
             // rewrite(x - IRMatcher::Indeterminate(), b) ||
@@ -33,12 +32,6 @@ Expr Simplify::visit(const Sub *op, ConstBounds *bounds) {
             rewrite(IRMatcher::Overflow() - x, IRMatcher::Overflow()) ||
             // rewrite(x - IRMatcher::Overflow(), b) ||
             rewrite(x - IRMatcher::Overflow(), IRMatcher::Overflow()) ||
-=======
-            rewrite(IRMatcher::Indeterminate() - x, a) ||
-            rewrite(x - IRMatcher::Indeterminate(), b) ||
-            rewrite(IRMatcher::Overflow() - x, a) ||
-            rewrite(x - IRMatcher::Overflow(), b) ||
->>>>>>> upstream/metaprogrammed_simplifier_rules
             rewrite(x - 0, x)) {
             return rewrite.result;
         }

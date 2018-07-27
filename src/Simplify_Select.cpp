@@ -35,7 +35,7 @@ Expr Simplify::visit(const Select *op, ConstBounds *bounds) {
              // rewrite(select(x, intrin(Call::likely_if_innermost, y), y), true_value) ||
              rewrite(select(x, intrin(Call::likely_if_innermost, y), y), true) ||
              // rewrite(select(x, y, intrin(Call::likely_if_innermost, y)), false_value))) {
-             rewrite(select(x, y, intrin(Call::likely_if_innermost, y)), false))) {
+             rewrite(select(x, y, intrin(Call::likely_if_innermost, y)), false) ||
 
              // Select evaluates both sides, so if we have an
              // unreachable expression on one side we can't use a
