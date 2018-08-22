@@ -62,7 +62,7 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
              //rewrite(min(x, (x/c0)*c0), b, c0 > 0) ||
              rewrite(min(x, (x/c0)*c0), (x/c0)*c0, c0 > 0) ||
              //rewrite(min(min(x, y), x), a) ||
-             rewrite(min(min(x, y), x), x) ||
+             rewrite(min(min(x, y), x), min(x, y)) ||
              //rewrite(min(min(x, y), y), a) ||
              rewrite(min(min(x, y), y), min(x, y)) ||
              //rewrite(min(min(min(x, y), z), x), a) ||
