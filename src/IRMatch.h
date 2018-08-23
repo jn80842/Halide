@@ -238,6 +238,14 @@ inline std::string print_smt2(SpecificExpr e, halide_type_t type_hint) {
     return s.str();
 }
 
+inline std::string get_nonzero_assumptions(SpecificExpr e) {
+    return "";
+}
+
+inline void build_divisor_set(SpecificExpr e, std::set<std::string> &divisor_set) {
+    return;
+}
+
 inline halide_type_t typecheck(SpecificExpr e, halide_type_t type_hint) {
     return type_hint;
 }
@@ -317,6 +325,16 @@ std::string print_smt2(const WildConstInt<i> &c, halide_type_t type_hint) {
     std::ostringstream s;
     s << c;
     return s.str();
+}
+
+template<int i>
+std::string get_nonzero_assumptions(const WildConstInt<i> &c) {
+    return "";
+}
+
+template<int i>
+void build_divisor_set(const WildConstInt<i> &c, std::set<std::string> &divisor_set) {
+    return;
 }
 
 template<int i>
@@ -405,6 +423,16 @@ std::string print_smt2(const WildConstUInt<i> &c, halide_type_t type_hint) {
     std::ostringstream s;
     s << c;
     return s.str();
+}
+
+template<int i>
+std::string get_nonzero_assumptions(const WildConstUInt<i> &c) {
+    return "";
+}
+
+template<int i>
+void build_divisor_set(const WildConstUInt<i> &c, std::set<std::string> &divisor_set) {
+    return;
 }
 
 template<int i>
@@ -500,6 +528,16 @@ std::string print_smt2(const WildConstFloat<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
+std::string get_nonzero_assumptions(const WildConstFloat<i> &c) {
+    return "";
+}
+
+template<int i>
+void build_divisor_set(const WildConstFloat<i> &c, std::set<std::string> &divisor_set) {
+    return;
+}
+
+template<int i>
 halide_type_t typecheck(const WildConstFloat<i> &c, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
@@ -583,6 +621,16 @@ std::string print_smt2(const WildConst<i> &c, halide_type_t type_hint) {
     std::ostringstream s;
     s << c;
     return s.str();
+}
+
+template<int i>
+std::string get_nonzero_assumptions(const WildConst<i> &c) {
+    return "";
+}
+
+template<int i>
+void build_divisor_set(const WildConst<i> &c, std::set<std::string> &divisor_set) {
+    return;
 }
 
 template<int i>
@@ -696,6 +744,16 @@ std::string print_smt2(const Wild<i> &op, halide_type_t type_hint) {
     std::ostringstream s;
     s << op;
     return s.str();
+}
+
+template<int i>
+std::string get_nonzero_assumptions(const Wild<i> &op) {
+    return "";
+}
+
+template<int i>
+void build_divisor_set(const Wild<i> &op, std::set<std::string> &divisor_set) {
+    return;
 }
 
 template<int i>
@@ -846,8 +904,16 @@ inline std::string print_smt2(const Const &op, halide_type_t type_hint) {
     } else {
         std::ostringstream s;
         s << op;
-        return "(make-H-Int false " + s.str() + ")";
+        return s.str();
     }
+}
+
+inline std::string get_nonzero_assumptions(const Const &op) {
+    return "";
+}
+
+inline void build_divisor_set(const Const &op, std::set<std::string> &divisor_set) {
+    return;
 }
 
 inline halide_type_t typecheck(const Const &op, halide_type_t type_hint) {
@@ -1119,7 +1185,18 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Add, A, B> &op, halide_type_t type_hint) {
-    return "(halide-add " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(+ " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const BinOp<Add, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const BinOp<Add, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1148,7 +1225,18 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Sub, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
-    return "(halide-sub " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(- " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const BinOp<Sub, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const BinOp<Sub, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1177,7 +1265,18 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
-    return "(halide-mul " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(* " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const BinOp<Mul, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const BinOp<Mul, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1206,7 +1305,19 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
-    return "(halide-div " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(div " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const BinOp<Div, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n";
+}
+
+template<typename A, typename B>
+void build_divisor_set(const BinOp<Div, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
+    divisor_set.insert(print_smt2(op.b, halide_type_of<int64_t>()));
 }
 
 template<typename A, typename B>
@@ -1239,6 +1350,17 @@ std::string print_smt2(const BinOp<And, A, B> &op, halide_type_t type_name) {
 }
 
 template<typename A, typename B>
+std::string get_nonzero_assumptions(const BinOp<And, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const BinOp<And, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
+}
+
+template<typename A, typename B>
 halide_type_t typecheck(const BinOp<And, A, B> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -1268,6 +1390,17 @@ std::string print_smt2(const BinOp<Or, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
+std::string get_nonzero_assumptions(const BinOp<Or, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const BinOp<Or, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
+}
+
+template<typename A, typename B>
 halide_type_t typecheck(const BinOp<Or, A, B> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -1293,7 +1426,18 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Min, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Min, A, B> &op, halide_type_t type_hint) {
-    return "(halide-min " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(min " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const BinOp<Min, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const BinOp<Min, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1322,7 +1466,18 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Max, A, B> &op, halide_type_t type_hint) {
-    return "(halide-max " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(max " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const BinOp<Max, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const BinOp<Max, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1352,7 +1507,18 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<LE, A, B> &op) {
 // print_smt2 for CmpOp currently assumes both terms are type H-Int in z3
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<LE, A, B> &op, halide_type_t type_hint) {
-    return "(halide-le " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+    return "(<= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const CmpOp<LE, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const CmpOp<LE, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1376,7 +1542,18 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<LT, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<LT, A, B> &op, halide_type_t type_hint) {
-    return "(halide-lt " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+    return "(< " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const CmpOp<LT, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const CmpOp<LT, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1400,7 +1577,18 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GE, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<GE, A, B> &op, halide_type_t type_hint) {
-    return "(halide-ge " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+    return "(>= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const CmpOp<GE, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const CmpOp<GE, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1424,7 +1612,18 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<GT, A, B> &op, halide_type_t type_hint) {
-    return "(halide-gt " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+    return "(> " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const CmpOp<GT, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const CmpOp<GT, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1456,8 +1655,19 @@ std::string print_smt2(const CmpOp<EQ, A, B> &op, halide_type_t type_hint) {
     if (lhs_t == Bool() || rhs_t == Bool()) {
         return "(= " + print_smt2(op.a, halide_type_of<bool>()) + " " + print_smt2(op.b, halide_type_of<bool>()) + ")";
     } else {
-        return "(halide-eq " + print_smt2(op.a, fresh_type_hint) + " " + print_smt2(op.b, fresh_type_hint) + ")";
+        return "(= " + print_smt2(op.a, fresh_type_hint) + " " + print_smt2(op.b, fresh_type_hint) + ")";
     }
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const CmpOp<EQ, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const CmpOp<EQ, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1498,8 +1708,19 @@ std::string print_smt2(const CmpOp<NE, A, B> &op, halide_type_t type_hint) {
     if (lhs_t == Bool() || rhs_t == Bool()) {
         return "(not (= " + print_smt2(op.a, halide_type_of<bool>()) + " " + print_smt2(op.b, halide_type_of<bool>()) + "))";
     } else {
-        return "(halide-ne " + print_smt2(op.a, fresh_type_hint) + " " + print_smt2(op.b, fresh_type_hint) + ")";
+        return "(not (= " + print_smt2(op.a, fresh_type_hint) + " " + print_smt2(op.b, fresh_type_hint) + "))";
     }
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const CmpOp<NE, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B>
+void build_divisor_set(const CmpOp<NE, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1534,7 +1755,19 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
-    return "(halide-mod " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(mod " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const BinOp<Mod, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n";
+}
+
+template<typename A, typename B>
+void build_divisor_set(const BinOp<Mod, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
+    divisor_set.insert(print_smt2(op.b, halide_type_of<int64_t>()));
 }
 
 template<typename A, typename B>
@@ -2099,6 +2332,16 @@ std::string print_smt2(const Intrin<Args...> &op, halide_type_t type_hint) {
 }
 
 template<typename... Args>
+std::string get_nonzero_assumptions(const Intrin<Args...> &op) {
+    return "";
+}
+
+template<typename... Args>
+void build_divisor_set(const Intrin<Args...> &op, std::set<std::string> &divisor_set) {
+    return;
+}
+
+template<typename... Args>
 halide_type_t typecheck(const Intrin<Args...> &op, halide_type_t type_hint) {
     return type_hint;
 }
@@ -2194,6 +2437,16 @@ std::string print_smt2(const NotOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+std::string get_nonzero_assumptions(const NotOp<A> &op) {
+    return get_nonzero_assumptions(op.a);
+}
+
+template<typename A>
+void build_divisor_set(const NotOp<A> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+}
+
+template<typename A>
 halide_type_t typecheck(const NotOp<A> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -2281,6 +2534,18 @@ std::ostream &operator<<(std::ostream &s, const SelectOp<C, T, F> &op) {
 template<typename C, typename T, typename F>
 std::string print_smt2(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
     return "(ite " + print_smt2(op.c, halide_type_of<bool>()) + " " + print_smt2(op.t, type_hint) + " " + print_smt2(op.f, type_hint) + ")";
+}
+
+template<typename C, typename T, typename F>
+std::string get_nonzero_assumptions(const SelectOp<C, T, F> &op) {
+    return get_nonzero_assumptions(op.c) + get_nonzero_assumptions(op.t) + get_nonzero_assumptions(op.f);
+}
+
+template<typename C, typename T, typename F>
+void build_divisor_set(const SelectOp<C, T, F> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.c, divisor_set);
+    build_divisor_set(op.t, divisor_set);
+    build_divisor_set(op.f, divisor_set);
 }
 
 template<typename C, typename T, typename F>
@@ -2390,6 +2655,16 @@ inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, true> &op)
 template<typename A>
 std::string print_smt2(const BroadcastOp<A, true> &op, halide_type_t type_hint) {
    return print_smt2(op.a, type_hint);
+}
+
+template<typename A, bool known_lanes>
+std::string get_nonzero_assumptions(const BroadcastOp<A, known_lanes> &op) {
+    return get_nonzero_assumptions(op.a);
+}
+
+template<typename A, bool known_lanes>
+void build_divisor_set(const BroadcastOp<A, known_lanes> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
 }
 
 template<typename A>
@@ -2513,7 +2788,18 @@ std::ostream &operator<<(std::ostream &s, const RampOp<A, B, true> &op) {
 
 template<typename A, typename B, bool known_lanes>
 std::string print_smt2(const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
-    return "(halide-add " + print_smt2(op.a,type_hint) + " (halide-mul " + print_smt2(op.b,type_hint) + " lanes))";
+    return "(+ " + print_smt2(op.a,type_hint) + " (* " + print_smt2(op.b,type_hint) + " lanes))";
+}
+
+template<typename A, typename B, bool known_lanes>
+std::string get_nonzero_assumptions(const RampOp<A, B, known_lanes> &op) {
+    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
+}
+
+template<typename A, typename B, bool known_lanes>
+void build_divisor_set(const RampOp<A, B, known_lanes> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B, bool known_lanes>
@@ -2635,7 +2921,17 @@ std::ostream &operator<<(std::ostream &s, const NegateOp<A> &op) {
 
 template<typename A>
 std::string print_smt2(const NegateOp<A> &op, halide_type_t type_hint) {
-    return "(halide-negate " + print_smt2(op.a, type_hint) + ")";
+    return "(- " + print_smt2(op.a, type_hint) + ")";
+}
+
+template<typename A>
+std::string get_nonzero_assumptions(const NegateOp<A> &op) {
+    return get_nonzero_assumptions(op.a);
+}
+
+template<typename A>
+void build_divisor_set(const NegateOp<A> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
 }
 
 template<typename A>
@@ -2721,6 +3017,16 @@ std::string print_smt2(const CastOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+std::string get_nonzero_assumptions(const CastOp<A> &op) {
+    return "";
+}
+
+template<typename A>
+void build_divisor_set(const CastOp<A> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+}
+
+template<typename A>
 halide_type_t typecheck(const CastOp<A> &op, halide_type_t type_hint) {
     return typecheck(op.a, type_hint);
 }
@@ -2802,6 +3108,16 @@ std::string print_smt2(const Fold<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+std::string get_nonzero_assumptions(const Fold<A> &op) {
+    return get_nonzero_assumptions(op.a);
+}
+
+template<typename A>
+void build_divisor_set(const Fold<A> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+}
+
+template<typename A>
 halide_type_t typecheck(const Fold<A> &op, halide_type_t type_hint) {
     return typecheck(op.a, type_hint);
 }
@@ -2871,6 +3187,16 @@ std::string print_smt2(const Overflows<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+std::string get_nonzero_assumptions(const Overflows<A> &op) {
+    return "";
+}
+
+template<typename A>
+void build_divisor_set(const Overflows<A> &op, std::set<std::string> &divisor_set) {
+    return;
+}
+
+template<typename A>
 halide_type_t typecheck(const Overflows<A> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -2920,6 +3246,14 @@ inline std::ostream &operator<<(std::ostream &s, const Indeterminate &op) {
 
 inline std::string print_smt2(const Indeterminate &op, halide_type_t type_hint) {
     return "indeterminate";
+}
+
+inline std::string get_nonzero_assumptions(const Indeterminate &op) {
+    return "";
+}
+
+inline void build_divisor_set(const Indeterminate &op, std::set<std::string> &divisor_set) {
+    return;
 }
 
 inline halide_type_t typecheck(const Indeterminate &op, halide_type_t type_hint) {
@@ -2981,6 +3315,14 @@ inline std::ostream &operator<<(std::ostream &s, const Overflow &op) {
 
 inline std::string print_smt2(const Overflow &op, halide_type_t type_hint) {
     return "overflow()";
+}
+
+inline std::string get_nonzero_assumptions(const Overflow &op) {
+    return "";
+}
+
+inline void build_divisor_set(const Overflow &op, std::set<std::string> &divisor_set) {
+    return;
 }
 
 inline halide_type_t typecheck(const Overflow &op, halide_type_t type_hint) {
@@ -3051,6 +3393,16 @@ std::string print_smt2(const IsConst<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+std::string get_nonzero_assumptions(const IsConst<A> &op) {
+    return "";
+}
+
+template<typename A>
+void build_divisor_set(const IsConst<A> &op, std::set<std::string> &divisor_set) {
+    return;
+}
+
+template<typename A>
 halide_type_t typecheck(const IsConst<A> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -3118,6 +3470,16 @@ std::ostream &operator<<(std::ostream &s, const CanProve<A, Prover> &op) {
 template<typename A, typename Prover>
 std::string print_smt2(const CanProve<A, Prover> &op, halide_type_t type_hint) {
     return print_smt2(op.a,type_hint);
+}
+
+template<typename A, typename Prover>
+std::string get_nonzero_assumptions(const CanProve<A, Prover> &op) {
+    return "";
+}
+
+template<typename A, typename Prover>
+void build_divisor_set(const CanProve<A, Prover> &op, std::set<std::string> &divisor_set) {
+    return;
 }
 
 template<typename A, typename Prover>
@@ -3194,6 +3556,16 @@ std::string print_smt2(const IsFloat<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
+std::string get_nonzero_assumptions(const IsFloat<A> &op) {
+    return "";
+}
+
+template<typename A>
+void build_divisor_set(const IsFloat<A> &op, std::set<std::string> &divisor_set) {
+    return;
+}
+
+template<typename A>
 halide_type_t typecheck(const IsFloat<A> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -3232,56 +3604,7 @@ HALIDE_NEVER_INLINE
 void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred,
                                 halide_type_t wildcard_type, halide_type_t output_type) noexcept {
 
-    int before_leaf_count = get_leaf_count(before);
-    int before_nonconst_leaf_count = get_nonconst_leaf_count(before);
-    int after_leaf_count = get_leaf_count(after);
-    int after_nonconst_leaf_count = get_nonconst_leaf_count(after);
 
-    term_map before_terms;
-    term_map after_terms;
-
-    count_terms(before, before_terms);
-    count_terms(after, after_terms);
-
-    leaf_vec before_leaf_vec;
-    leaf_vec after_leaf_vec;
-
-    build_leaf_vec(before, before_leaf_vec);
-    build_leaf_vec(after, after_leaf_vec);
-
-    if (before_nonconst_leaf_count < after_nonconst_leaf_count) {
-        debug(0) << "FAILED NC_LEAF COUNT: " << before_nonconst_leaf_count << " " << after_nonconst_leaf_count << " " << before << " rewrites to " << after << "\n";
-    } else if (before_nonconst_leaf_count == after_nonconst_leaf_count && term_map_gt(after_terms,before_terms)) {
-        debug(0) << "FAILED LEXICO: " << before << " rewrites to " << after << "\n";
-    } else if (before_nonconst_leaf_count == after_nonconst_leaf_count && before_terms == after_terms && before_leaf_count < after_leaf_count) {
-        debug(0) << "FAILED LEAF COUNT: " << before_leaf_count << " " << after_leaf_count << " " << before << " rewrites to " << after << "\n";
-    } else if (before_nonconst_leaf_count == after_nonconst_leaf_count && before_terms == after_terms && before_leaf_count == after_leaf_count && before_leaf_vec < after_leaf_vec) {
-        debug(0) << "FAILED CONST POSITION: " << before << " rewrites to " << after << "\n";
-    } else if (before_nonconst_leaf_count == after_nonconst_leaf_count && before_terms == after_terms && before_leaf_count == after_leaf_count && before_leaf_vec == after_leaf_vec) {
-        debug(0) << "PERFECTLY EQUAL: " << before << " " << after << "\n";
-    }
-
-/*
-    if (after_leaf_count > before_leaf_count) {
-        debug(0) << "FAILED ORDERING 1: ";
-        debug(0) << "Before leaf count: " << before_leaf_count << " , nonconst leaf count " << before_nonconst_leaf_count << " ";
-        debug(0) << "After leaf count: " << after_leaf_count << " , nonconst leaf count " << after_nonconst_leaf_count << " ";
-        debug(0) << before << " rewrites to ";
-        debug(0) << after << "\n";
-    } else if (after_leaf_count == before_leaf_count && after_nonconst_leaf_count > before_nonconst_leaf_count) {
-        debug(0) << "FAILED ORDERING 2: ";
-        debug(0) << "Before leaf count: " << before_leaf_count << " , nonconst leaf count " << before_nonconst_leaf_count << " ";
-        debug(0) << "After leaf count: " << after_leaf_count << " , nonconst leaf count " << after_nonconst_leaf_count << " ";
-        debug(0) << before << " rewrites to ";
-        debug(0) << after << "\n";
-    } else if (after_leaf_count == before_leaf_count && after_nonconst_leaf_count == before_nonconst_leaf_count) {
-        debug(0) << "PERFECT TIE: ";
-        debug(0) << "Before leaf count: " << before_leaf_count << " , nonconst leaf count " << before_nonconst_leaf_count << " ";
-        debug(0) << "After leaf count: " << after_leaf_count << " , nonconst leaf count " << after_nonconst_leaf_count << " ";
-        debug(0) << before << " rewrites to ";
-        debug(0) << after << "\n";
-    }
-*/
     halide_type_t before_type = typecheck(before, wildcard_type);
     halide_type_t after_type = typecheck(after, wildcard_type);
     halide_type_t hint_type = before_type;
@@ -3297,92 +3620,45 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     // print rewrite rule as comments in smt2 file
     assertfile << ";; Before: " << before << " After : " << after <<  ";; Pred  : " << pred << "\n\n";
 
-    assertfile << "(declare-datatypes (T1 T2)\n"
-                "  ((H-Int (make-H-Int (indet-flag T1) (val T2)))))\n\n"
-                "(define-fun indeterminate () (H-Int Bool Int)\n"
-                "  (make-H-Int true 0)\n"
-                ")\n\n";
-    assertfile << "(define-fun halide-add ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
-                  "  (if (or (indet-flag a) (indet-flag b))\n"
-                  "    indeterminate\n"
-                  "    (make-H-Int false (+ (val a) (val b)))\n"
-                  "  )\n"
-                  ")\n\n";
-    assertfile << "(define-fun halide-sub ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
-                  "  (if (or (indet-flag a) (indet-flag b))\n"
-                  "    indeterminate\n"
-                  "    (make-H-Int false (- (val a) (val b)))\n"
-                  "  )\n"
-                  ")\n\n";
-    assertfile << "(define-fun halide-mul ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
-                  "  (if (or (indet-flag a) (indet-flag b))\n"
-                  "    indeterminate\n"
-                  "    (make-H-Int false (* (val a) (val b)))\n"
-                  "  )\n"
-                  ")\n\n";
-    assertfile << "(define-fun halide-div ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
-                  "  (if (or (or (indet-flag a) (indet-flag b)) (= (val b) 0))\n"
-                  "    indeterminate\n"
-                  "    (make-H-Int false (div (val a) (val b)))\n"
-                  "  )\n"
-                  ")\n\n";
-    assertfile << "(define-fun halide-mod ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
-                  "  (if (or (or (indet-flag a) (indet-flag b)) (= (val b) 0))\n"
-                  "    indeterminate\n"
-                  "    (make-H-Int false (mod (val a) (val b)))\n"
-                  "  )\n"
-                  ")\n\n";
-    assertfile << "(define-fun halide-max ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
-                  "  (if (or (indet-flag a) (indet-flag b))\n"
-                  "    indeterminate\n"
-                  "    (ite (>= (val a) (val b)) a b)\n"
-                  "  )\n"
-                  ")\n\n";
-    assertfile << "(define-fun halide-min ((a (H-Int Bool Int)) (b (H-Int Bool Int))) (H-Int Bool Int)\n"
-                  "  (if (or (indet-flag a) (indet-flag b))\n"
-                  "    indeterminate\n"
-                  "    (ite (<= (val a) (val b)) a b)\n"
-                  "  )\n"
-                  ")\n\n";
-    assertfile << "(define-fun halide-negate ((a (H-Int Bool Int))) (H-Int Bool Int)\n"
-                  "  (if (indet-flag a)\n"
-                  "    indeterminate\n"
-                  "    (make-H-Int false (- (val a)))\n"
-                  "  )\n"
-                  ")\n\n";
-    assertfile << "(define-fun halide-eq ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
-                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (= (val a) (val b))))\n\n";
-    assertfile << "(define-fun halide-ne ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
-                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (not (= (val a) (val b)))))\n\n";
-    assertfile << "(define-fun halide-le ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
-                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (<= (val a) (val b))))\n\n";
-    assertfile << "(define-fun halide-lt ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
-                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (< (val a) (val b))))\n\n";
-    assertfile << "(define-fun halide-ge ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
-                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (>= (val a) (val b))))\n\n";
-    assertfile << "(define-fun halide-gt ((a (H-Int Bool Int)) (b (H-Int Bool Int))) Bool\n"
-                  "  (and (and (not (indet-flag a)) (not (indet-flag b))) (> (val a) (val b))))\n\n";
+    assertfile << "(define-fun min ((x Int) (y Int)) Int\n"
+                  "  (if (< x y) x y))\n";
+    assertfile << "(define-fun max ((x Int) (y Int)) Int\n"
+                  "  (if (< x y) y x))\n";
 
     variable_map variables;
     build_variable_map(before, variables, hint_type);
     build_variable_map(after, variables, hint_type);
 
+    std::set<std::string> before_divisors;
+    build_divisor_set(before, before_divisors);
+    std::set<std::string> after_divisors;
+    build_divisor_set(after, after_divisors);
+
+    bool new_divisors = false;
+
+    for (std::set<std::string>::iterator it=after_divisors.begin(); it!=after_divisors.end(); ++it) {
+        if (before_divisors.count(*it) == 0)
+            new_divisors = true;
+    }
+
+    if (new_divisors)
+        debug(0) << "!!!! Contains new divisor terms in RHS: LHS " << before << " RHS " << after << "\n\n";
+
     for (std::map<std::string, halide_type_t>::iterator it=variables.begin(); it!=variables.end(); ++it) {
         if (it->second == Bool()) {
             assertfile << "(declare-const " << it->first << " Bool)\n";
-        } else if (it->second == Int(64)) {
-            assertfile << "(declare-const " << it->first << " (H-Int Bool Int))\n";
-            assertfile << "(assert (not (indet-flag " << it->first << ")))\n";
+        //} else if (it->second == Int(64)) {
+        } else {
+            assertfile << "(declare-const " << it->first << " Int)\n";
         }/* else {
-            debug(0) << "variable " << it->first << " has unknown type\n";
+        //    debug(0) << "variable " << it->first << " has unknown type\n";
         }*/
     }
 
     // all broadcasts/ramps in the same expression share the same number of lanes
-    assertfile << "(declare-const lanes (H-Int Bool Int))\n";
-    assertfile << "(assert (not (indet-flag lanes)))\n";
+    assertfile << "(declare-const lanes Int)\n";
     // lanes must be greater than 0
-    assertfile << "(assert (> (val lanes) 0))\n\n";
+    assertfile << "(assert (> lanes 0))\n\n";
 
     // this is kinda hacky, fix later
     std::ostringstream pred_stream;
@@ -3390,6 +3666,10 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     if (pred_stream.str() != "1") {
         assertfile << "(assert " << print_smt2(pred, hint_type) << ")\n";
     }
+
+    assertfile << get_nonzero_assumptions(before);
+    assertfile << get_nonzero_assumptions(after);
+    assertfile << get_nonzero_assumptions(pred);
 
     // verify that the solver cannot find a model in which the two sides of the rewrite rule are different
     assertfile << "\n(assert (not (= " << print_smt2(before, hint_type) << " " << print_smt2(after, hint_type) << ")))\n";
