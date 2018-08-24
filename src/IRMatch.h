@@ -2793,7 +2793,8 @@ std::ostream &operator<<(std::ostream &s, const RampOp<A, B, true> &op) {
 
 template<typename A, typename B, bool known_lanes>
 std::string print_smt2(const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
-    return "(+ " + print_smt2(op.a,type_hint) + " (* " + print_smt2(op.b,type_hint) + " lanes))";
+    // in order to match predicates, we represent lanes as lanes - 1
+    return "(+ " + print_smt2(op.a,type_hint) + " (* " + print_smt2(op.b,type_hint) + " (- lanes 1)))";
 }
 
 template<typename A, typename B, bool known_lanes>
