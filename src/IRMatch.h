@@ -3612,6 +3612,50 @@ void count_terms(const IsFloat<A> &op, term_map &m) {
 }
 
 template<typename Before,
+        typename After,
+        typename Predicate>
+HALIDE_ALWAYS_INLINE
+void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
+                            halide_type_t wildcard_type, halide_type_t output_type) noexcept {
+
+    // Check that any divisor terms in RHS are present in LHS
+    // TODO: Check that new divisor terms are constants & guaranteed to be non-zero via predicates
+    std::set<std::string> before_divisors;
+    build_divisor_set(before, before_divisors);
+    std::set<std::string> after_divisors;
+    build_divisor_set(after, after_divisors);
+
+    bool new_divisors = false;
+
+    for (std::set<std::string>::iterator it=after_divisors.begin(); it!=after_divisors.end(); ++it) {
+        if (before_divisors.count(*it) == 0)
+            new_divisors = true;
+    }
+
+    //if (new_divisors)
+    //    debug(0) << "!!!! LHS" << before << " RHS " << after << ": contains new divisor terms in RHS\n\n";
+
+    // Check that the ordering of LHS > ordering of RHS
+    int LHS_variable_count = get_nonconst_leaf_count(before);
+    int RHS_variable_count = get_nonconst_leaf_count(after);
+    term_map LHS_term_map;
+    term_map RHS_term_map;
+
+    count_terms(before, LHS_term_map);
+    count_terms(after, RHS_term_map);
+
+    if (LHS_variable_count < RHS_variable_count) {
+        debug(0) << "!!!! LHS" << before << " RHS " << after << ": variable count ordering is violated\n\n";
+    } else if ((LHS_variable_count == RHS_variable_count) && (not (term_map_gt(LHS_term_map, RHS_term_map)))) {
+        if (LHS_term_map == RHS_term_map) {
+            debug(0) << "!!!! LHS " << before << " RHS " << after  << ": term maps are equivalent\n\n";
+        } else {
+            debug(0) << "!!!! LHS" << before << " RHS " << after << ": term map count ordering is violated\n\n";
+        }
+    }
+}
+
+template<typename Before,
          typename After,
          typename Predicate>
 HALIDE_NEVER_INLINE
@@ -3642,21 +3686,6 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     variable_map variables;
     build_variable_map(before, variables, hint_type);
     build_variable_map(after, variables, hint_type);
-
-    std::set<std::string> before_divisors;
-    build_divisor_set(before, before_divisors);
-    std::set<std::string> after_divisors;
-    build_divisor_set(after, after_divisors);
-
-    bool new_divisors = false;
-
-    for (std::set<std::string>::iterator it=after_divisors.begin(); it!=after_divisors.end(); ++it) {
-        if (before_divisors.count(*it) == 0)
-            new_divisors = true;
-    }
-
-    if (new_divisors)
-        debug(0) << "!!!! Contains new divisor terms in RHS: LHS " << before << " RHS " << after << "\n\n";
 
     for (std::map<std::string, halide_type_t>::iterator it=variables.begin(); it!=variables.end(); ++it) {
         if (it->second == Bool()) {
@@ -3860,6 +3889,9 @@ bool evaluate_predicate(Pattern p, MatcherState &state) {
 // isolate z3 verification of rules
 #define HALIDE_VERIFY_SIMPLIFY_RULES 1
 
+// check various properties of rules when they match
+#define HALIDE_CHECK_RULES_PROPERTIES 1
+
 template<typename Instance>
 struct Rewriter {
     Instance instance;
@@ -3890,6 +3922,9 @@ struct Rewriter {
         #endif
         #if HALIDE_VERIFY_SIMPLIFY_RULES
         verify_simplification_rule(before, after, true, wildcard_type, output_type);
+        #endif
+        #if HALIDE_CHECK_RULES_PROPERTIES
+        check_rule_properties(before, after, true, wildcard_type, output_type);
         #endif
         if (before.template match<0>(instance, state)) {
             build_replacement(after);
@@ -3933,6 +3968,9 @@ struct Rewriter {
         #if HALIDE_VERIFY_SIMPLIFY_RULES
         verify_simplification_rule(before, Const(after), true, wildcard_type, output_type);
         #endif
+        #if HALIDE_CHECK_RULES_PROPERTIES
+        check_rule_properties(before, Const(after), true, wildcard_type, output_type);
+        #endif
         if (before.template match<0>(instance, state)) {
             result = make_const(output_type, after);
             #if HALIDE_DEBUG_MATCHED_RULES
@@ -3963,6 +4001,9 @@ struct Rewriter {
         #endif
         #if HALIDE_VERIFY_SIMPLIFY_RULES
         verify_simplification_rule(before, after, pred, wildcard_type, output_type);
+        #endif
+        #if HALIDE_CHECK_RULES_PROPERTIES
+        check_rule_properties(before, after, pred, wildcard_type, output_type);
         #endif
         if (before.template match<0>(instance, state) &&
             evaluate_predicate(pred, state)) {
@@ -4013,6 +4054,9 @@ struct Rewriter {
         #endif
         #if HALIDE_VERIFY_SIMPLIFY_RULES
         verify_simplification_rule(before, Const(after), pred, wildcard_type, output_type);
+        #endif
+        #if HALIDE_CHECK_RULES_PROPERTIES
+        check_rule_properties(before, Const(after), pred, wildcard_type, output_type);
         #endif
         if (before.template match<0>(instance, state) &&
             evaluate_predicate(pred, state)) {
