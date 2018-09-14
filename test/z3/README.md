@@ -21,4 +21,5 @@ We assume that all left hand side expressions do not divide by zero; that is, an
 ## Resources
 
 A useful Z3 tutorial: https://rise4fun.com/z3/tutorial
+
 Documentation for SMT2: http://smtlib.cs.uiowa.edu/index.shtml
