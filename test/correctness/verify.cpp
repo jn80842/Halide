@@ -13,30 +13,9 @@ Expr broadcast(const Expr &base, int w) {
     return Broadcast::make(base, w);
 }
 
-void check(const Expr &a, const Expr &b) {
-    std::cout << "called expr check\n";
-    Expr simpler = simplify(a);
-    if (!equal(simpler, b)) {
-        std::cerr
-            << "\nSimplification failure:\n"
-            << "Input: " << a << '\n'
-            << "Output: " << simpler << '\n'
-            << "Expected output: " << b << '\n';
-   //     abort();
-    }
-}
-
-void check(const Stmt &a, const Stmt &b) {
-    std::cout << "called stmt check\n";
-    Stmt simpler = simplify(a);
-    if (!equal(simpler, b)) {
-        std::cerr
-            << "\nSimplification failure:\n"
-            << "Input: " << a << '\n'
-            << "Output: " << simpler << '\n'
-            << "Expected output: " << b << '\n';
-    //    abort();
-    }
+void check (const Expr &a) {
+    std::cout << "called expr check " << a << "\n";
+    simplify(a);
 }
 
 int main(int argc, char **argv) {
@@ -49,25 +28,25 @@ int main(int argc, char **argv) {
     Expr b2 = Variable::make(Bool(), "b2");
     Expr b3 = Variable::make(Bool(), "b3");
 
-    check(x + y, 5);
-    check(b1 && b2, 5);
-    check(x / y, 5);
-    check(xf / c0, 5);
-    check(x == 1, true);
-    check(b1 == b2, true);
-    check(x < y, false);
-    check(xf < yf, false);
-    check(max(x,y),4);
-    check(min(x,y),4);
-    check(x % y, 5);
-    check(x * y, 5);
-    check(!b1, false);
-    check(b1 || b2, false);
-    check(select(b1,x,y),3);
-    check(select(b1,b2,b3),false);
-    check(x - y, 5);
-    check(x > y, true);
-    check(x + (y + (c0 - x)/c1)*c1, 5);
+    check(x + y);
+    check(b1 && b2);
+    check(x / y);
+    check(xf / c0);
+    check(x == 1);
+    check(b1 == b2);
+    check(x < y);
+    check(xf < yf);
+    check(max(x,y));
+    check(min(x,y));
+    check(x % y);
+    check(x * y);
+    check(!b1);
+    check(b1 || b2);
+    check(select(b1,x,y));
+    check(select(b1,b2,b3));
+    check(x - y);
+    check(x > y);
+    check(x + (y + (c0 - x)/c1)*c1);
 
     printf("Success!\n");
 
