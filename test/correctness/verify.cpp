@@ -21,8 +21,6 @@ void check (const Expr &a) {
 int main(int argc, char **argv) {
     Expr x = Var("x"), y = Var("y"), z = Var("z"), w = Var("w");
     Expr c0 = Var("c0"), c1 = Var("c1");
-    Expr xf = cast<float>(x);
-    Expr yf = cast<float>(y);
     Expr t = const_true(), f = const_false();
     Expr b1 = Variable::make(Bool(), "b1");
     Expr b2 = Variable::make(Bool(), "b2");
@@ -31,11 +29,9 @@ int main(int argc, char **argv) {
     check(x + y);
     check(b1 && b2);
     check(x / y);
-    check(xf / c0);
     check(x == 1);
     check(b1 == b2);
     check(x < y);
-    check(xf < yf);
     check(max(x,y));
     check(min(x,y));
     check(x % y);
