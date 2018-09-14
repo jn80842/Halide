@@ -3711,8 +3711,8 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     }
 
     assertfile << get_nonzero_assumptions(before);
-    assertfile << get_nonzero_assumptions(after);
-    assertfile << get_nonzero_assumptions(pred);
+    //assertfile << get_nonzero_assumptions(after);
+    //assertfile << get_nonzero_assumptions(pred);
 
     // verify that the solver cannot find a model in which the two sides of the rewrite rule are different
     assertfile << "\n(assert (not (= " << print_smt2(before, hint_type) << " " << print_smt2(after, hint_type) << ")))\n";
