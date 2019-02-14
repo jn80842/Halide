@@ -3645,12 +3645,12 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     count_terms(after, RHS_term_map);
 
     if (LHS_variable_count < RHS_variable_count) {
-        debug(0) << "!!!! LHS" << before << " RHS " << after << ": variable count ordering is violated\n\n";
+        debug(0) << "!!!! LHS " << before << " RHS " << after << ": variable count ordering is violated\n\n";
     } else if ((LHS_variable_count == RHS_variable_count) && (not (term_map_gt(LHS_term_map, RHS_term_map)))) {
         if (LHS_term_map == RHS_term_map) {
             debug(0) << "!!!! LHS " << before << " RHS " << after  << ": term maps are equivalent\n\n";
         } else {
-            debug(0) << "!!!! LHS" << before << " RHS " << after << ": term map count ordering is violated\n\n";
+            debug(0) << "!!!! LHS " << before << " RHS " << after << ": term map count ordering is violated\n\n";
         }
     }
 }
