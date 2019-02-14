@@ -254,10 +254,6 @@ inline int get_leaf_count(SpecificExpr e) {
     return 1;
 }
 
-inline int get_nonconst_leaf_count(SpecificExpr e) {
-    return 1;
-}
-
 inline void count_terms(SpecificExpr e, term_map &m) {
     return;
 }
@@ -345,11 +341,6 @@ halide_type_t typecheck(const WildConstInt<i> &c, halide_type_t type_hint) {
 template<int i>
 int get_leaf_count(const WildConstInt<i> &c) {
     return 1;
-}
-
-template<int i>
-int get_nonconst_leaf_count(const WildConstInt<i> &c) {
-    return 0;
 }
 
 template<int i>
@@ -450,11 +441,6 @@ int get_leaf_count(const WildConstUInt<i> &c) {
 }
 
 template<int i>
-int get_nonconst_leaf_count(const WildConstUInt<i> &c) {
-    return 0;
-}
-
-template<int i>
 void count_terms(const WildConstUInt<i> & c, term_map &m) {
     increment_term(IRNodeType::UIntImm, m);
 }
@@ -548,11 +534,6 @@ int get_leaf_count(const WildConstFloat<i> &c) {
 }
 
 template<int i>
-int get_nonconst_leaf_count(const WildConstFloat<i> &c) {
-    return 0;
-}
-
-template<int i>
 void count_terms(const WildConstFloat<i> &c, term_map &m) {
     increment_term(IRNodeType::FloatImm, m);
 }
@@ -641,11 +622,6 @@ halide_type_t typecheck(const WildConst<i> &c, halide_type_t type_hint) {
 template<int i>
 int get_leaf_count(const WildConst<i> &c) {
     return 1;
-}
-
-template<int i>
-int get_nonconst_leaf_count(const WildConst<i> &c) {
-    return 0;
 }
 
 // since numeric type is unknown here, choose the strongest term
@@ -766,16 +742,11 @@ int get_leaf_count(const Wild<i> &op) {
     return 1;
 }
 
-template<int i>
-int get_nonconst_leaf_count(const Wild<i> &op) {
-    return 1;
-}
-
 // Wild terms aren't used in lexico ordering
 // as non constant leaves are used for ordering before lexico
 template<int i>
 void count_terms(const Wild<i> &op, term_map &m) {
-    return;
+    increment_term(IRNodeType::Variable, m);
 }
 
 template<int i>
@@ -922,10 +893,6 @@ inline halide_type_t typecheck(const Const &op, halide_type_t type_hint) {
 
 inline int get_leaf_count(const Const &op) {
     return 1;
-}
-
-inline int get_nonconst_leaf_count(const Const &op) {
-    return 0;
 }
 
 // since type is not known, choose strongest term type
@@ -1150,11 +1117,6 @@ int get_leaf_count(const CmpOp<Op, A, B> &op) {
 }
 
 template<typename Op, typename A, typename B>
-int get_nonconst_leaf_count(const CmpOp<Op, A, B> &op) {
-    return get_nonconst_leaf_count(op.a) + get_nonconst_leaf_count(op.b);
-}
-
-template<typename Op, typename A, typename B>
 void build_leaf_vec(const CmpOp<Op, A, B> &op, leaf_vec &v) {
     build_leaf_vec(op.a, v);
     build_leaf_vec(op.b, v);
@@ -1163,11 +1125,6 @@ void build_leaf_vec(const CmpOp<Op, A, B> &op, leaf_vec &v) {
 template<typename Op, typename A, typename B>
 int get_leaf_count(const BinOp<Op, A, B> &op) {
     return get_leaf_count(op.a) + get_leaf_count(op.b);
-}
-
-template<typename Op, typename A, typename B>
-int get_nonconst_leaf_count(const BinOp<Op, A, B> &op) {
-    return get_nonconst_leaf_count(op.a) + get_nonconst_leaf_count(op.b);
 }
 
 template<typename Op, typename A, typename B>
@@ -2352,11 +2309,6 @@ int get_leaf_count(const Intrin<Args...> &op) {
 }
 
 template<typename... Args>
-int get_nonconst_leaf_count(const Intrin<Args...> &op) {
-    return 1;
-}
-
-template<typename... Args>
 void build_variable_map(const Intrin<Args...> &op, variable_map &varmap, halide_type_t type_hint) {
     return;
 }
@@ -2454,11 +2406,6 @@ halide_type_t typecheck(const NotOp<A> &op, halide_type_t type_hint) {
 template<typename A>
 int get_leaf_count(const NotOp<A> &op) {
     return get_leaf_count(op.a);
-}
-
-template<typename A>
-int get_nonconst_leaf_count(const NotOp<A> &op) {
-    return get_nonconst_leaf_count(op.a);
 }
 
 template<typename A>
@@ -2567,11 +2514,6 @@ int get_leaf_count(const SelectOp<C, T, F> &op) {
 }
 
 template<typename C, typename T, typename F>
-int get_nonconst_leaf_count(const SelectOp<C, T, F> &op) {
-    return get_nonconst_leaf_count(op.c) + get_nonconst_leaf_count(op.t) + get_nonconst_leaf_count(op.f);
-}
-
-template<typename C, typename T, typename F>
 void build_variable_map(const SelectOp<C, T, F> &op, variable_map &varmap, halide_type_t type_hint) {
     type_hint = typecheck(op, type_hint);
     build_variable_map(op.c, varmap, halide_type_of<bool>());
@@ -2675,11 +2617,6 @@ halide_type_t typecheck(const BroadcastOp<A, true> &op, halide_type_t type_hint)
 template<typename A, bool known_lanes>
 int get_leaf_count(const BroadcastOp<A, known_lanes> &op) {
     return get_leaf_count(op.a);
-}
-
-template<typename A, bool known_lanes>
-int get_nonconst_leaf_count(const BroadcastOp<A, known_lanes> &op) {
-    return get_nonconst_leaf_count(op.a);
 }
 
 template<typename A, bool known_lanes>
@@ -2832,11 +2769,6 @@ int get_leaf_count(const RampOp<A, B, known_lanes> &op) {
     return get_leaf_count(op.a) + get_leaf_count(op.b);
 }
 
-template<typename A, typename B, bool known_lanes>
-int get_nonconst_leaf_count(const RampOp<A, B, known_lanes> &op) {
-    return get_nonconst_leaf_count(op.a) + get_nonconst_leaf_count(op.b);
-}
-
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const RampOp<A, B, false> &op) {
     s << "ramp(" << op.a << ", " << op.b << ")";
@@ -2946,11 +2878,6 @@ int get_leaf_count(const NegateOp<A> &op) {
 }
 
 template<typename A>
-int get_nonconst_leaf_count(const NegateOp<A> &op) {
-    return get_nonconst_leaf_count(op.a);
-}
-
-template<typename A>
 void build_variable_map(const NegateOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
 }
@@ -3035,11 +2962,6 @@ halide_type_t typecheck(const CastOp<A> &op, halide_type_t type_hint) {
 template<typename A>
 int get_leaf_count(const CastOp<A> &op) {
     return get_leaf_count(op.a);
-}
-
-template<typename A>
-int get_nonconst_leaf_count(const CastOp<A> &op) {
-    return get_nonconst_leaf_count(op.a);
 }
 
 template<typename A>
@@ -3129,11 +3051,6 @@ int get_leaf_count(const Fold<A> &op) {
 }
 
 template<typename A>
-int get_nonconst_leaf_count(const Fold<A> &op) {
-    return 0;
-}
-
-template<typename A>
 void build_variable_map(const Fold<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
 }
@@ -3207,11 +3124,6 @@ int get_leaf_count(const Overflows<A> &op) {
     return get_leaf_count(op.a);
 }
 
-template<typename A>
-int get_nonconst_leaf_count(const Overflows<A> &op) {
-    return get_nonconst_leaf_count(op.a);
-}
-
 struct Indeterminate {
     struct pattern_tag {};
 
@@ -3262,10 +3174,6 @@ inline halide_type_t typecheck(const Indeterminate &op, halide_type_t type_hint)
 }
 
 inline int get_leaf_count(const Indeterminate &op) {
-    return 1;
-}
-
-inline int get_nonconst_leaf_count(const Indeterminate &op) {
     return 1;
 }
 
@@ -3331,10 +3239,6 @@ inline halide_type_t typecheck(const Overflow &op, halide_type_t type_hint) {
 }
 
 inline int get_leaf_count(const Overflow &op) {
-    return 1;
-}
-
-inline int get_nonconst_leaf_count(const Overflow &op) {
     return 1;
 }
 
@@ -3414,11 +3318,6 @@ int get_leaf_count(const IsConst<A> &op) {
 }
 
 template<typename A>
-int get_nonconst_leaf_count(const IsConst<A> &op) {
-    return get_nonconst_leaf_count(op.a);
-}
-
-template<typename A>
 void build_variable_map(const IsConst<A> &op, variable_map &varmap, halide_type_t type_hint) {
     halide_type_t fresh_type_hint;
     build_variable_map(op.a, varmap, fresh_type_hint);
@@ -3490,11 +3389,6 @@ halide_type_t typecheck(const CanProve<A, Prover> &op, halide_type_t type_hint) 
 
 template<typename A, typename Prover>
 int get_leaf_count(const CanProve<A, Prover> &op) {
-    return 0;
-}
-
-template<typename A, typename Prover>
-int get_nonconst_leaf_count(const CanProve<A, Prover> &op) {
     return 0;
 }
 
@@ -3577,11 +3471,6 @@ int get_leaf_count(const IsFloat<A> &op) {
 }
 
 template<typename A>
-int get_nonconst_leaf_count(const IsFloat<A> &op) {
-    return get_nonconst_leaf_count(op.a);
-}
-
-template<typename A>
 void build_variable_map(const IsFloat<A> &op, variable_map &varmap, halide_type_t type_hint) {
     halide_type_t fresh_type_hint;
     build_variable_map(op.a, varmap, fresh_type_hint);
@@ -3622,18 +3511,13 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     //if (new_divisors)
     //    debug(0) << "!!!! LHS" << before << " RHS " << after << ": contains new divisor terms in RHS\n\n";
 
-    // Check that the ordering of LHS > ordering of RHS
-    int LHS_variable_count = get_nonconst_leaf_count(before);
-    int RHS_variable_count = get_nonconst_leaf_count(after);
     term_map LHS_term_map;
     term_map RHS_term_map;
 
     count_terms(before, LHS_term_map);
     count_terms(after, RHS_term_map);
 
-    if (LHS_variable_count < RHS_variable_count) {
-        debug(0) << "!!!! LHS " << before << " RHS " << after << ": variable count ordering is violated\n\n";
-    } else if ((LHS_variable_count == RHS_variable_count) && (not (term_map_gt(LHS_term_map, RHS_term_map)))) {
+    if (not (term_map_gt(LHS_term_map, RHS_term_map))) {
         if (LHS_term_map == RHS_term_map) {
             debug(0) << "!!!! LHS " << before << " RHS " << after  << ": term maps are equivalent\n\n";
         } else {

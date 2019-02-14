@@ -294,7 +294,9 @@ void increment_term(IRNodeType node_type, term_map &m) {
 }
 
 bool term_map_gt(term_map &m1, term_map &m2) {
-    if (m1[IRNodeType::Ramp] != m2[IRNodeType::Ramp]) {
+    if (m1[IRNodeType::Variable] != m2[IRNodeType::Variable]) {
+        return m1[IRNodeType::Variable] > m2[IRNodeType::Variable];
+    } else if (m1[IRNodeType::Ramp] != m2[IRNodeType::Ramp]) {
         return m1[IRNodeType::Ramp] > m2[IRNodeType::Ramp];
     } else if (m1[IRNodeType::Broadcast] != m2[IRNodeType::Broadcast]) {
         return m1[IRNodeType::Broadcast] > m2[IRNodeType::Broadcast];
