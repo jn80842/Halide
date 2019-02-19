@@ -15,6 +15,7 @@
 
 #include <random>
 #include <set>
+#include <list>
 
 namespace Halide {
 namespace Internal {
@@ -74,9 +75,18 @@ constexpr int max_wild = 6;
 typedef std::map<std::string, halide_type_t> variable_map;
 typedef std::map<IRNodeType, int> term_map;
 typedef std::vector<int> leaf_vec;
+typedef std::map<IRNodeType, int> node_type_ordering;
+typedef std::list<IRNodeType> node_type_list;
 
 void increment_term(IRNodeType node_type, term_map &m);
 bool term_map_gt(term_map &m1, term_map &m2);
+
+enum class CompIRNodeTypeStatus {
+    GT, EQ, LT
+};
+
+CompIRNodeTypeStatus compare_node_types(IRNodeType n1, IRNodeType n2);
+bool compare_node_type_lists(node_type_list before_list, node_type_list after_list);
 
 /** To save stack space, the matcher objects are largely stateless and
  * immutable. This state object is built up during matching and then
@@ -258,6 +268,15 @@ inline void count_terms(SpecificExpr e, term_map &m) {
     return;
 }
 
+// what node type to use here?
+inline IRNodeType get_node_type(SpecificExpr e) {
+    return IRNodeType::UIntImm;
+}
+
+inline void build_node_type_list(SpecificExpr e, node_type_list &l) {
+    l.push_back(get_node_type(e));
+}
+
 inline void build_variable_map(SpecificExpr e, variable_map &varmap, halide_type_t type_hint) {
     return;
 }
@@ -349,8 +368,17 @@ void count_terms(const WildConstInt<i> &c, term_map &m) {
 }
 
 template<int i>
+IRNodeType get_node_type(const WildConstInt<i> &c) {
+    return IRNodeType::IntImm;
+}
+
+template<int i>
+void build_node_type_list(const WildConstInt<i> &c, node_type_list &l) {
+    l.push_back(get_node_type(c));
+}
+
+template<int i>
 void build_variable_map(const WildConstInt<i> &c, variable_map &varmap, halide_type_t type_hint) {
-    // debug(0) << print_smt2(c, type_hint) << " given type of int64\n";
     varmap.insert({print_smt2(c, type_hint), halide_type_of<int64_t>()});
 }
 
@@ -441,8 +469,18 @@ int get_leaf_count(const WildConstUInt<i> &c) {
 }
 
 template<int i>
-void count_terms(const WildConstUInt<i> & c, term_map &m) {
+void count_terms(const WildConstUInt<i> &c, term_map &m) {
     increment_term(IRNodeType::UIntImm, m);
+}
+
+template<int i>
+IRNodeType get_node_type(const WildConstUInt<i> &c) {
+    return IRNodeType::UIntImm;
+}
+
+template<int i>
+void build_node_type_list(const WildConstUInt<i> &c, node_type_list &l) {
+    l.push_back(get_node_type(c));
 }
 
 template<int i>
@@ -539,6 +577,16 @@ void count_terms(const WildConstFloat<i> &c, term_map &m) {
 }
 
 template<int i>
+IRNodeType get_node_type(const WildConstFloat<i> &c) {
+    return IRNodeType::FloatImm;
+}
+
+template<int i>
+void build_node_type_list(const WildConstFloat<i> &c, node_type_list &l) {
+    l.push_back(get_node_type(c));
+}
+
+template<int i>
 void build_variable_map(const WildConstFloat<i> &c, variable_map &varmap, halide_type_t type_hint) {
     varmap.insert({print_smt2(c, type_hint), typecheck(c, type_hint)});
 }
@@ -628,6 +676,16 @@ int get_leaf_count(const WildConst<i> &c) {
 template<int i>
 void count_terms(const WildConst<i> &c, term_map &m) {
     increment_term(IRNodeType::UIntImm, m);
+}
+
+template<int i>
+IRNodeType get_node_type(const WildConst<i> &c) {
+    return IRNodeType::UIntImm;
+}
+
+template<int i>
+void build_node_type_list(const WildConst<i> &c, node_type_list &l) {
+    l.push_back(get_node_type(c));
 }
 
 template<int i>
@@ -742,11 +800,19 @@ int get_leaf_count(const Wild<i> &op) {
     return 1;
 }
 
-// Wild terms aren't used in lexico ordering
-// as non constant leaves are used for ordering before lexico
 template<int i>
 void count_terms(const Wild<i> &op, term_map &m) {
     increment_term(IRNodeType::Variable, m);
+}
+
+template<int i>
+IRNodeType get_node_type(const Wild<i> &op) {
+    return IRNodeType::Variable;
+}
+
+template<int i>
+void build_node_type_list(const Wild<i> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
 }
 
 template<int i>
@@ -898,6 +964,14 @@ inline int get_leaf_count(const Const &op) {
 // since type is not known, choose strongest term type
 inline void count_terms(const Const &op, term_map &m) {
     increment_term(IRNodeType::UIntImm, m);
+}
+
+inline IRNodeType get_node_type(const Const &op) {
+    return IRNodeType::UIntImm;
+}
+
+inline void build_node_type_list(const Const &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
 }
 
 inline void build_variable_map(const Const &op, variable_map &varmap, halide_type_t type_hint) {
@@ -1133,6 +1207,19 @@ void build_leaf_vec(const BinOp<Op, A, B> &op, leaf_vec &v) {
     build_leaf_vec(op.b, v);
 }
 
+template<typename Op, typename A, typename B>
+void build_node_type_list(const CmpOp<Op, A, B> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+    build_node_type_list(op.a,l);
+    build_node_type_list(op.b,l);
+}
+
+template<typename Op, typename A, typename B>
+void build_node_type_list(const BinOp<Op, A, B> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+    build_node_type_list(op.a,l);
+    build_node_type_list(op.b,l);
+}
 // for later: bitwidths use bvadd, etc, not + etc
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
@@ -1172,6 +1259,11 @@ void count_terms(const BinOp<Add, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
     increment_term(IRNodeType::Add, m);
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Add, A, B> &op) {
+    return IRNodeType::Add;
 }
 
 template<typename A, typename B>
@@ -1215,6 +1307,11 @@ void count_terms(const BinOp<Sub, A, B> &op, term_map &m) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Sub, A, B> &op) {
+    return IRNodeType::Sub;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
     s << "(" << op.a << " * " << op.b << ")";
     return s;
@@ -1252,6 +1349,11 @@ void count_terms(const BinOp<Mul, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
     increment_term(IRNodeType::Mul, m);
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Mul, A, B> &op) {
+    return IRNodeType::Mul;
 }
 
 template<typename A, typename B>
@@ -1296,6 +1398,11 @@ void count_terms(const BinOp<Div, A, B> &op, term_map &m) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Div, A, B> &op) {
+    return IRNodeType::Div;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<And, A, B> &op) {
     s << "(" << op.a << " && " << op.b << ")";
     return s;
@@ -1333,6 +1440,11 @@ void count_terms(const BinOp<And, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
     increment_term(IRNodeType::And, m);
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<And, A, B> &op) {
+    return IRNodeType::And;
 }
 
 template<typename A, typename B>
@@ -1376,6 +1488,11 @@ void count_terms(const BinOp<Or, A, B> &op, term_map &m) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Or, A, B> &op) {
+    return IRNodeType::Or;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Min, A, B> &op) {
     s << "min(" << op.a << ", " << op.b << ")";
     return s;
@@ -1413,6 +1530,11 @@ void count_terms(const BinOp<Min, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
     increment_term(IRNodeType::Min, m);
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Min, A, B> &op) {
+    return IRNodeType::Min;
 }
 
 template<typename A, typename B>
@@ -1456,6 +1578,11 @@ void count_terms(const BinOp<Max, A, B> &op, term_map &m) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Max, A, B> &op) {
+    return IRNodeType::Max;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<LE, A, B> &op) {
     s << "(" << op.a << " <= " << op.b << ")";
     return s;
@@ -1489,6 +1616,11 @@ void count_terms(const CmpOp<LE, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
     increment_term(IRNodeType::LE, m);
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<LE, A, B> &op) {
+    return IRNodeType::LE;
 }
 
 template<typename A, typename B>
@@ -1527,6 +1659,11 @@ void count_terms(const CmpOp<LT, A, B> &op, term_map &m) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<LT, A, B> &op) {
+    return IRNodeType::LT;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GE, A, B> &op) {
     s << "(" << op.a << " >= " << op.b << ")";
     return s;
@@ -1562,6 +1699,11 @@ void count_terms(const CmpOp<GE, A, B> &op, term_map &m) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<GE, A, B> &op) {
+    return IRNodeType::GE;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
     s << "(" << op.a << " > " << op.b << ")";
     return s;
@@ -1594,6 +1736,11 @@ void count_terms(const CmpOp<GT, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
     increment_term(IRNodeType::GT, m);
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<GT, A, B> &op) {
+    return IRNodeType::GT;
 }
 
 template<typename A, typename B>
@@ -1652,6 +1799,11 @@ void count_terms(const CmpOp<EQ, A, B> &op, term_map &m) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<EQ, A, B> &op) {
+    return IRNodeType::EQ;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
     s << "(" << op.a << " != " << op.b << ")";
     return s;
@@ -1705,6 +1857,11 @@ void count_terms(const CmpOp<NE, A, B> &op, term_map &m) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<NE, A, B> &op) {
+    return IRNodeType::NE;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
     s << "(" << op.a << " % " << op.b << ")";
     return s;
@@ -1743,6 +1900,11 @@ void count_terms(const BinOp<Mod, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
     increment_term(IRNodeType::Mod, m);
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Mod, A, B> &op) {
+    return IRNodeType::Mod;
 }
 
 template<typename A, typename B>
@@ -2323,6 +2485,17 @@ void count_terms(const Intrin<Args...> &op, term_map &m) {
     return;
 }
 
+// what node type to use?
+template<typename... Args>
+IRNodeType get_node_type(const Intrin<Args...> &op) {
+    return IRNodeType::IntImm;
+}
+
+template<typename... Args>
+void build_node_type_list(const Intrin<Args...> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+}
+
 template<typename... Args>
 HALIDE_ALWAYS_INLINE
 auto intrin(Call::ConstString name, Args... args) noexcept -> Intrin<decltype(pattern_arg(args))...> {
@@ -2422,6 +2595,17 @@ template<typename A>
 void count_terms(const NotOp<A> &op, term_map &m) {
     count_terms(op.a, m);
     increment_term(IRNodeType::Not, m);
+}
+
+template<typename A>
+IRNodeType get_node_type(const NotOp<A> &op) {
+    return IRNodeType::Not;
+}
+
+template<typename A>
+void build_node_type_list(const NotOp<A> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+    build_node_type_list(op.a,l);
 }
 
 template<typename C, typename T, typename F>
@@ -2537,6 +2721,19 @@ void count_terms(const SelectOp<C, T, F> &op, term_map &m) {
 }
 
 template<typename C, typename T, typename F>
+IRNodeType get_node_type(const SelectOp<C, T, F> &op) {
+    return IRNodeType::Select;
+}
+
+template<typename C, typename T, typename F>
+void build_node_type_list(const SelectOp<C, T, F> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+    build_node_type_list(op.c,l);
+    build_node_type_list(op.t,l);
+    build_node_type_list(op.f,l);
+}
+
+template<typename C, typename T, typename F>
 HALIDE_ALWAYS_INLINE
 auto select(C c, T t, F f) noexcept -> SelectOp<decltype(pattern_arg(c)), decltype(pattern_arg(t)), decltype(pattern_arg(f))> {
     return {pattern_arg(c), pattern_arg(t), pattern_arg(f)};
@@ -2633,6 +2830,17 @@ template<typename A, bool known_lanes>
 void count_terms(const BroadcastOp<A, known_lanes> &op, term_map &m) {
     count_terms(op.a, m);
     increment_term(IRNodeType::Broadcast, m);
+}
+
+template<typename A, bool known_lanes>
+IRNodeType get_node_type(const BroadcastOp<A, known_lanes> &op) {
+    return IRNodeType::Broadcast;
+}
+
+template<typename A, bool known_lanes>
+void build_node_type_list(const BroadcastOp<A, known_lanes> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+    build_node_type_list(op.a,l);
 }
 
 template<typename A>
@@ -2756,6 +2964,18 @@ void count_terms(const RampOp<A, B, known_lanes> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
     increment_term(IRNodeType::Ramp, m);
+}
+
+template<typename A, typename B, bool known_lanes>
+IRNodeType get_node_type(const RampOp<A, B, known_lanes> &op) {
+    return IRNodeType::Ramp;
+}
+
+template<typename A, typename B, bool known_lanes>
+void build_node_type_list(const RampOp<A, B, known_lanes> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+    build_node_type_list(op.a,l);
+    build_node_type_list(op.b,l);
 }
 
 template<typename A, typename B, bool known_lanes>
@@ -2894,6 +3114,17 @@ void count_terms(const NegateOp<A> &op, term_map &m) {
 }
 
 template<typename A>
+IRNodeType get_node_type(const NegateOp<A> &op) {
+    return IRNodeType::Sub;
+}
+
+template<typename A>
+void build_node_type_list(const NegateOp<A> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+    build_node_type_list(op.a,l);
+}
+
+template<typename A>
 HALIDE_ALWAYS_INLINE
 auto operator-(A a) noexcept -> NegateOp<decltype(pattern_arg(a))> {
     return {pattern_arg(a)};
@@ -2975,9 +3206,20 @@ void build_leaf_vec(const CastOp<A> &op, leaf_vec &v) {
 }
 
 template<typename A>
-void count_terms(const CastOp<A> & op, term_map &m) {
+void count_terms(const CastOp<A> &op, term_map &m) {
     count_terms(op.a, m);
     increment_term(IRNodeType::Cast, m);
+}
+
+template<typename A>
+IRNodeType get_node_type(const CastOp<A> &op) {
+    return IRNodeType::Cast;
+}
+
+template<typename A>
+void build_node_type_list(const CastOp<A> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+    build_node_type_list(op.a,l);
 }
 
 template<typename A>
@@ -3064,6 +3306,16 @@ void build_leaf_vec(const Fold<A> &op, leaf_vec &v) {
 template<typename A>
 void count_terms(const Fold<A> &op, term_map &m) {
     increment_term(IRNodeType::UIntImm, m);
+}
+
+template<typename A>
+IRNodeType get_node_type(const Fold<A> &op) {
+    return IRNodeType::UIntImm;
+}
+
+template<typename A>
+void build_node_type_list(const Fold<A> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
 }
 
 template<typename A>
@@ -3189,6 +3441,15 @@ inline void count_terms(const Indeterminate &op, term_map &m) {
     increment_term(IRNodeType::Variable, m);
 }
 
+// is this the right node type to return?
+inline IRNodeType get_node_type(const Indeterminate &op) {
+    return IRNodeType::Variable;
+}
+
+inline void build_node_type_list(const Indeterminate &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+}
+
 struct Overflow {
     struct pattern_tag {};
 
@@ -3252,6 +3513,15 @@ inline void build_leaf_vec(const Overflow &op, leaf_vec &v) {
 
 inline void count_terms(const Overflow &op, term_map &m) {
     increment_term(IRNodeType::Variable, m);
+}
+
+// is this the right node type to return?
+inline IRNodeType get_node_type(const Overflow &op) {
+    return IRNodeType::Variable;
+}
+
+inline void build_node_type_list(const Overflow &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
 }
 
 template<typename A>
@@ -3334,6 +3604,17 @@ void count_terms(const IsConst<A> &op, term_map &m) {
     increment_term(IRNodeType::Variable, m);
 }
 
+// is this the right node type to return?
+template<typename A>
+IRNodeType get_node_type(const IsConst<A> &op) {
+    return IRNodeType::Variable;
+}
+
+template<typename A>
+void build_node_type_list(const IsConst<A> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+}
+
 template<typename A, typename Prover>
 struct CanProve {
     struct pattern_tag {};
@@ -3407,6 +3688,17 @@ void build_leaf_vec(const CanProve<A, Prover> &op, leaf_vec &v) {
 template<typename A, typename Prover>
 void count_terms(const CanProve<A, Prover> &op, term_map &m) {
     return;
+}
+
+// is this the right node type to return?
+template<typename A, typename Prover>
+IRNodeType get_node_type(const CanProve<A, Prover> &op) {
+    return IRNodeType::Variable;
+}
+
+template<typename A, typename Prover>
+void build_node_type_list(const CanProve<A,Prover> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
 }
 
 template<typename A>
@@ -3487,6 +3779,16 @@ void count_terms(const IsFloat<A> &op, term_map &m) {
     return;
 }
 
+template<typename A>
+IRNodeType get_node_type(const IsFloat<A> &op) {
+    return IRNodeType::UIntImm;
+}
+
+template<typename A>
+void build_node_type_list(const IsFloat<A> &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+}
+
 template<typename Before,
         typename After,
         typename Predicate>
@@ -3500,6 +3802,8 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     build_divisor_set(before, before_divisors);
     std::set<std::string> after_divisors;
     build_divisor_set(after, after_divisors);
+
+
 
     bool new_divisors = false;
 
@@ -3517,11 +3821,25 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     count_terms(before, LHS_term_map);
     count_terms(after, RHS_term_map);
 
-    if (not (term_map_gt(LHS_term_map, RHS_term_map))) {
-        if (LHS_term_map == RHS_term_map) {
-            debug(0) << "!!!! LHS " << before << " RHS " << after  << ": term maps are equivalent\n\n";
-        } else {
-            debug(0) << "!!!! LHS " << before << " RHS " << after << ": term map count ordering is violated\n\n";
+    if (not (LHS_term_map[IRNodeType::Variable] > RHS_term_map[IRNodeType::Variable])) {
+        if (not (term_map_gt(LHS_term_map, RHS_term_map))) {
+            if (LHS_term_map == RHS_term_map) {
+                debug(0) << "!!!! LHS " << before << " RHS " << after  << ": term maps are equivalent\n\n";
+                node_type_list before_node_list;
+                build_node_type_list(before,before_node_list);
+                node_type_list after_node_list;
+                build_node_type_list(after,after_node_list);
+
+                if (before_node_list.size() != after_node_list.size()) {
+                    debug(0) << "!!!!! before list  " << before << " not same size as after list " << after << "\n\n";
+                } else {
+                    if (not (compare_node_type_lists(before_node_list,after_node_list))) {
+                    debug(0) << "!!!! before list " << before << " not greater than after list " << after << "\n\n";
+                    }
+                }
+            } else {
+                debug(0) << "!!!! LHS " << before << " RHS " << after << ": term map LHS greater than RHS\n\n";
+            }
         }
     }
 }

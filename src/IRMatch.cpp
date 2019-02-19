@@ -293,6 +293,57 @@ void increment_term(IRNodeType node_type, term_map &m) {
     }
 }
 
+node_type_ordering nto = {
+   // {IRNodeType::Variable,24},
+    {IRNodeType::Ramp,23},
+    {IRNodeType::Broadcast,22},
+    {IRNodeType::Select,21},
+    {IRNodeType::Div,20},
+    {IRNodeType::Mul,19},
+    {IRNodeType::Mod,18},
+    {IRNodeType::Sub,17},
+    {IRNodeType::Add,16},
+    {IRNodeType::Max,15},
+    {IRNodeType::Min,14},
+    {IRNodeType::Not,13},
+    {IRNodeType::Or,12},
+    {IRNodeType::And,11},
+    {IRNodeType::GE,10},
+    {IRNodeType::GT,9},
+    {IRNodeType::LE,8},
+    {IRNodeType::LT,7},
+    {IRNodeType::NE,6},
+    {IRNodeType::EQ,5},
+    {IRNodeType::Cast,4},
+    {IRNodeType::Variable,3},
+    {IRNodeType::FloatImm,2},
+    {IRNodeType::UIntImm,1},
+    {IRNodeType::IntImm,0}
+};
+
+CompIRNodeTypeStatus compare_node_types(IRNodeType n1, IRNodeType n2) {
+    if (n1 == n2) {
+        return CompIRNodeTypeStatus::EQ;
+    } else if (nto[n1] > nto[n2]) {
+        return CompIRNodeTypeStatus::GT;
+    } else {
+        return CompIRNodeTypeStatus::LT;
+    }
+}
+
+bool compare_node_type_lists(node_type_list before_list, node_type_list after_list) {
+    node_type_list::iterator it_before = before_list.begin();
+    node_type_list::iterator it_after = after_list.begin();
+    while(it_before != before_list.end() && it_after != after_list.end()) {
+        if (*it_before != *it_after) {
+            return compare_node_types(*it_before,*it_after) == CompIRNodeTypeStatus::GT;
+        }
+        ++it_before;
+        ++it_after;
+    }
+    return false;
+}
+
 bool term_map_gt(term_map &m1, term_map &m2) {
     if (m1[IRNodeType::Variable] != m2[IRNodeType::Variable]) {
         return m1[IRNodeType::Variable] > m2[IRNodeType::Variable];
