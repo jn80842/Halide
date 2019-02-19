@@ -1818,6 +1818,7 @@ std::string print_smt2(const CmpOp<NE, A, B> &op, halide_type_t type_hint) {
     } else {
         return "(not (= " + print_smt2(op.a, fresh_type_hint) + " " + print_smt2(op.b, fresh_type_hint) + "))";
     }
+
 }
 
 template<typename A, typename B>
@@ -1864,6 +1865,46 @@ template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
     s << "(" << op.a << " % " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
+    return "(mod " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+}
+
+template<typename A, typename B>
+std::string get_nonzero_assumptions(const BinOp<Mod, A, B> &op) {
+    return get_nonzero_assumptions(op.a) + "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n";
+}
+
+template<typename A, typename B>
+void build_divisor_set(const BinOp<Mod, A, B> &op, std::set<std::string> &divisor_set) {
+    build_divisor_set(op.a, divisor_set);
+    build_divisor_set(op.b, divisor_set);
+    divisor_set.insert(print_smt2(op.b, halide_type_of<int64_t>()));
+}
+
+template<typename A, typename B>
+halide_type_t typecheck(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
+}
+
+template<typename A, typename B>
+void build_variable_map(const BinOp<Mod, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
+    build_variable_map(op.a, varmap, halide_type_of<int64_t>());
+    build_variable_map(op.b, varmap, halide_type_of<int64_t>());
+}
+
+template<typename A, typename B>
+void count_terms(const BinOp<Mod, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Mod, m);
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Mod, A, B> &op) {
+    return IRNodeType::Mod;
 }
 
 template<typename A, typename B>
