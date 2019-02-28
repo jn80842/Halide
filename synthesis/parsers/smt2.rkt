@@ -36,6 +36,8 @@
          [(VAR) $1]
          [(TRUE) "true"]
          [(FALSE) "false"]
+         [(UINT1) "true"]
+         [(UINT0) "false"]
          [(exp EQ exp) (format "(= ~a ~a)" $1 $3)]
          [(MAX OP exp COMMA exp CP) (format "(max ~a ~a)" $3 $5)]
          [(MIN OP exp COMMA exp CP) (format "(min ~a ~a)" $3 $5)]
@@ -53,7 +55,8 @@
          [(exp GE exp) (format "(>= ~a ~a)" $1 $3)]
          [(exp LE exp) (format "(<= ~a ~a)" $1 $3)]
          [(- exp) (prec NEG) (- $2)]
-         [(OP exp CP) $2]))))
+         [(OP exp CP) $2]
+         [(LII exp) $2]))))
 
 (define str "((min((v3*2), ((v4*2) + 1)) + (((v1 + v2)/4)*2)) <= ((((v1 + v2)/4) + v3)*2))")
 

@@ -11,7 +11,7 @@
 (provide halide-lexer evaluate-parser value-tokens op-tokens)
 
 (define-tokens value-tokens (NUM VAR))
-(define-empty-tokens op-tokens (newline OP CP COMMA + - * / % ^ < > ! EQ GE LE EOF NEG OR AND MAX MIN SELECT TRUE FALSE))
+(define-empty-tokens op-tokens (newline OP CP COMMA + - * / % ^ < > ! EQ GE LE EOF NEG OR AND MAX MIN SELECT TRUE FALSE LII UINT1 UINT0))
 
 ;; A hash table to store variable values in for the calculator
 (define vars (make-hash))
@@ -30,10 +30,13 @@
    ;; recursively call the lexer on the remaining input after a tab or space.  Returning the
    ;; result of that operation.  This effectively skips all whitespace.
    [(:or #\tab #\space) (halide-lexer input-port)]
+   ["VERIFYFAILURE" (halide-lexer input-port)] ;; throw away header
    ;; (token-newline) returns 'newline
    [#\newline (token-newline)]
    ;; Since (token-=) returns '=, just return the symbol directly
    [(:or "+" "-" "*" "/" "<" ">" "!" "%") (string->symbol lexeme)]
+   ["(uint1)1" 'UINT1]
+   ["(uint1)0" 'UINT0]
    [">=" 'GE]
    ["<=" 'LE]
    ["==" 'EQ]
@@ -47,6 +50,7 @@
    ["select" 'SELECT]
    ["true" 'TRUE]
    ["false" 'FALSE]
+   ["likely_if_innermost" 'LII]
    ;[(:+ (:or lower-letter upper-letter)) (token-VAR (string->symbol lexeme))]
    [(:: "v" (:+ digit)) (token-VAR (string->symbol lexeme))]
    [(:+ digit) (token-NUM (string->number lexeme))]
@@ -81,6 +85,8 @@
          [(VAR) (hash-ref vars $1 (lambda () 0))]
          [(TRUE) #t]
          [(FALSE) #f]
+         [(UINT1) #t]
+         [(UINT0) #f]
          [(exp EQ exp) (equal? $1 $3)]
          [(MAX OP exp COMMA exp CP) (max $3 $5)]
          [(MIN OP exp COMMA exp CP) (min $3 $5)]
@@ -98,7 +104,8 @@
          [(exp GE exp) (>= $1 $3)]
          [(exp LE exp) (<= $1 $3)]
          [(- exp) (prec NEG) (- $2)]
-         [(OP exp CP) $2]))))
+         [(OP exp CP) $2]
+         [(LII OP exp CP) $3]))))
 
 (define (evaluate-parser p s)
   (let ([ip (open-input-string s)])

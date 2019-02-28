@@ -45,6 +45,8 @@
          [(VAR) (build-variable-set variable-set $1)]
          [(TRUE) "true"]
          [(FALSE) "false"]
+         [(UINT1) "true"]
+         [(UINT0) "false"]
          [(MAX OP exp COMMA exp CP) (format "max(~a,~a)" $3 $5)]
          [(MIN OP exp COMMA exp CP) (format "min(~a,~a)" $3 $5)]
          [(! OP exp CP) (format "!(~a)" $3)]
@@ -62,7 +64,8 @@
          [(exp GE exp) (format "~a>=~a" $1 $3)]
          [(exp LE exp) (format "~a<=~a" $1 $3)]
          [(- exp) (format "-~a" $2)]
-         [(OP exp CP) (format "(~a)" $2)]))))
+         [(OP exp CP) (format "(~a)" $2)]
+         [(LII OP exp CP) (format "~a" $3)]))))
 
 (define (masked-constants s)
   (let ([ip (open-input-string s)])

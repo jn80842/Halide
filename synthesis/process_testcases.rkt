@@ -3,13 +3,15 @@
 (require racket/engine)
 
 (require "lang.rkt")
-(require "sketch.rkt")
-(require "synthesize.rkt")
-(require "parsers/halide-dsl.rkt")
+;;(require "sketch.rkt")
+;;(require "synthesize.rkt")
+;;(require "parsers/halide-dsl.rkt")
 (require "parsers/mask-constants.rkt")
 (require "parsers/smt2.rkt")
 
 (current-bitwidth #f)
+
+(define input-filename "/Users/mpu/research/termrewriting/benchmarks/apps4.txt")
 
 ;(define true-output-file (open-output-file "/Users/jnewcomb/testcases/verify/simplifier_testcases_proven_true" #:exists 'append))
 ;(define not-true-output-file (open-output-file "/Users/jnewcomb/testcases/verify/simplifier_testcases_not_proven_true" #:exists 'append))
@@ -65,13 +67,13 @@
                         "(check-sat)"
                         "(get-model)")) "\n")))
 
-(call-with-input-file "/Users/jnewcomb/testcases/unsimplified.txt"
+(call-with-input-file input-filename
   (λ (f)
     (for/fold ([counter 0])
               ([line (in-lines f)])
       (begin
         (displayln line)
         (displayln (testcase->smt2 line))
-        (call-with-output-file (format "/Users/jnewcomb/testcases/formulas/~a.txt" counter)
+        (call-with-output-file (format "/Users/mpu/research/termrewriting/benchmarks/formulas/~a.smt2" counter)
           (λ (out) (display (testcase->smt2 line) out)))
         (add1 counter)))))
