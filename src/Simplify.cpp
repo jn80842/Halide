@@ -298,6 +298,8 @@ Stmt simplify_exprs(Stmt s) {
 }
 
 bool can_prove(Expr e, const Scope<Interval> &bounds) {
+    Expr orig = e;
+    //debug(0) << "CALLED CAN PROVE\n";
     internal_assert(e.type().is_bool())
         << "Argument to can_prove is not a boolean Expr: " << e << "\n";
 
@@ -316,8 +318,6 @@ bool can_prove(Expr e, const Scope<Interval> &bounds) {
     e = RemoveLikelies().mutate(e);
 
     e = common_subexpression_elimination(e);
-
-    Expr orig = e;
 
     e = simplify(e, true, bounds);
 
@@ -354,6 +354,11 @@ bool can_prove(Expr e, const Scope<Interval> &bounds) {
         } renamer;
 
         e = renamer.mutate(e);
+        Expr renamed_orig = renamer.mutate(orig);
+
+        if (!is_one(e)) {
+            debug(0) << "VERIFYFAILURE " << renamed_orig << "\n";
+        }
 
         // Look for a concrete counter-example with random probing
         static std::mt19937 rng(0);
@@ -382,6 +387,12 @@ bool can_prove(Expr e, const Scope<Interval> &bounds) {
         debug(0) << "Failed to prove, but could not find a counter-example:\n " << e << "\n";
         debug(0) << "Original expression:\n" << orig << "\n";
         return false;
+    }
+
+    if (is_one(e)) {
+        debug(0) << "SIMPLIFIER SUCCESS: " << orig << "\n";
+    } else {
+        debug(0) << "SIMPLIFIER FAIL: " << e << "\n";
     }
 
     return is_one(e);
