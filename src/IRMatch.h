@@ -4089,10 +4089,10 @@ bool evaluate_predicate(Pattern p, MatcherState &state) {
 #define HALIDE_FUZZ_TEST_RULES 0
 
 // isolate z3 verification of rules
-#define HALIDE_VERIFY_SIMPLIFY_RULES 1
+#define HALIDE_VERIFY_SIMPLIFY_RULES 0
 
 // check various properties of rules when they match
-#define HALIDE_CHECK_RULES_PROPERTIES 1
+#define HALIDE_CHECK_RULES_PROPERTIES 0
 
 template<typename Instance>
 struct Rewriter {
