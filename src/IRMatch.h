@@ -1224,7 +1224,12 @@ int get_leaf_count(const CmpOp<Op, A, B> &op) {
 
 template<typename Op, typename A, typename B>
 int get_vector_ops_count(const CmpOp<Op, A, B> &op) {
-    return get_vector_ops_count(op.a) + get_vector_ops_count(op.b);
+    int child_vector_op_count = get_vector_ops_count(op.a) + get_vector_ops_count(op.b);
+    if (child_vector_op_count > 0) {
+        return child_vector_op_count + 1;
+    } else {
+        return 0;
+    }
 }
 
 template<typename Op, typename A, typename B>
@@ -1240,7 +1245,12 @@ int get_leaf_count(const BinOp<Op, A, B> &op) {
 
 template<typename Op, typename A, typename B>
 int get_vector_ops_count(const BinOp<Op, A, B> &op) {
-    return get_vector_ops_count(op.a) + get_vector_ops_count(op.b);
+    int child_vector_op_count = get_vector_ops_count(op.a) + get_vector_ops_count(op.b);
+    if (child_vector_op_count > 0) {
+        return child_vector_op_count + 1;
+    } else {
+        return 0;
+    }
 }
 
 template<typename Op, typename A, typename B>
@@ -2634,7 +2644,12 @@ int get_leaf_count(const NotOp<A> &op) {
 
 template<typename A>
 int get_vector_ops_count(const NotOp<A> &op) {
-    return get_vector_ops_count(op.a);
+    int child_vector_op_count = get_vector_ops_count(op.a);
+    if (child_vector_op_count > 0) {
+        return child_vector_op_count + 1;
+    } else {
+        return 0;
+    }
 }
 
 template<typename A>
@@ -2757,7 +2772,12 @@ int get_leaf_count(const SelectOp<C, T, F> &op) {
 
 template<typename C, typename T, typename F>
 int get_vector_ops_count(const SelectOp<C, T, F> &op) {
-    return get_vector_ops_count(op.c) + get_vector_ops_count(op.t) + get_vector_ops_count(op.f);
+    int child_vector_op_count = get_vector_ops_count(op.c) + get_vector_ops_count(op.t) + get_vector_ops_count(op.f);
+    if (child_vector_op_count > 0) {
+        return child_vector_op_count + 1;
+    } else {
+        return 0;
+    }
 }
 
 template<typename C, typename T, typename F>
@@ -3176,7 +3196,12 @@ int get_leaf_count(const NegateOp<A> &op) {
 
 template<typename A>
 int get_vector_ops_count(const NegateOp<A> &op) {
-    return get_vector_ops_count(op.a);
+    int child_vector_op_count = get_vector_ops_count(op.a);
+    if (child_vector_op_count > 0) {
+        return child_vector_op_count + 1;
+    } else {
+        return 0;
+    }
 }
 
 template<typename A>
@@ -3279,6 +3304,7 @@ int get_leaf_count(const CastOp<A> &op) {
     return get_leaf_count(op.a);
 }
 
+// possible to cast from vector op to non vector op?
 template<typename A>
 int get_vector_ops_count(const CastOp<A> &op) {
     return get_vector_ops_count(op.a);
@@ -3472,7 +3498,12 @@ int get_leaf_count(const Overflows<A> &op) {
 
 template<typename A>
 int get_vector_ops_count(const Overflows<A> &op) {
-    return get_vector_ops_count(op.a);
+    int child_vector_op_count = get_vector_ops_count(op.a);
+    if (child_vector_op_count > 0) {
+        return child_vector_op_count + 1;
+    } else {
+        return 0;
+    }
 }
 
 struct Indeterminate {
@@ -3700,7 +3731,12 @@ int get_leaf_count(const IsConst<A> &op) {
 
 template<typename A>
 int get_vector_ops_count(const IsConst<A> &op) {
-    return get_vector_ops_count(op.a);
+    int child_vector_op_count = get_vector_ops_count(op.a);
+    if (child_vector_op_count > 0) {
+        return child_vector_op_count + 1;
+    } else {
+        return 0;
+    }
 }
 
 template<typename A>
