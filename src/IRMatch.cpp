@@ -285,6 +285,69 @@ bool expr_match(Expr pattern, Expr expr, map<string, Expr> &matches) {
 
 namespace IRMatcher {
 
+void update_bfs_node_type_map(bfs_node_type_map &type_map, IRNodeType t, int current_depth) {
+    if (type_map.count(current_depth) == 0) {
+        std::list<IRNodeType> l = {t};
+        type_map.insert({current_depth, l});
+    } else {
+        type_map[current_depth].push_back(t);
+    }
+}
+
+node_type_strings node_type_string_lookup = {
+    {IRNodeType::Ramp,"Ramp "},
+    {IRNodeType::Broadcast,"Broadcast "},
+    {IRNodeType::Select,"Select "},
+    {IRNodeType::Div,"Div "},
+    {IRNodeType::Mul,"Mul "},
+    {IRNodeType::Mod,"Mod "},
+    {IRNodeType::Sub,"Sub "},
+    {IRNodeType::Add,"Add "},
+    {IRNodeType::Max,"Max "},
+    {IRNodeType::Min,"Min "},
+    {IRNodeType::Not,"No "},
+    {IRNodeType::Or,"Or "},
+    {IRNodeType::And,"And "},
+    {IRNodeType::GE,"GE "},
+    {IRNodeType::GT,"GT "},
+    {IRNodeType::LE,"LE "},
+    {IRNodeType::LT,"LT "},
+    {IRNodeType::NE,"NE "},
+    {IRNodeType::EQ,"EQ "},
+    {IRNodeType::Cast,"Cast "},
+    {IRNodeType::Variable,"Variable "},
+    {IRNodeType::FloatImm,"FloatImm "},
+    {IRNodeType::UIntImm,"UIntImm "},
+    {IRNodeType::IntImm,"IntImm "}
+};
+
+std::string print_bfs_node_type_map(bfs_node_type_map &type_map) {
+    std::string retval;
+    for (unsigned long i=0; i<type_map.size(); i++) {
+        retval += std::to_string(i);
+         for (auto it = type_map[i].cbegin(); it != type_map[i].cend(); it++)
+            retval += node_type_string_lookup[*it];
+    }
+    return retval;
+}
+
+CompIRNodeTypeStatus compare_bfs_node_type_maps(bfs_node_type_map &map1, bfs_node_type_map &map2) {
+    int map_size;
+    if (map1.size() > map2.size()) {
+        map_size = map2.size();
+    } else {
+        map_size = map1.size();
+    }
+    for (int i=0; i<map_size; i++) {
+        for(auto it1 = map1[i].begin(), it2 = map2[i].begin(); it1 != map1[i].end() || it2 != map2[i].end(); ++it1, ++it2) {
+            if (not (compare_node_types(*it1, *it2) == CompIRNodeTypeStatus::EQ)) {
+                return compare_node_types(*it1, *it2);
+            }
+        }
+    }
+    return CompIRNodeTypeStatus::EQ;
+}
+
 void increment_term(IRNodeType node_type, term_map &m) {
     if (m.count(node_type) == 0) {
         m[node_type] = 1;
@@ -292,6 +355,8 @@ void increment_term(IRNodeType node_type, term_map &m) {
         m[node_type] = m[node_type] + 1;
     }
 }
+
+
 
 node_type_ordering nto = {
    // {IRNodeType::Variable,24},
@@ -303,7 +368,7 @@ node_type_ordering nto = {
     {IRNodeType::Mod,18},
     {IRNodeType::Sub,17},
     {IRNodeType::Add,16},
-    {IRNodeType::Max,15},
+    {IRNodeType::Max,14},
     {IRNodeType::Min,14},
     {IRNodeType::Not,13},
     {IRNodeType::Or,12},
@@ -322,7 +387,7 @@ node_type_ordering nto = {
 };
 
 CompIRNodeTypeStatus compare_node_types(IRNodeType n1, IRNodeType n2) {
-    if (n1 == n2) {
+    if (nto[n1] == nto[n2]) {
         return CompIRNodeTypeStatus::EQ;
     } else if (nto[n1] > nto[n2]) {
         return CompIRNodeTypeStatus::GT;

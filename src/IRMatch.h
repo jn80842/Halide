@@ -76,7 +76,13 @@ typedef std::map<std::string, halide_type_t> variable_map;
 typedef std::map<IRNodeType, int> term_map;
 typedef std::vector<int> leaf_vec;
 typedef std::map<IRNodeType, int> node_type_ordering;
+typedef std::map<IRNodeType, std::string> node_type_strings;
 typedef std::list<IRNodeType> node_type_list;
+typedef std::map<int, std::list<IRNodeType>> bfs_node_type_map;
+
+void update_bfs_node_type_map(bfs_node_type_map &type_map, IRNodeType t, int current_depth);
+std::string print_bfs_node_type_map(bfs_node_type_map &type_map);
+
 
 void increment_term(IRNodeType node_type, term_map &m);
 bool term_map_gt(term_map &m1, term_map &m2);
@@ -87,6 +93,8 @@ enum class CompIRNodeTypeStatus {
 
 CompIRNodeTypeStatus compare_node_types(IRNodeType n1, IRNodeType n2);
 bool compare_node_type_lists(node_type_list before_list, node_type_list after_list);
+
+CompIRNodeTypeStatus compare_bfs_node_type_maps(bfs_node_type_map &map1, bfs_node_type_map &map2);
 
 /** To save stack space, the matcher objects are largely stateless and
  * immutable. This state object is built up during matching and then
@@ -267,6 +275,10 @@ inline int get_vector_ops_count(SpecificExpr e) {
     return 0;
 }
 
+inline void build_bfs_type_map(SpecificExpr e, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map,IRNodeType::UIntImm,current_depth);
+}
+
 inline void count_terms(SpecificExpr e, term_map &m) {
     return;
 }
@@ -368,6 +380,11 @@ int get_leaf_count(const WildConstInt<i> &c) {
 template<int i>
 int get_vector_ops_count(const WildConstInt<i> &c) {
     return 0;
+}
+
+template<int i>
+void build_bfs_type_map(const WildConstInt<i> &c, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map,IRNodeType::IntImm,current_depth);
 }
 
 template<int i>
@@ -482,6 +499,11 @@ int get_vector_ops_count(const WildConstUInt<i> &c) {
 }
 
 template<int i>
+void build_bfs_type_map(const WildConstUInt<i> &c, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, IRNodeType::UIntImm, current_depth);
+}
+
+template<int i>
 void count_terms(const WildConstUInt<i> &c, term_map &m) {
     increment_term(IRNodeType::UIntImm, m);
 }
@@ -590,6 +612,11 @@ int get_vector_ops_count(const WildConstFloat<i> &c) {
 }
 
 template<int i>
+void build_bfs_type_map(const WildConstFloat<i> &c, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, IRNodeType::FloatImm, current_depth);
+}
+
+template<int i>
 void count_terms(const WildConstFloat<i> &c, term_map &m) {
     increment_term(IRNodeType::FloatImm, m);
 }
@@ -693,6 +720,11 @@ int get_leaf_count(const WildConst<i> &c) {
 template<int i>
 int get_vector_ops_count(const WildConst<i> &c) {
     return 0;
+}
+
+template<int i>
+void build_bfs_type_map(const WildConst<i> &c, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, IRNodeType::UIntImm, current_depth);
 }
 
 // since numeric type is unknown here, choose the strongest term
@@ -826,6 +858,11 @@ int get_leaf_count(const Wild<i> &op) {
 template<int i>
 int get_vector_ops_count(const Wild<i> &op) {
     return 0;
+}
+
+template<int i>
+void build_bfs_type_map(const Wild<i> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, IRNodeType::Variable, current_depth);
 }
 
 template<int i>
@@ -991,6 +1028,10 @@ inline int get_leaf_count(const Const &op) {
 
 inline int get_vector_ops_count(const Const &op) {
     return 0;
+}
+
+inline void build_bfs_type_map(const Const &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, IRNodeType::UIntImm, current_depth);
 }
 
 // since type is not known, choose strongest term type
@@ -1233,6 +1274,13 @@ int get_vector_ops_count(const CmpOp<Op, A, B> &op) {
 }
 
 template<typename Op, typename A, typename B>
+void build_bfs_type_map(const CmpOp<Op, A, B> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
+    build_bfs_type_map(op.b, type_map, current_depth + 1);
+}
+
+template<typename Op, typename A, typename B>
 void build_leaf_vec(const CmpOp<Op, A, B> &op, leaf_vec &v) {
     build_leaf_vec(op.a, v);
     build_leaf_vec(op.b, v);
@@ -1251,6 +1299,13 @@ int get_vector_ops_count(const BinOp<Op, A, B> &op) {
     } else {
         return 0;
     }
+}
+
+template<typename Op, typename A, typename B>
+void build_bfs_type_map(const BinOp<Op, A, B> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
+    build_bfs_type_map(op.b, type_map, current_depth + 1);
 }
 
 template<typename Op, typename A, typename B>
@@ -2530,6 +2585,11 @@ int get_vector_ops_count(const Intrin<Args...> &op) {
 }
 
 template<typename... Args>
+void build_bfs_type_map(const Intrin<Args...> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, IRNodeType::IntImm, current_depth);
+}
+
+template<typename... Args>
 void build_variable_map(const Intrin<Args...> &op, variable_map &varmap, halide_type_t type_hint) {
     return;
 }
@@ -2650,6 +2710,12 @@ int get_vector_ops_count(const NotOp<A> &op) {
     } else {
         return 0;
     }
+}
+
+template<typename A>
+void build_bfs_type_map(const NotOp<A> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
 }
 
 template<typename A>
@@ -2781,6 +2847,14 @@ int get_vector_ops_count(const SelectOp<C, T, F> &op) {
 }
 
 template<typename C, typename T, typename F>
+void build_bfs_type_map(const SelectOp<C, T, F> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.c, type_map, current_depth + 1);
+    build_bfs_type_map(op.t, type_map, current_depth + 1);
+    build_bfs_type_map(op.f, type_map, current_depth + 1);
+}
+
+template<typename C, typename T, typename F>
 void build_variable_map(const SelectOp<C, T, F> &op, variable_map &varmap, halide_type_t type_hint) {
     type_hint = typecheck(op, type_hint);
     build_variable_map(op.c, varmap, halide_type_of<bool>());
@@ -2902,6 +2976,12 @@ int get_leaf_count(const BroadcastOp<A, known_lanes> &op) {
 template<typename A, bool known_lanes>
 int get_vector_ops_count(const BroadcastOp<A, known_lanes> &op) {
     return get_vector_ops_count(op.a) + 1;
+}
+
+template<typename A, bool known_lanes>
+void build_bfs_type_map(const BroadcastOp<A, known_lanes> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
 }
 
 template<typename A, bool known_lanes>
@@ -3084,6 +3164,13 @@ int get_vector_ops_count(const RampOp<A, B, known_lanes> &op) {
     return get_vector_ops_count(op.a) + get_vector_ops_count(op.b) + 1;
 }
 
+template<typename A, typename B, bool known_lanes>
+void build_bfs_type_map(const RampOp<A, B, known_lanes> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
+    build_bfs_type_map(op.b, type_map, current_depth + 1);
+}
+
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const RampOp<A, B, false> &op) {
     s << "ramp(" << op.a << ", " << op.b << ")";
@@ -3205,6 +3292,12 @@ int get_vector_ops_count(const NegateOp<A> &op) {
 }
 
 template<typename A>
+void build_bfs_type_map(const NegateOp<A> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
+}
+
+template<typename A>
 void build_variable_map(const NegateOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
 }
@@ -3311,6 +3404,12 @@ int get_vector_ops_count(const CastOp<A> &op) {
 }
 
 template<typename A>
+void build_bfs_type_map(const CastOp<A> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
+}
+
+template<typename A>
 void build_variable_map(const CastOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
 }
@@ -3413,6 +3512,12 @@ int get_vector_ops_count(const Fold<A> &op) {
 }
 
 template<typename A>
+void build_bfs_type_map(const Fold<A> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
+}
+
+template<typename A>
 void build_variable_map(const Fold<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
 }
@@ -3506,6 +3611,12 @@ int get_vector_ops_count(const Overflows<A> &op) {
     }
 }
 
+template<typename A>
+void build_bfs_type_map(const Overflows<A> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
+}
+
 struct Indeterminate {
     struct pattern_tag {};
 
@@ -3563,6 +3674,10 @@ inline int get_leaf_count(const Indeterminate &op) {
 
 inline int get_vector_ops_count(const Indeterminate &op) {
     return 0;
+}
+
+inline void build_bfs_type_map(const Indeterminate &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, IRNodeType::Variable, current_depth);
 }
 
 inline void build_variable_map(const Indeterminate &op, variable_map &varmap, halide_type_t type_hint) {
@@ -3643,6 +3758,10 @@ inline int get_leaf_count(const Overflow &op) {
 
 inline int get_vector_ops_count(const Overflow &op) {
     return 0;
+}
+
+inline void build_bfs_type_map(const Overflow &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, IRNodeType::Variable, current_depth);
 }
 
 inline void build_variable_map(const Overflow &op, variable_map &varmap, halide_type_t type_hint) {
@@ -3740,6 +3859,12 @@ int get_vector_ops_count(const IsConst<A> &op) {
 }
 
 template<typename A>
+void build_bfs_type_map(const IsConst<A> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
+}
+
+template<typename A>
 void build_variable_map(const IsConst<A> &op, variable_map &varmap, halide_type_t type_hint) {
     halide_type_t fresh_type_hint;
     build_variable_map(op.a, varmap, fresh_type_hint);
@@ -3828,6 +3953,12 @@ int get_leaf_count(const CanProve<A, Prover> &op) {
 template<typename A, typename Prover>
 int get_vector_ops_count(const CanProve<A, Prover> &op) {
     return 0;
+}
+
+template<typename A, typename Prover>
+void build_bfs_type_map(const CanProve<A, Prover> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
 }
 
 template<typename A, typename Prover>
@@ -3925,6 +4056,12 @@ int get_vector_ops_count(const IsFloat<A> &op) {
 }
 
 template<typename A>
+void build_bfs_type_map(const IsFloat<A> &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
+    build_bfs_type_map(op.a, type_map, current_depth + 1);
+}
+
+template<typename A>
 void build_variable_map(const IsFloat<A> &op, variable_map &varmap, halide_type_t type_hint) {
     halide_type_t fresh_type_hint;
     build_variable_map(op.a, varmap, fresh_type_hint);
@@ -3987,17 +4124,28 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     int before_vector_count = get_vector_ops_count(before);
     int after_vector_count = get_vector_ops_count(after);
 
+    bfs_node_type_map LHS_node_type_map;
+    bfs_node_type_map RHS_node_type_map;
+
+    build_bfs_type_map(before, LHS_node_type_map, 0);
+    build_bfs_type_map(after, RHS_node_type_map, 0);
+
+ //   debug(0) << "LHS " << before << " " << print_bfs_node_type_map(LHS_node_type_map) << "\n";
+
     if (before_vector_count > after_vector_count) {
         debug(0) << "VECTOR OP SUCCESS: LHS " << before_vector_count << ": " << before << " RHS " << after_vector_count << ": " << after << "\n";
     } else if (LHS_term_map[IRNodeType::Variable] > RHS_term_map[IRNodeType::Variable]) {
         debug(0) << "WILD CARD COUNT SUCCESS: " << LHS_term_map[IRNodeType::Variable] << " -> " << RHS_term_map[IRNodeType::Variable] << " LHS " << before << " RHS " << after << "\n";
     } else if (term_map_gt(LHS_term_map,RHS_term_map)) {
         debug(0) << "HISTO COUNT SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
-    } else if (LHS_term_map == RHS_term_map) {
-        debug(0) << "HISTO COUNT FAIL EQ: " << " LHS " << before << " RHS " << after << "\n";
+    } else if (compare_bfs_node_type_maps(LHS_node_type_map,RHS_node_type_map) == CompIRNodeTypeStatus::GT) {
+        debug(0) << "BFS TRAVERSAL SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
+    } else if (compare_bfs_node_type_maps(LHS_node_type_map,RHS_node_type_map) == CompIRNodeTypeStatus::EQ) {
+        debug(0) << "BFS TRAVERSAL EQUAL: " << " LHS " << before << " RHS " << after << "\n";
     } else {
-        debug(0) << "ORDERING FAIL: " << " LHS " << before << " RHS " << after << "\n";
+        debug(0) << "ORDERING FAILURE: LHS" << before << " RHS " << after << "\n";
     }
+
 /*
     if (not (LHS_term_map[IRNodeType::Variable] > RHS_term_map[IRNodeType::Variable])) {
         if (not (term_map_gt(LHS_term_map, RHS_term_map))) {
