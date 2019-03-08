@@ -4134,10 +4134,10 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
 
     if (before_vector_count > after_vector_count) {
         debug(0) << "VECTOR OP SUCCESS: LHS " << before_vector_count << ": " << before << " RHS " << after_vector_count << ": " << after << "\n";
-    } else if (LHS_term_map[IRNodeType::Variable] > RHS_term_map[IRNodeType::Variable]) {
-        debug(0) << "WILD CARD COUNT SUCCESS: " << LHS_term_map[IRNodeType::Variable] << " -> " << RHS_term_map[IRNodeType::Variable] << " LHS " << before << " RHS " << after << "\n";
+  //  } else if (LHS_term_map[IRNodeType::Variable] > RHS_term_map[IRNodeType::Variable]) {
+  //      debug(0) << "WILD CARD COUNT SUCCESS: " << LHS_term_map[IRNodeType::Variable] << " -> " << RHS_term_map[IRNodeType::Variable] << " LHS " << before << " RHS " << after << "\n";
     } else if (term_map_gt(LHS_term_map,RHS_term_map)) {
-        debug(0) << "HISTO COUNT SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
+        debug(0) << "HISTO COUNT SUCCESS!: " << " LHS " << before << " RHS " << after << "\n";
     } else if (compare_bfs_node_type_maps(LHS_node_type_map,RHS_node_type_map) == CompIRNodeTypeStatus::GT) {
         debug(0) << "BFS TRAVERSAL SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
     } else if (compare_bfs_node_type_maps(LHS_node_type_map,RHS_node_type_map) == CompIRNodeTypeStatus::EQ) {

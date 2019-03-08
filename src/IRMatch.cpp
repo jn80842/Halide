@@ -380,7 +380,7 @@ node_type_ordering nto = {
     {IRNodeType::NE,6},
     {IRNodeType::EQ,5},
     {IRNodeType::Cast,4},
-    {IRNodeType::Variable,3},
+  //  {IRNodeType::Variable,3},
     {IRNodeType::FloatImm,2},
     {IRNodeType::UIntImm,1},
     {IRNodeType::IntImm,0}
