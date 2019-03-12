@@ -275,6 +275,10 @@ inline int get_vector_ops_count(SpecificExpr e) {
     return 0;
 }
 
+inline bool is_vector_term(SpecificExpr e) {
+    return false;
+}
+
 inline void build_bfs_type_map(SpecificExpr e, bfs_node_type_map &type_map, int current_depth) {
     update_bfs_node_type_map(type_map,IRNodeType::UIntImm,current_depth);
 }
@@ -380,6 +384,11 @@ int get_leaf_count(const WildConstInt<i> &c) {
 template<int i>
 int get_vector_ops_count(const WildConstInt<i> &c) {
     return 0;
+}
+
+template<int i>
+bool is_vector_term(const WildConstInt<i> &c) {
+    return false;
 }
 
 template<int i>
@@ -499,6 +508,11 @@ int get_vector_ops_count(const WildConstUInt<i> &c) {
 }
 
 template<int i>
+bool is_vector_term(const WildConstUInt<i> &c) {
+    return false;
+}
+
+template<int i>
 void build_bfs_type_map(const WildConstUInt<i> &c, bfs_node_type_map &type_map, int current_depth) {
     update_bfs_node_type_map(type_map, IRNodeType::UIntImm, current_depth);
 }
@@ -612,6 +626,11 @@ int get_vector_ops_count(const WildConstFloat<i> &c) {
 }
 
 template<int i>
+bool is_vector_term(const WildConstFloat<i> &c) {
+    return false;
+}
+
+template<int i>
 void build_bfs_type_map(const WildConstFloat<i> &c, bfs_node_type_map &type_map, int current_depth) {
     update_bfs_node_type_map(type_map, IRNodeType::FloatImm, current_depth);
 }
@@ -720,6 +739,11 @@ int get_leaf_count(const WildConst<i> &c) {
 template<int i>
 int get_vector_ops_count(const WildConst<i> &c) {
     return 0;
+}
+
+template<int i>
+bool is_vector_term(const WildConst<i> &c) {
+    return false;
 }
 
 template<int i>
@@ -858,6 +882,11 @@ int get_leaf_count(const Wild<i> &op) {
 template<int i>
 int get_vector_ops_count(const Wild<i> &op) {
     return 0;
+}
+
+template<int i>
+bool is_vector_term(const Wild<i> &op) {
+    return false;
 }
 
 template<int i>
@@ -1028,6 +1057,10 @@ inline int get_leaf_count(const Const &op) {
 
 inline int get_vector_ops_count(const Const &op) {
     return 0;
+}
+
+inline bool is_vector_term(const Const &op) {
+    return false;
 }
 
 inline void build_bfs_type_map(const Const &op, bfs_node_type_map &type_map, int current_depth) {
@@ -1265,12 +1298,22 @@ int get_leaf_count(const CmpOp<Op, A, B> &op) {
 
 template<typename Op, typename A, typename B>
 int get_vector_ops_count(const CmpOp<Op, A, B> &op) {
-    int child_vector_op_count = get_vector_ops_count(op.a) + get_vector_ops_count(op.b);
+  /*  int child_vector_op_count = get_vector_ops_count(op.a) + get_vector_ops_count(op.b);
     if (child_vector_op_count > 0) {
         return child_vector_op_count + 1;
     } else {
         return 0;
+    } */
+    int op_val = 0;
+    if (is_vector_term(op.a) || is_vector_term(op.b)) {
+        op_val = 1;
     }
+    return get_vector_ops_count(op.a) + get_vector_ops_count(op.b) + op_val;
+}
+
+template<typename Op, typename A, typename B>
+bool is_vector_term(const CmpOp<Op, A, B> &op) {
+    return is_vector_term(op.a) || is_vector_term(op.b);
 }
 
 template<typename Op, typename A, typename B>
@@ -1293,12 +1336,22 @@ int get_leaf_count(const BinOp<Op, A, B> &op) {
 
 template<typename Op, typename A, typename B>
 int get_vector_ops_count(const BinOp<Op, A, B> &op) {
-    int child_vector_op_count = get_vector_ops_count(op.a) + get_vector_ops_count(op.b);
+  /*  int child_vector_op_count = get_vector_ops_count(op.a) + get_vector_ops_count(op.b);
     if (child_vector_op_count > 0) {
         return child_vector_op_count + 1;
     } else {
         return 0;
+    } */
+    int op_val = 0;
+    if (is_vector_term(op.a) || is_vector_term(op.b)) {
+        op_val = 1;
     }
+    return get_vector_ops_count(op.a) + get_vector_ops_count(op.b) + op_val;
+}
+
+template<typename Op, typename A, typename B>
+bool is_vector_term(const BinOp<Op, A, B> &op) {
+    return is_vector_term(op.a) || is_vector_term(op.b);
 }
 
 template<typename Op, typename A, typename B>
@@ -2585,6 +2638,11 @@ int get_vector_ops_count(const Intrin<Args...> &op) {
 }
 
 template<typename... Args>
+bool is_vector_term(const Intrin<Args...> &op) {
+    return false;
+}
+
+template<typename... Args>
 void build_bfs_type_map(const Intrin<Args...> &op, bfs_node_type_map &type_map, int current_depth) {
     update_bfs_node_type_map(type_map, IRNodeType::IntImm, current_depth);
 }
@@ -2704,12 +2762,22 @@ int get_leaf_count(const NotOp<A> &op) {
 
 template<typename A>
 int get_vector_ops_count(const NotOp<A> &op) {
-    int child_vector_op_count = get_vector_ops_count(op.a);
+  /*  int child_vector_op_count = get_vector_ops_count(op.a);
     if (child_vector_op_count > 0) {
         return child_vector_op_count + 1;
     } else {
         return 0;
+    } */
+    int op_val = 0;
+    if (is_vector_term(op.a)) {
+        op_val = 1;
     }
+    return get_vector_ops_count(op.a) + op_val;
+}
+
+template<typename A>
+bool is_vector_term(const NotOp<A> &op) {
+    return is_vector_term(op.a);
 }
 
 template<typename A>
@@ -2838,12 +2906,22 @@ int get_leaf_count(const SelectOp<C, T, F> &op) {
 
 template<typename C, typename T, typename F>
 int get_vector_ops_count(const SelectOp<C, T, F> &op) {
-    int child_vector_op_count = get_vector_ops_count(op.c) + get_vector_ops_count(op.t) + get_vector_ops_count(op.f);
+   /* int child_vector_op_count = get_vector_ops_count(op.c) + get_vector_ops_count(op.t) + get_vector_ops_count(op.f);
     if (child_vector_op_count > 0) {
         return child_vector_op_count + 1;
     } else {
         return 0;
+    } */
+    int op_val = 0;
+    if (is_vector_term(op.c) || is_vector_term(op.t) || is_vector_term(op.f)) {
+        op_val = 1;
     }
+    return get_vector_ops_count(op.c) + get_vector_ops_count(op.t) + get_vector_ops_count(op.f) + op_val;
+}
+
+template<typename C, typename T, typename F>
+bool is_vector_term(const SelectOp<C, T, F> &op) {
+    return is_vector_term(op.c) || is_vector_term(op.t) || is_vector_term(op.f);
 }
 
 template<typename C, typename T, typename F>
@@ -2975,7 +3053,13 @@ int get_leaf_count(const BroadcastOp<A, known_lanes> &op) {
 
 template<typename A, bool known_lanes>
 int get_vector_ops_count(const BroadcastOp<A, known_lanes> &op) {
-    return get_vector_ops_count(op.a) + 1;
+    //return get_vector_ops_count(op.a);
+    return 0;
+}
+
+template<typename A, bool known_lanes>
+bool is_vector_term(const BroadcastOp<A, known_lanes> &op) {
+    return true;
 }
 
 template<typename A, bool known_lanes>
@@ -3161,7 +3245,13 @@ int get_leaf_count(const RampOp<A, B, known_lanes> &op) {
 
 template<typename A, typename B, bool known_lanes>
 int get_vector_ops_count(const RampOp<A, B, known_lanes> &op) {
-    return get_vector_ops_count(op.a) + get_vector_ops_count(op.b) + 1;
+   // return get_vector_ops_count(op.a) + get_vector_ops_count(op.b) + 1;
+    return 0;
+}
+
+template<typename A, typename B, bool known_lanes>
+bool is_vector_term(const RampOp<A, B, known_lanes> &op) {
+    return true;
 }
 
 template<typename A, typename B, bool known_lanes>
@@ -3283,12 +3373,22 @@ int get_leaf_count(const NegateOp<A> &op) {
 
 template<typename A>
 int get_vector_ops_count(const NegateOp<A> &op) {
-    int child_vector_op_count = get_vector_ops_count(op.a);
+   /* int child_vector_op_count = get_vector_ops_count(op.a);
     if (child_vector_op_count > 0) {
         return child_vector_op_count + 1;
     } else {
         return 0;
+    } */
+    int op_val = 0;
+    if (is_vector_term(op.a)) {
+        op_val = 1;
     }
+    return get_vector_ops_count(op.a) + op_val;
+}
+
+template<typename A>
+bool is_vector_term(const NegateOp<A> &op) {
+    return is_vector_term(op.a);
 }
 
 template<typename A>
@@ -3404,6 +3504,11 @@ int get_vector_ops_count(const CastOp<A> &op) {
 }
 
 template<typename A>
+bool is_vector_term(const CastOp<A> &op) {
+    return is_vector_term(op.a);
+}
+
+template<typename A>
 void build_bfs_type_map(const CastOp<A> &op, bfs_node_type_map &type_map, int current_depth) {
     update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
     build_bfs_type_map(op.a, type_map, current_depth + 1);
@@ -3512,6 +3617,11 @@ int get_vector_ops_count(const Fold<A> &op) {
 }
 
 template<typename A>
+bool is_vector_term(const Fold<A> &op) {
+    return false;
+}
+
+template<typename A>
 void build_bfs_type_map(const Fold<A> &op, bfs_node_type_map &type_map, int current_depth) {
     update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
     build_bfs_type_map(op.a, type_map, current_depth + 1);
@@ -3603,12 +3713,22 @@ int get_leaf_count(const Overflows<A> &op) {
 
 template<typename A>
 int get_vector_ops_count(const Overflows<A> &op) {
-    int child_vector_op_count = get_vector_ops_count(op.a);
+   /* int child_vector_op_count = get_vector_ops_count(op.a);
     if (child_vector_op_count > 0) {
         return child_vector_op_count + 1;
     } else {
         return 0;
+    } */
+    int op_val = 0;
+    if (is_vector_term(op.a)) {
+        op_val = 1;
     }
+    return get_vector_ops_count(op.a) + op_val;
+}
+
+template<typename A>
+bool is_vector_term(const Overflows<A> &op) {
+    return is_vector_term(op.a);
 }
 
 template<typename A>
@@ -3674,6 +3794,10 @@ inline int get_leaf_count(const Indeterminate &op) {
 
 inline int get_vector_ops_count(const Indeterminate &op) {
     return 0;
+}
+
+inline bool is_vector_term(const Indeterminate &op) {
+    return false;
 }
 
 inline void build_bfs_type_map(const Indeterminate &op, bfs_node_type_map &type_map, int current_depth) {
@@ -3758,6 +3882,10 @@ inline int get_leaf_count(const Overflow &op) {
 
 inline int get_vector_ops_count(const Overflow &op) {
     return 0;
+}
+
+inline bool is_vector_term(const Overflow &op) {
+    return false;
 }
 
 inline void build_bfs_type_map(const Overflow &op, bfs_node_type_map &type_map, int current_depth) {
@@ -3850,12 +3978,18 @@ int get_leaf_count(const IsConst<A> &op) {
 
 template<typename A>
 int get_vector_ops_count(const IsConst<A> &op) {
-    int child_vector_op_count = get_vector_ops_count(op.a);
+  /*  int child_vector_op_count = get_vector_ops_count(op.a);
     if (child_vector_op_count > 0) {
         return child_vector_op_count + 1;
     } else {
         return 0;
-    }
+    } */
+    return 0;
+}
+
+template<typename A>
+bool is_vector_term(const IsConst<A> &op) {
+    return false;
 }
 
 template<typename A>
@@ -3953,6 +4087,11 @@ int get_leaf_count(const CanProve<A, Prover> &op) {
 template<typename A, typename Prover>
 int get_vector_ops_count(const CanProve<A, Prover> &op) {
     return 0;
+}
+
+template<typename A, typename Prover>
+bool is_vector_term(const CanProve<A, Prover> &op) {
+    return false;
 }
 
 template<typename A, typename Prover>
@@ -4056,6 +4195,11 @@ int get_vector_ops_count(const IsFloat<A> &op) {
 }
 
 template<typename A>
+bool is_vector_term(const IsFloat<A> &op) {
+    return false;
+}
+
+template<typename A>
 void build_bfs_type_map(const IsFloat<A> &op, bfs_node_type_map &type_map, int current_depth) {
     update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
     build_bfs_type_map(op.a, type_map, current_depth + 1);
@@ -4121,8 +4265,16 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     count_terms(before, LHS_term_map);
     count_terms(after, RHS_term_map);
 
+    if (term_map_gt(LHS_term_map,RHS_term_map)) {
+        debug(0) << "HISTO COUNT SUCCESS!: " << " LHS " << before << " RHS " << after << "\n";
+    } else {
+        debug(0) << "ORDERING FAILURE: LHS" << before << " RHS " << after << "\n";
+    }
+/*
     int before_vector_count = get_vector_ops_count(before);
     int after_vector_count = get_vector_ops_count(after);
+
+
 
     bfs_node_type_map LHS_node_type_map;
     bfs_node_type_map RHS_node_type_map;
@@ -4145,7 +4297,7 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     } else {
         debug(0) << "ORDERING FAILURE: LHS" << before << " RHS " << after << "\n";
     }
-
+*/
 /*
     if (not (LHS_term_map[IRNodeType::Variable] > RHS_term_map[IRNodeType::Variable])) {
         if (not (term_map_gt(LHS_term_map, RHS_term_map))) {
