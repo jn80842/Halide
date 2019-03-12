@@ -267,8 +267,8 @@ inline halide_type_t typecheck(SpecificExpr e, halide_type_t type_hint) {
     return type_hint;
 }
 
-inline int get_leaf_count(SpecificExpr e) {
-    return 1;
+inline int get_variable_count(SpecificExpr e) {
+    return 0;
 }
 
 inline int get_vector_ops_count(SpecificExpr e) {
@@ -377,8 +377,8 @@ halide_type_t typecheck(const WildConstInt<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-int get_leaf_count(const WildConstInt<i> &c) {
-    return 1;
+int get_variable_count(const WildConstInt<i> &c) {
+    return 0;
 }
 
 template<int i>
@@ -498,8 +498,8 @@ halide_type_t typecheck(const WildConstUInt<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-int get_leaf_count(const WildConstUInt<i> &c) {
-    return 1;
+int get_variable_count(const WildConstUInt<i> &c) {
+    return 0;
 }
 
 template<int i>
@@ -616,8 +616,8 @@ halide_type_t typecheck(const WildConstFloat<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-int get_leaf_count(const WildConstFloat<i> &c) {
-    return 1;
+int get_variable_count(const WildConstFloat<i> &c) {
+    return 0;
 }
 
 template<int i>
@@ -732,8 +732,8 @@ halide_type_t typecheck(const WildConst<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-int get_leaf_count(const WildConst<i> &c) {
-    return 1;
+int get_variable_count(const WildConst<i> &c) {
+    return 0;
 }
 
 template<int i>
@@ -875,7 +875,7 @@ halide_type_t typecheck(const Wild<i> &op, halide_type_t type_hint) {
 }
 
 template<int i>
-int get_leaf_count(const Wild<i> &op) {
+int get_variable_count(const Wild<i> &op) {
     return 1;
 }
 
@@ -1051,8 +1051,8 @@ inline halide_type_t typecheck(const Const &op, halide_type_t type_hint) {
     return type_hint;
 }
 
-inline int get_leaf_count(const Const &op) {
-    return 1;
+inline int get_variable_count(const Const &op) {
+    return 0;
 }
 
 inline int get_vector_ops_count(const Const &op) {
@@ -1292,8 +1292,8 @@ halide_type_t typecheck(const CmpOp<Op, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename Op, typename A, typename B>
-int get_leaf_count(const CmpOp<Op, A, B> &op) {
-    return get_leaf_count(op.a) + get_leaf_count(op.b);
+int get_variable_count(const CmpOp<Op, A, B> &op) {
+    return get_variable_count(op.a) + get_variable_count(op.b);
 }
 
 template<typename Op, typename A, typename B>
@@ -1330,8 +1330,8 @@ void build_leaf_vec(const CmpOp<Op, A, B> &op, leaf_vec &v) {
 }
 
 template<typename Op, typename A, typename B>
-int get_leaf_count(const BinOp<Op, A, B> &op) {
-    return get_leaf_count(op.a) + get_leaf_count(op.b);
+int get_variable_count(const BinOp<Op, A, B> &op) {
+    return get_variable_count(op.a) + get_variable_count(op.b);
 }
 
 template<typename Op, typename A, typename B>
@@ -2628,8 +2628,8 @@ halide_type_t typecheck(const Intrin<Args...> &op, halide_type_t type_hint) {
 }
 
 template<typename... Args>
-int get_leaf_count(const Intrin<Args...> &op) {
-    return 1;
+int get_variable_count(const Intrin<Args...> &op) {
+    return 0;
 }
 
 template<typename... Args>
@@ -2756,8 +2756,8 @@ halide_type_t typecheck(const NotOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_leaf_count(const NotOp<A> &op) {
-    return get_leaf_count(op.a);
+int get_variable_count(const NotOp<A> &op) {
+    return get_variable_count(op.a);
 }
 
 template<typename A>
@@ -2900,8 +2900,8 @@ halide_type_t typecheck(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
 }
 
 template<typename C, typename T, typename F>
-int get_leaf_count(const SelectOp<C, T, F> &op) {
-    return get_leaf_count(op.c) + get_leaf_count(op.t) + get_leaf_count(op.f);
+int get_variable_count(const SelectOp<C, T, F> &op) {
+    return get_variable_count(op.c) + get_variable_count(op.t) + get_variable_count(op.f);
 }
 
 template<typename C, typename T, typename F>
@@ -3047,8 +3047,8 @@ halide_type_t typecheck(const BroadcastOp<A, true> &op, halide_type_t type_hint)
 }
 
 template<typename A, bool known_lanes>
-int get_leaf_count(const BroadcastOp<A, known_lanes> &op) {
-    return get_leaf_count(op.a);
+int get_variable_count(const BroadcastOp<A, known_lanes> &op) {
+    return get_variable_count(op.a);
 }
 
 template<typename A, bool known_lanes>
@@ -3239,8 +3239,8 @@ void build_leaf_vec(const RampOp<A, B, known_lanes> &op, leaf_vec &v) {
 }
 
 template<typename A, typename B, bool known_lanes>
-int get_leaf_count(const RampOp<A, B, known_lanes> &op) {
-    return get_leaf_count(op.a) + get_leaf_count(op.b);
+int get_variable_count(const RampOp<A, B, known_lanes> &op) {
+    return get_variable_count(op.a) + get_variable_count(op.b);
 }
 
 template<typename A, typename B, bool known_lanes>
@@ -3367,8 +3367,8 @@ halide_type_t typecheck(const NegateOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_leaf_count(const NegateOp<A> &op) {
-    return get_leaf_count(op.a);
+int get_variable_count(const NegateOp<A> &op) {
+    return get_variable_count(op.a);
 }
 
 template<typename A>
@@ -3493,8 +3493,8 @@ halide_type_t typecheck(const CastOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_leaf_count(const CastOp<A> &op) {
-    return get_leaf_count(op.a);
+int get_variable_count(const CastOp<A> &op) {
+    return get_variable_count(op.a);
 }
 
 // possible to cast from vector op to non vector op?
@@ -3607,8 +3607,8 @@ halide_type_t typecheck(const Fold<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_leaf_count(const Fold<A> &op) {
-    return 1;
+int get_variable_count(const Fold<A> &op) {
+    return 0;
 }
 
 template<typename A>
@@ -3707,8 +3707,8 @@ halide_type_t typecheck(const Overflows<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_leaf_count(const Overflows<A> &op) {
-    return get_leaf_count(op.a);
+int get_variable_count(const Overflows<A> &op) {
+    return get_variable_count(op.a);
 }
 
 template<typename A>
@@ -3788,8 +3788,8 @@ inline halide_type_t typecheck(const Indeterminate &op, halide_type_t type_hint)
     return halide_type_of<int64_t>();
 }
 
-inline int get_leaf_count(const Indeterminate &op) {
-    return 1;
+inline int get_variable_count(const Indeterminate &op) {
+    return 0;
 }
 
 inline int get_vector_ops_count(const Indeterminate &op) {
@@ -3876,8 +3876,8 @@ inline halide_type_t typecheck(const Overflow &op, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
 
-inline int get_leaf_count(const Overflow &op) {
-    return 1;
+inline int get_variable_count(const Overflow &op) {
+    return 0;
 }
 
 inline int get_vector_ops_count(const Overflow &op) {
@@ -3972,8 +3972,8 @@ halide_type_t typecheck(const IsConst<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_leaf_count(const IsConst<A> &op) {
-    return get_leaf_count(op.a);
+int get_variable_count(const IsConst<A> &op) {
+    return get_variable_count(op.a);
 }
 
 template<typename A>
@@ -4080,7 +4080,7 @@ halide_type_t typecheck(const CanProve<A, Prover> &op, halide_type_t type_hint) 
 }
 
 template<typename A, typename Prover>
-int get_leaf_count(const CanProve<A, Prover> &op) {
+int get_variable_count(const CanProve<A, Prover> &op) {
     return 0;
 }
 
@@ -4185,8 +4185,8 @@ halide_type_t typecheck(const IsFloat<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-int get_leaf_count(const IsFloat<A> &op) {
-    return get_leaf_count(op.a);
+int get_variable_count(const IsFloat<A> &op) {
+    return get_variable_count(op.a);
 }
 
 template<typename A>
@@ -4265,61 +4265,18 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     count_terms(before, LHS_term_map);
     count_terms(after, RHS_term_map);
 
-    if (term_map_gt(LHS_term_map,RHS_term_map)) {
-        debug(0) << "HISTO COUNT SUCCESS!: " << " LHS " << before << " RHS " << after << "\n";
-    } else {
-        debug(0) << "ORDERING FAILURE: LHS" << before << " RHS " << after << "\n";
-    }
-/*
-    int before_vector_count = get_vector_ops_count(before);
-    int after_vector_count = get_vector_ops_count(after);
-
-
-
-    bfs_node_type_map LHS_node_type_map;
-    bfs_node_type_map RHS_node_type_map;
-
-    build_bfs_type_map(before, LHS_node_type_map, 0);
-    build_bfs_type_map(after, RHS_node_type_map, 0);
-
- //   debug(0) << "LHS " << before << " " << print_bfs_node_type_map(LHS_node_type_map) << "\n";
-
-    if (before_vector_count > after_vector_count) {
-        debug(0) << "VECTOR OP SUCCESS: LHS " << before_vector_count << ": " << before << " RHS " << after_vector_count << ": " << after << "\n";
-  //  } else if (LHS_term_map[IRNodeType::Variable] > RHS_term_map[IRNodeType::Variable]) {
-  //      debug(0) << "WILD CARD COUNT SUCCESS: " << LHS_term_map[IRNodeType::Variable] << " -> " << RHS_term_map[IRNodeType::Variable] << " LHS " << before << " RHS " << after << "\n";
-    } else if (term_map_gt(LHS_term_map,RHS_term_map)) {
-        debug(0) << "HISTO COUNT SUCCESS!: " << " LHS " << before << " RHS " << after << "\n";
-    } else if (compare_bfs_node_type_maps(LHS_node_type_map,RHS_node_type_map) == CompIRNodeTypeStatus::GT) {
-        debug(0) << "BFS TRAVERSAL SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
-    } else if (compare_bfs_node_type_maps(LHS_node_type_map,RHS_node_type_map) == CompIRNodeTypeStatus::EQ) {
-        debug(0) << "BFS TRAVERSAL EQUAL: " << " LHS " << before << " RHS " << after << "\n";
-    } else {
-        debug(0) << "ORDERING FAILURE: LHS" << before << " RHS " << after << "\n";
-    }
-*/
-/*
-    if (not (LHS_term_map[IRNodeType::Variable] > RHS_term_map[IRNodeType::Variable])) {
-        if (not (term_map_gt(LHS_term_map, RHS_term_map))) {
-            if (LHS_term_map == RHS_term_map) {
-                debug(0) << "!!!! LHS " << before << " RHS " << after  << ": term maps are equivalent\n\n";
-                node_type_list before_node_list;
-                build_node_type_list(before,before_node_list);
-                node_type_list after_node_list;
-                build_node_type_list(after,after_node_list);
-
-                if (before_node_list.size() != after_node_list.size()) {
-                    debug(0) << "!!!!! before list  " << before << " not same size as after list " << after << "\n\n";
-                } else {
-                    if (not (compare_node_type_lists(before_node_list,after_node_list))) {
-                    debug(0) << "!!!! before list " << before << " not greater than after list " << after << "\n\n";
-                    }
-                }
-            } else {
-                debug(0) << "!!!! LHS " << before << " RHS " << after << ": term map LHS greater than RHS\n\n";
-            }
+    if (get_variable_count(before) >= get_variable_count(after)) {
+        if (term_map_gt(LHS_term_map,RHS_term_map)) {
+            debug(0) << "HISTO COUNT SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
+        } else if (compare_node_types(get_node_type(after),get_node_type(before)) == CompIRNodeTypeStatus::GT) {
+            debug(0) << "ROOT NODE TYPE SUCCESS: LHS" << before << " RHS " << after << "\n";
+        } else {
+            debug(0) << "ORDER FAILURE: LHS " << before << " RHS " << after << "\n";
         }
-    } */
+    } else {
+        debug(0) << "VARIABLE COUNT FAILURE: LHS " << before << " RHS " << after << "\n";
+    }
+
 }
 
 template<typename Before,
