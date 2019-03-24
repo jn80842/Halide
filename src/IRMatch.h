@@ -93,7 +93,7 @@ enum class CompIRNodeTypeStatus {
 
 CompIRNodeTypeStatus compare_node_types(IRNodeType n1, IRNodeType n2);
 bool compare_node_type_lists(node_type_list before_list, node_type_list after_list);
-
+CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2);
 CompIRNodeTypeStatus compare_bfs_node_type_maps(bfs_node_type_map &map1, bfs_node_type_map &map2);
 
 /** To save stack space, the matcher objects are largely stateless and
@@ -4266,13 +4266,25 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     count_terms(after, RHS_term_map);
 
     if (get_variable_count(before) >= get_variable_count(after)) {
-        if (term_map_gt(LHS_term_map,RHS_term_map)) {
+        if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::GT) {
+            debug(0) << "HISTO COUNT SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
+        }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
+            debug(0) << "HISTO COUNT FAILURE: " << " LHS " << before << " RHS " << after << "\n";
+        } else if (compare_node_types(get_node_type(after),get_node_type(before)) == CompIRNodeTypeStatus::GT) {
+            debug(0) << "ROOT NODE TYPE SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
+        } else if (compare_node_types(get_node_type(after),get_node_type(before)) == CompIRNodeTypeStatus::LT) {
+            debug(0) << "ROOT NODE TYPE FAILURE: " << " LHS " << before << " RHS " << after << "\n";
+        } else {
+            debug(0) << "FAILURE: TERMS ARE EQUAL UNDER ORDERING: " << " LHS " << before << " RHS " << after << "\n";
+        }
+
+      /*  if (term_map_gt(LHS_term_map,RHS_term_map)) {
             debug(0) << "HISTO COUNT SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
         } else if (compare_node_types(get_node_type(after),get_node_type(before)) == CompIRNodeTypeStatus::GT) {
             debug(0) << "ROOT NODE TYPE SUCCESS: LHS" << before << " RHS " << after << "\n";
         } else {
             debug(0) << "ORDER FAILURE: LHS " << before << " RHS " << after << "\n";
-        }
+        } */
     } else {
         debug(0) << "VARIABLE COUNT FAILURE: LHS " << before << " RHS " << after << "\n";
     }
