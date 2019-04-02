@@ -305,7 +305,7 @@ node_type_strings node_type_string_lookup = {
     {IRNodeType::Add,"Add "},
     {IRNodeType::Max,"Max "},
     {IRNodeType::Min,"Min "},
-    {IRNodeType::Not,"No "},
+    {IRNodeType::Not,"Not "},
     {IRNodeType::Or,"Or "},
     {IRNodeType::And,"And "},
     {IRNodeType::GE,"GE "},
