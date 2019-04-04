@@ -1,4 +1,4 @@
-import subprocess
+import subprocess, time
 
 ops_order = ['ramp', 'broadcast', 'select', 'div', 'mul', 'mod', 'sub', 'add', 'maxmin', 'not', 'or', 'and', 'lt', 'eq']
 reverse_ops_lookup = {'ramp':1, 'broadcast':2, 'select':3, 'div':4, 'mul':5, 'mod':6, 'sub':7, 'add':8, 'maxmin':9, 'not':10, 'or':11, 'and':12, 'lt':13, 'eq':14}
@@ -200,6 +200,8 @@ def call_z3(expr1, expr2, int_vars, bool_vars):
     return "expressions are not equivalent"
 
 def staged_example():
+  start = time.time()
+  verified_count = 0
   int_vars = [Expr("y",get_empty_histo(),""), Expr("z",get_empty_histo(),"")]
   bool_vars = [Expr("x",get_empty_histo(),"")]
   bool_consts = [Expr("true", get_empty_histo(), ""), Expr("false", get_empty_histo(), "")]
@@ -209,7 +211,11 @@ def staged_example():
   bnr2 = bool_next_round(int_vars + inr1, bool_vars + bool_consts + bnr1)
   for t in bnr1 + bnr2:
     if expr_gt(lhs, t):
+      verified_count += 1
       output = call_z3(lhs, t, int_vars, bool_vars)
       if output == "expressions are equivalent!":
         print("Candidate rule: {} ==> {}".format(lhs, t))
+  end = time.time()
+  print("Called z3 on {} candidate RHS".format(verified_count))
+  print(end - start)
 
