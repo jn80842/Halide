@@ -37,9 +37,8 @@
               (exp [(NUM) (let ([t $1])
                             (set-add! subterm-set (number->string t))
                             t)]
-                   [(VAR) (let ([t $1])
-                            (set-add! subterm-set (symbol->string t))
-                            t)]
+                   ;; no need to rename variables so don't put in set
+                   [(VAR) $1]
                    [(TRUE) (let ([t "true"])
                              (set-add! subterm-set t)
                              t)]
@@ -110,6 +109,7 @@
   
   (define str "((min((v3*2), ((v4*2) + 1)) + (((v1 + v2)/4)*2)) == ((((v1 + v2)/4) + v3)*2))")
 (define origstr "(<= (+ (min (* v3 2) (+ (* v4 2) 1)) (* (div (+ v1 v2) 4) 2)) (* (+ (div (+ v1 v2) 4) v3) 2))")
+(define str2 "(select((0 < v0), min((v2*2), (v1 + 18)), (v2*2)) <= (v2*2))")
   
   #;(define (get-smt2-formula s)
       (evaluate-parser parser-to-smt2 s))
