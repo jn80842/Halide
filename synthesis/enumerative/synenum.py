@@ -21,6 +21,14 @@ def expr_gt(e1, e2):
         return e1.histo[ops_order[i]] > e2.histo[ops_order[i]]
     return False
 
+def expr_cmp(e1, e2):
+  if e1.histo == e2.histo and e1.root == e2.root:
+    return 0
+  elif expr_gt(e1, e2):
+    return 1
+  else:
+    return -1
+
 def add_histos(h1, h2):
   new_histo = get_empty_histo()
   for i in range(len(ops_order)):
@@ -32,6 +40,22 @@ class Expr:
     self.expr_str = expr_str
     self.histo = histo
     self.root = root
+  def __str__(self):
+    return self.expr_str
+  def __eq__(self, other):
+    if isinstance(other, Expr):
+      return self.expr_str == other.expr_str
+    else:
+      return NotImplemented
+  def __ne__(self, other):
+    if isinstance(other, Expr):
+      return self.expr_str != other.expr_str
+    else:
+      return NotImplemented
+
+class Variable:
+  def __init__(self, tname):
+    self.tname = tname
   def __str__(self):
     return self.expr_str
 
@@ -139,6 +163,13 @@ def arity2(f, inputs1, inputs2):
       new_exprs.append(f(inputs1[i], inputs2[j]))
   return new_exprs
 
+def comm_arity2(f, inputs):
+  new_exprs = []
+  for i in range(len(inputs)):
+    for j in range(i+1):
+      new_exprs.append(f(inputs[i], inputs[j]))
+  return new_exprs
+
 def arity3(f, inputs1, inputs2, inputs3):
   new_exprs = []
   for i in range(len(inputs1)):
@@ -154,13 +185,13 @@ def int_next_round(int_terms, bool_terms):
   if len(bool_terms) > 0:
     next_round_terms += arity3(make_select, bool_terms, int_terms, int_terms)
   next_round_terms += arity2(make_div, int_terms, int_terms)
-  next_round_terms += arity2(make_mul, int_terms, int_terms)
+  next_round_terms += comm_arity2(make_mul, int_terms)
   next_round_terms += arity2(make_mod, int_terms, int_terms)
   next_round_terms += arity2(make_sub, int_terms, int_terms)
   next_round_terms += arity1(make_negate, int_terms)
-  next_round_terms += arity2(make_add, int_terms, int_terms)
-  next_round_terms += arity2(make_max, int_terms, int_terms)
-  next_round_terms += arity2(make_min, int_terms, int_terms)
+  next_round_terms += comm_arity2(make_add, int_terms)
+  next_round_terms += comm_arity2(make_max, int_terms)
+  next_round_terms += comm_arity2(make_min, int_terms)
   return next_round_terms
 
 # returns bools: select, not, or, and, lt, eq
@@ -170,11 +201,11 @@ def bool_next_round(int_terms, bool_terms):
   if len(bool_terms) > 0:
     next_round_terms += arity3(make_select, bool_terms, bool_terms, bool_terms)
     next_round_terms += arity1(make_not, bool_terms)
-    next_round_terms += arity2(make_or, bool_terms, bool_terms)
-    next_round_terms += arity2(make_and, bool_terms, bool_terms)
+    next_round_terms += comm_arity2(make_or, bool_terms)
+    next_round_terms += comm_arity2(make_and, bool_terms)
   if len(int_terms) > 0:
     next_round_terms += arity2(make_lt, int_terms, int_terms)
-    next_round_terms += arity2(make_eq, int_terms, int_terms)
+    next_round_terms += comm_arity2(make_eq, int_terms)
   return next_round_terms
 
 def get_smt2_query(expr1, expr2, int_vars, bool_vars):
@@ -209,13 +240,51 @@ def staged_example():
   bnr1 = bool_next_round(int_vars, bool_vars + bool_consts)
   inr2 = int_next_round(int_vars + inr1, bool_vars + bool_consts + bnr1)
   bnr2 = bool_next_round(int_vars + inr1, bool_vars + bool_consts + bnr1)
+  candidates = []
   for t in bnr1 + bnr2:
     if expr_gt(lhs, t):
       verified_count += 1
       output = call_z3(lhs, t, int_vars, bool_vars)
       if output == "expressions are equivalent!":
         print("Candidate rule: {} ==> {}".format(lhs, t))
+        candidates.append(t)
   end = time.time()
   print("Called z3 on {} candidate RHS".format(verified_count))
+  smallest = sorted(candidates, cmp=expr_cmp)
+  print("Smallest candidate RHS: {}".format(smallest[0]))
   print(end - start)
+
+def find_all_true_depth2():
+  true_expr = make_base_variable("false")
+  bool_consts = [Expr("true", get_empty_histo(), ""), Expr("false", get_empty_histo(), "")]
+  int_vars = [make_base_variable("i1"),make_base_variable("i2"),make_base_variable("i3")]
+  bool_vars = [make_base_variable("b1"),make_base_variable("b2"),make_base_variable("b3")]
+  inr1 = int_next_round(int_vars, bool_vars + bool_consts)
+  bnr1 = bool_next_round(int_vars, bool_vars + bool_consts)
+  bnr2 = bool_next_round(int_vars + inr1, bool_vars + bool_consts + bnr1)
+  bnr1_true = []
+  for t in bnr1: # + bnr2:
+    output = call_z3(t, true_expr, int_vars, bool_vars)
+    if output == "expressions are equivalent!":
+      bnr1_true.append(t)
+
+def find_all_false_depth2():
+  false_expr = make_base_variable("false")
+  bool_consts = [Expr("true", get_empty_histo(), ""), Expr("false", get_empty_histo(), "")]
+  int_vars = [make_base_variable("i1"),make_base_variable("i2"),make_base_variable("i3")]
+  bool_vars = [make_base_variable("b1"),make_base_variable("b2"),make_base_variable("b3")]
+  inr1 = int_next_round(int_vars, bool_vars + bool_consts)
+  bnr1 = bool_next_round(int_vars, bool_vars + bool_consts)
+  bnr2 = bool_next_round(int_vars + inr1, bool_vars + bool_consts + bnr1)
+  bnr1_false = []
+  for t in bnr1: # + bnr2:
+    output = call_z3(t, false_expr, int_vars, bool_vars)
+    if output == "expressions are equivalent!":
+      bnr1_false.append(t)
+  bnr2 = bool_next_round(int_vars + inr1, bool_vars + bool_consts + (list(set(bnr1) - set(bnr1_false))))
+  for t in bnr2:
+    output = call_z3(t, false_expr, int_vars, bool_vars)
+    if output == "expressions are equivalent!":
+      print("Candidate rule: {} ==> {}".format(t, false_expr))
+
 
