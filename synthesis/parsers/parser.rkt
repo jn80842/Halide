@@ -52,7 +52,7 @@
    ["false" 'FALSE]
    ["likely_if_innermost" 'LII]
    ;[(:+ (:or lower-letter upper-letter)) (token-VAR (string->symbol lexeme))]
-   [(:: "v" (:+ digit)) (token-VAR (string->symbol lexeme))]
+   [(:: (union "v" "i" "t") (:+ digit)) (token-VAR (string->symbol lexeme))]
    [(:+ digit) (token-NUM (string->number lexeme))]
    [(:: (:+ digit) #\. (:* digit)) (token-NUM (string->number lexeme))]))
 
