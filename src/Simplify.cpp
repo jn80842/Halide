@@ -324,7 +324,7 @@ bool can_prove(Expr e, const Scope<Interval> &bounds) {
 
     // Take a closer look at all failed proof attempts to hunt for
     // simplifier weaknesses
-    if (debug::debug_level() > 0 && !is_const(e)) {
+    if (debug::debug_level() >= 0) {
         struct RenameVariables : public IRMutator {
             using IRMutator::visit;
 
@@ -356,6 +356,12 @@ bool can_prove(Expr e, const Scope<Interval> &bounds) {
 
         e = renamer.mutate(e);
 
+        if (is_one(e) || is_zero(e)) {
+            debug(0) << "SIMPLIFIER SUCCESS: " << e << "\n";
+        } else {
+            debug(0) << "SIMPLIFIER FAILURE: " << e << "\n";
+        }
+/*
         // Look for a concrete counter-example with random probing
         static std::mt19937 rng(0);
         for (int i = 0; i < 100; i++) {
@@ -378,11 +384,13 @@ bool can_prove(Expr e, const Scope<Interval> &bounds) {
                 // Found a counter-example, or something that fails to fold
                 return false;
             }
+            
         }
 
         debug(0) << "Failed to prove, but could not find a counter-example:\n " << e << "\n";
         debug(0) << "Original expression:\n" << orig << "\n";
         return false;
+        */
     }
 
     return is_one(e);
