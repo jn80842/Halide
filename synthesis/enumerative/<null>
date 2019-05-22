@@ -1,7 +1,0 @@
-(declare-fun lanes () Int)
-(declare-fun y () Int)
-(declare-fun z () Int)
-(declare-fun x () Bool)
-(assert (> lanes 1))
-(assert (let ((a!1 (= (< z (ite x y z)) (< (ite (< z z) z z) (- z y)))))
-  (not a!1)))
