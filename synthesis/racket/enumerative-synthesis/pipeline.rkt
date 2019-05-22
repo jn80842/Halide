@@ -1,157 +1,120 @@
 #lang racket
 
-;(require "enumerate.rkt")
-;(require "comparison.rkt")
-;(require "callz3.rkt")
-
 (require "../halide-dsl/halide-to-smt2.rkt")
+(require "../halide-dsl/rename-constants.rkt")
+(require "../halide-dsl/subterms.rkt")
+(require "../halide-dsl/halide-helpers.rkt")
+(require "../smt2/smt2-to-halide.rkt")
+(require "../smt2/smt2-helpers.rkt")
+(require "../smt2/smt2-gt.rkt")
+(require "callz3.rkt")
+(require "enumerate.rkt")
 
 ;; start with expression that simplifier cannot reduce
 
 (define e "(((min(((((((v4 + 3)/4)*4) + -1)/63)*63), -2) + ((v1*125) + v2)) + 2) <= ((v1*125) + v2))")
 
-;; parse halide expression into SMT2
-
-(define smt2-e (halide->smt2 e))
-
 ;; replace all constants with fresh variables
 
-;(define const-e (const-to-fresh-vars e))
+(define newconsts-e (get-halide-renamed-constants-expr e))
 
-;; verify that expression is still true
+;; parse halide expression into SMT2
 
-;(if (call-z3 (get-verify-true-formula 
+(define smt2-e (halide->smt2 newconsts-e))
 
+;; verify that expression is true when constants are renamed
 
-
+(if (call-z3 (get-verify-true-formula (get-smt2-variables smt2-e) '() smt2-e))
+    (println "Expression with renamed constants is true")
+    (println "Expression with renamed constants is not always true"))
 
 ;; get all subterms/substitutions from source expr
 
-;; filter out candidate LHSs below a certain size
+(define all-candidate-LHSs (get-all-substs-and-subterms newconsts-e))
 
-;; for each candidate LHS, find all variables (assume that all vars are of type integer)
+;; filter out all candidate LHSs that have more than 6 unique variables
 
-#;(define (get-string-variables s)
-  (map symbol->string (set->list (get-variables s))))
+(define lessthan6v-candidate-LHSs (filter (λ (e) (< (set-count (get-halide-variables e)) 7)) all-candidate-LHSs))
 
-;(define e1-vars (map symbol->string (set->list (get-variables e1))))
+;; remove all candidate LHSs that are a single variable
+;; because of variable renaming, the only such term will be v0
 
-;; enumerate all expressions up to a given size
-;; for those expressions, filter if they are not less than LHS in ordering
+(define candidate-LHSs (remove "v0" lessthan6v-candidate-LHSs))
 
-;(define smt2-e1 (get-smt2-formula e1))
+;; translate candidate LHSs into SMT2 and type them
 
+(define typed-smt2-LHSs (hash-smt2-terms-by-type (map halide->smt2 candidate-LHSs)))
 
+;; find all boolean LHSs that are equivalent to true
+(define true-LHSs (time (filter (λ (e) (call-z3 (get-verify-true-formula (get-smt2-variables e) '() e)))
+                          (hash-ref typed-smt2-LHSs 'boolean))))
 
-;(define inr1 (int-next-round e1-vars '()))
-;(define bnr1 (bool-next-round e1-vars '()))
+(println "Candidate LHSs equivalent to true:")
+(for ([t (sort-smt2-by-node-count true-LHSs)])
+  (println (smt2->halide t)))
+(println "")
 
-;(define inr2 (int-next-round (append e1-vars (filter-by-gt smt2-e1 inr1)) (filter-by-gt smt2-e1 bnr1)))
-;(define bnr2 (bool-next-round (append e1-vars (filter-by-gt smt2-e1 inr1)) (filter-by-gt smt2-e1 bnr1)))
+;; find all boolean LHSs that are equivalent to false
+(define false-LHSs (time (filter (λ (e) (call-z3 (get-verify-false-formula (get-smt2-variables e) '() e)))
+                           (remove* true-LHSs (hash-ref typed-smt2-LHSs 'boolean)))))
 
-;; if LHS > RHS, query z3 for equivalence
+(println "Candidate LHSs equivalent to false:")
+(for ([t false-LHSs])
+  (println (smt2->halide t)))
+(println "")
 
+;; find equivalent expressions of depth 1
 
+(define (find-rules-bool-depth1 bool-terms)
+  (make-hash (for/list ([t bool-terms])
+               (let* ([t-vars (get-smt2-variables t)]
+                      [bnr1-terms (filter (λ (e) (smt2-expr-gt? t e)) ((get-bool-expr-function t) (append (list "0" "1" "2") t-vars) '()))]
+                      [RHSs (filter (λ (e) (call-z3 (get-verify-equiv-formula t-vars '() t e))) bnr1-terms)])
+                 (println t)
+                 (println (format "Checked against ~a terms" (length bnr1-terms)))
+                 (if (not (empty? RHSs))
+                     (println (format "Found ~a equivalent terms" (length RHSs)))
+                     (println "Found no equivalent terms"))
+                 (cons t RHSs)))))
 
+(define (find-rules-int-depth1 int-terms)
+  (make-hash (for/list ([t int-terms])
+               (let* ([t-vars (get-smt2-variables t)]
+                      [inr1-terms (filter (λ (e) (smt2-expr-gt? t e)) ((get-int-expr-function t) (append (list "0" "1" "2") t-vars) '()))]
+                      [RHSs (filter (λ (e) (call-z3 (get-verify-equiv-formula t-vars '() t e))) inr1-terms)])
+                 (println t)
+                 (println (format "Checked against ~a terms" (length inr1-terms)))
+                 (if (not (empty? RHSs))
+                     (println (format "Found ~a equivalent terms" (length RHSs)))
+                     (println "Found no equivalent terms"))
+                 (cons t RHSs)))))
 
+(define (find-rules-bool-depth2 bool-terms)
+  (make-hash (for/list ([t bool-terms])
+               (let* ([ground-int-terms (append (list "0" "1" "2") (get-smt2-variables t))]
+                      [bnr1-terms (filter (λ (e) (smt2-expr-gt? t e)) ((get-bool-expr-function t) ground-int-terms '()))]
+                      [inr1-terms (filter (λ (e) (smt2-expr-gt? t e)) ((get-int-expr-function t) ground-int-terms '()))]
+                      [bnr2-terms (filter (λ (e) (smt2-expr-gt? t e)) ((get-bool-expr-function t) (append ground-int-terms inr1-terms)
+                                                                                                  (append (list "true" "false") bnr1-terms)))]
+                      [RHSs (filter (λ (e) (call-z3 (get-verify-equiv-formula ground-int-terms '() t e))) bnr2-terms)])
+                 (println t)
+                 (println (format "Checked against ~a terms" (length bnr2-terms)))
+                 (if (not (empty? RHSs))
+                     (println (format "Found ~a equivalent terms" (length RHSs)))
+                     (println "Found no equivalent terms"))
+                 (cons t RHSs)))))
 
-
-
-#;(time (for ([rhs (filter-by-gt smt2-e1 bnr2)])
-        (unless (not (verify-exprs-are-equal e1-vars '() smt2-e1 rhs))
-          (println (format "Candidate rule: ~a ---> ~a" smt2-e1 rhs)))))
-
-;(define smt2-candidate-lhs (filter (λ (t) (string-contains? t "(")) (map get-smt2-formula (get-all-substs-and-subterms e1))))
-
-;(define type-classified-candidates (make-hash (map (λ (xs) (cons (get-type-smt2 (first xs)) xs)) (group-by get-type-smt2 smt2-candidate-lhs))))
-
-#;(for ([t (hash-ref type-classified-candidates 'boolean)])
-  (if (call-z3 (z3-verify-true e1-vars '() t))
-      (println (format "~a ---> true" t))
-      (if (call-z3 (z3-verify-false e1-vars '() t))
-          (println (format "~a ----> false" t))
-          (println (format "~a ----> neither true nor false" t)))))
-
-#;(hash-set! type-classified-candidates 'boolean (filter (λ (t) (not (or (call-z3 (z3-verify-true e1-vars '() t)) (call-z3 (z3-verify-false e1-vars '() t)))))
-        (hash-ref type-classified-candidates 'boolean)))
-
-#;(call-with-input-file "/Users/mpu/research/termrewriting/pipeline_verified_exprs.txt"
-  (λ (f)
-    (for/fold ([counter 0])
-              ([line (in-lines f)])
-      (begin
-        (if (call-z3 (z3-verify-true (map symbol->string (set->list (get-variables (masked-constants line)))) '()
-                                 (get-smt2-formula (masked-constants line))))
-            (println (format "TRUE: ~a" line))
-            (println (format "FALSE: ~a" line)))))))
-
-;;; an expression verified true when constants are replaced with fresh vars
-;(define s "(((min(((((((v4 + 3)/4)*4) + -1)/63)*63), -2) + ((v1*125) + v2)) + 2) <= ((v1*125) + v2))")
-;(define s-vars (get-string-variables (masked-constants s)))
-
-(define (get-smt2-vars s)
-  (set->list (list->set (regexp-match* #rx"v[0-9]+" s))))
-
-(define (get-typed-smt2-terms s)
-  (make-hash (map (λ (xs) (cons (get-type-smt2 (first xs)) xs))
-                  (group-by get-type-smt2 (map get-smt2-formula (get-all-substs-and-subterms (masked-constants s)))))))
-
-(define s-terms (get-typed-smt2-terms s))
-
-(define (find-true-exprs terms)
-  (sort (filter (λ (t) (call-z3 (z3-verify-true (get-smt2-vars t) '() t))) terms) (λ (x y) (< (string-length x) (string-length y)))))
-(define (find-false-exprs terms)
-  (sort (filter (λ (t) (call-z3 (z3-verify-false (get-smt2-vars t) '() t))) terms) (λ (x y) (< (string-length x) (string-length y)))))
-
-(define s-terms-true (find-true-exprs (hash-ref s-terms 'boolean)))
-(define s-terms-false (find-false-exprs (hash-ref s-terms 'boolean)))
-
-(hash-set! s-terms 'boolean (filter (λ (t) (and (not (member t s-terms-true)) (not (member t s-terms-false)))) (hash-ref s-terms 'boolean)))
-
-(define (find-single-var-equiv-exprs terms)
-  (for/list ([t terms])
-    (cons t (filter (λ (v) (verify-exprs-are-equal (get-smt2-vars t) '() t v)) (get-smt2-vars t)))))
-
-(define (get-terms-by-depth terms)
-  (make-hash (map (λ (xs) (cons (get-smt2-node-depth (first xs)) xs)) (group-by get-smt2-node-depth terms))))
-
-(define (find-int-depth1-equiv-exprs term)
-  (let* ([vars (get-smt2-vars term)]
-         [exprs ((get-int-expr-function term) vars '())])
-    (filter (λ (e) (verify-exprs-are-equal vars '() term e)) exprs)))
-
-(define (check-terms-int-depth1 int-terms)
-  (for ([t int-terms])
-    (let* ([t-vars (get-smt2-vars t)]
-           [inr1-terms ((get-int-expr-function t) t-vars '())])
-      (println t)
-      (println (format "Checked against ~a terms" (length inr1-terms)))
-      (println (filter (λ (e) (verify-exprs-are-equal t-vars '() t e)) inr1-terms)))))
-
-(define (check-terms-bool-depth1 bool-terms)
-  (for ([t bool-terms])
-    (let* ([t-vars (get-smt2-vars t)]
-           [bnr1-terms ((get-bool-expr-function t) t-vars '())])
-      (println t)
-      (println (format "Checked against ~a terms" (length bnr1-terms)))
-      (println (filter (λ (e) (verify-exprs-are-equal t-vars '() t e)) bnr1-terms)))))
-      
-(define (find-int-depth2-equiv-exprs term)
-  (let* ([vars (get-smt2-vars term)]
-         [inr1-exprs (filter-by-gt term (int-next-round vars '()))]
-         [bnr1-exprs (filter-by-gt term (bool-next-round vars '()))]
-         [inr2-exprs (filter-by-gt term (int-next-round (append vars inr1-exprs) bnr1-exprs))])
-    (println (format "INR1: ~a" (length inr1-exprs)))
-    (println (format "BNR1: ~a" (length bnr1-exprs)))
-    (println (format "INR2: ~a" (length inr2-exprs)))
-    (filter (λ (e) (verify-exprs-are-equal vars '() term e) inr2-exprs))))
-
-(define (find-bool-depth2-equiv-exprs term)
-  (let* ([vars (append '(0 1) (get-smt2-vars term))]
-         [inr1-exprs (filter-by-gt term (int-next-round vars '()))]
-         [bnr1-exprs (filter-by-gt term (bool-next-round vars '()))]
-         [bnr2-exprs (filter-by-gt term (bool-next-round (append vars inr1-exprs) bnr1-exprs))])
-    (println (format "INR1: ~a" (length inr1-exprs)))
-    (println (format "BNR1: ~a" (length bnr1-exprs)))
-    (println (format "BNR2: ~a" (length bnr2-exprs)))
-    (filter (λ (e) (verify-exprs-are-equal vars '() term e)) bnr2-exprs)))
+(define (find-rules-int-depth2 int-terms)
+  (make-hash (for/list ([t int-terms])
+               (let* ([ground-int-terms (append (list "0" "1" "2") (get-smt2-variables t))]
+                      [bnr1-terms (filter (λ (e) (smt2-expr-gt? t e)) ((get-bool-expr-function t) ground-int-terms '()))]
+                      [inr1-terms (filter (λ (e) (smt2-expr-gt? t e)) ((get-int-expr-function t) ground-int-terms '()))]
+                      [inr2-terms (filter (λ (e) (smt2-expr-gt? t e)) ((get-int-expr-function t) (append ground-int-terms inr1-terms)
+                                                                                                  (append (list "true" "false") bnr1-terms)))]
+                      [RHSs (filter (λ (e) (call-z3 (get-verify-equiv-formula ground-int-terms '() t e))) inr2-terms)])
+                 (println t)
+                 (println (format "Checked against ~a terms" (length inr2-terms)))
+                 (if (not (empty? RHSs))
+                     (println (format "Found ~a equivalent terms" (length RHSs)))
+                     (println "Found no equivalent terms"))
+                 (cons t RHSs)))))
