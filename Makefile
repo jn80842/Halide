@@ -570,6 +570,7 @@ SOURCE_FILES = \
   SimplifySpecializations.cpp \
   SkipStages.cpp \
   SlidingWindow.cpp \
+  SMT2.cpp \
   Solve.cpp \
   SplitTuples.cpp \
   StmtToHtml.cpp \
@@ -732,6 +733,7 @@ HEADER_FILES = \
   SimplifySpecializations.h \
   SkipStages.h \
   SlidingWindow.h \
+  SMT2.h \
   Solve.h \
   SplitTuples.h \
   StmtToHtml.h \
