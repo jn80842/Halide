@@ -195,7 +195,7 @@ SMT2Variables::SMT2Variables(Expr e) {
     e.accept(this);
     for (auto v : varset) {
         // note assumption that all variables are of integer type
-        decls += "(declare-const " + v + " Int)\n";
+        decls += "(declare-const " + v + " Int) ";
     }
 }
 
@@ -427,12 +427,12 @@ std::string smt2formula(Expr e) {
 }
 
 std::string z3query_body(std::string assert_smt) {
-    std::string phi = "(define-fun min ((x Int) (y Int)) Int (ite (> x y) x y))\n";
-    phi += "(define-fun max ((x Int) (y Int)) Int (ite (> x y) y x))\n";
-    phi += "(declare-const lanes Int)\n";
-    phi += "(assert (> lanes 1))\n\n";
+    std::string phi = "(define-fun min ((x Int) (y Int)) Int (ite (> x y) x y)) ";
+    phi += "(define-fun max ((x Int) (y Int)) Int (ite (> x y) y x)) ";
+    phi += "(declare-const lanes Int) ";
+    phi += "(assert (> lanes 1)) ";
     phi += assert_smt;
-    phi += "\n\n(check-sat)\n(get-model)";
+    phi += " (check-sat) (get-model)";
     return phi;
 }
 
@@ -440,6 +440,12 @@ std::string z3query_verifyequal(Expr e1, Expr e2) {
     // assumption 1: no variables in e2 that are not present in e1 (necessary for valid rule)
     // assumption 2: all variables are of Int type
     return smt2_declarations(e1) + z3query_body("(assert (not (= " + smt2formula(e1) + " " + smt2formula(e2) + ")))");
+}
+
+bool query_equivalence(Expr e1, Expr e2) {
+    std::string system_call = "echo '" + z3query_verifyequal(e1,e2) + "' | z3 -in -smt2 -T:60 -memory:1000";
+    int exitcode = std::system(system_call.c_str());
+    return !(exitcode == 0);
 }
 
 }

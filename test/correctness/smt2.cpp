@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    if (smt2_declarations(x * x) != "(declare-const x Int)\n") {
+    if (smt2_declarations(x * x) != "(declare-const x Int) ") {
         printf("Failed x * x var declarations --> ");
         print_smt2_declarations(x * x);
         return -1;
@@ -47,10 +47,17 @@ int main(int argc, char **argv) {
 
     if (not (expr_gt(x * x, x + x))) {
         printf("Failed: x * x should be greater than x + x\n");
+        return -1;
     }
 
     if (not (expr_gt(select(b1, x, y) < y, select(b1, x < y, f)))) {
         printf("Failed: select(b1, x, y) < y should be greater than select(b1, x < y, f)\n");
+        return -1;
+    }
+
+    if (!(query_equivalence(x + y, y + x))) {
+        printf("Failed: z3 equivalent check of x + y and y + z failed\n");
+        return -1;
     }
 /*
     check_smt2(x + y);
@@ -72,8 +79,12 @@ int main(int argc, char **argv) {
     check_smt2(x + (y + (c0 - x)/c1)*c1);
     check_smt2(broadcast(x,2));
     check_smt2(ramp(x,y,4));
-*/
+
   //  check_equal_formula(x + y, x * y);
+
+*/
+
+
     printf("Success!\n");
 
     return 0;
