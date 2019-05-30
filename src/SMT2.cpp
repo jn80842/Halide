@@ -199,6 +199,41 @@ SMT2Variables::SMT2Variables(Expr e) {
     }
 }
 
+void increment_varcount(std::string varname, std::map<std::string, int> &m) {
+    if (m.count(varname) == 1) {
+        m[varname] = m[varname] + 1;
+    } else {
+        m[varname] = 1;
+    }
+}
+
+class SMT2VariableCount : public IRVisitor {
+public:
+    std::map<std::string, int> varname_hash;
+    SMT2VariableCount(Expr e);
+
+    using IRVisitor::visit;
+    void visit(const Variable *var) override {
+        increment_varcount(var->name, varname_hash);
+    }
+};
+
+SMT2VariableCount::SMT2VariableCount(Expr e) {
+    e.accept(this);
+}
+
+bool valid_varcounts_order(Expr e1, Expr e2) {
+    std::map<std::string, int> e1_varcounts = SMT2VariableCount(e1).varname_hash;
+    std::map<std::string, int> e2_varcounts = SMT2VariableCount(e2).varname_hash;
+
+    for (auto it=e2_varcounts.begin(); it != e2_varcounts.end(); ++it) {
+        if (!((e1_varcounts.count(it->first) == 1) && (e1_varcounts[it->first] >= it->second))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void increment_term(IRNodeType node_type, term_map &m) {
     if (m.count(node_type) == 0) {
         m[node_type] = 1;
@@ -405,6 +440,9 @@ RootNodeReductionOrder::RootNodeReductionOrder(Expr e) {
 }
 
 bool expr_gt(Expr e1, Expr e2) {
+    if (!(valid_varcounts_order(e1, e2))) {
+        return false;
+    }
     HistoReductionOrder h1 = HistoReductionOrder(e1);
     HistoReductionOrder h2 = HistoReductionOrder(e2);
     for (int i = nt_count; i > -1; --i) {

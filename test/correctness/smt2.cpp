@@ -1,5 +1,7 @@
 #include "Halide.h"
 
+using std::vector;
+
 using namespace Halide;
 using namespace Halide::Internal;
 
@@ -45,6 +47,14 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    if (not (expr_gt(x * x, x))) {
+        printf("Failed: x * x should be greater than x\n");
+    }
+
+    if (not (not (expr_gt(x * (x + y), y + y)))) {
+        printf("Failed: x * (x + y) should be greater than y + y\n");
+    }
+
     if (not (expr_gt(x * x, x + x))) {
         printf("Failed: x * x should be greater than x + x\n");
         return -1;
@@ -56,35 +66,35 @@ int main(int argc, char **argv) {
     }
 
     if (!(query_equivalence(x + y, y + x))) {
-        printf("Failed: z3 equivalent check of x + y and y + z failed\n");
+        printf("Failed: z3 equivalent check of x + y and y + x failed\n");
+        return -1;
+    }
+
+    if (!(query_equivalence(x * 2, x + x))) {
+        printf("Failed: z3 equivalent check of x * 2 and x + y failed\n");
         return -1;
     }
 /*
-    check_smt2(x + y);
-    check_smt2(b1 && b2);
-    check_smt2(x / y);
-    check_smt2(x == 1);
-    check_smt2(b1 == b2);
-    check_smt2(x < y);
-    check_smt2(max(x,y));
-    check_smt2(min(x,y));
-    check_smt2(x % y);
-    check_smt2(x * y);
-    check_smt2(!b1);
-    check_smt2(b1 || b2);
-    check_smt2(select(b1,x,y));
-    check_smt2(select(b1,b2,b3));
-    check_smt2(x - y);
-    check_smt2(x > y);
-    check_smt2(x + (y + (c0 - x)/c1)*c1);
-    check_smt2(broadcast(x,2));
-    check_smt2(ramp(x,y,4));
+    vector<Expr> ground_int_exprs;
+    vector<Expr> ground_bool_exprs;
+    ground_int_exprs.push_back(x);
+    ground_int_exprs.push_back(2);
 
-  //  check_equal_formula(x + y, x * y);
+    vector<Expr> int_exprs = build_int_expressions(ground_int_exprs, ground_bool_exprs);
 
+    std::cout << "int_exprs contains " << int_exprs.size() << " elements.\n";
+    Expr working_expr;
+
+    for (auto it = int_exprs.begin(); it != int_exprs.end(); ++it) {
+        working_expr = *it;
+        if (expr_gt(x * 2, working_expr)) {
+            std::cout << "Less than x * 2: " << working_expr << "\n";
+        }
+       if (query_equivalence(x * 2, working_expr)) {
+            std::cout << "Equivalent to x * 2: " << working_expr << "\n";
+        }
+    }
 */
-
-
     printf("Success!\n");
 
     return 0;

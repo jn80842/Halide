@@ -482,6 +482,7 @@ SOURCE_FILES = \
   EarlyFree.cpp \
   Elf.cpp \
   EliminateBoolVectors.cpp \
+  EnumerateExpr.cpp \
   Error.cpp \
   FastIntegerDivide.cpp \
   FindCalls.cpp \
@@ -652,6 +653,7 @@ HEADER_FILES = \
   EarlyFree.h \
   Elf.h \
   EliminateBoolVectors.h \
+  EnumerateExpr.h \
   Error.h \
   Expr.h \
   ExprUsesVar.h \
