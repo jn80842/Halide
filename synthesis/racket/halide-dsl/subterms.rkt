@@ -3,6 +3,7 @@
 (require parser-tools/yacc)
 
 (require "lexer.rkt")
+(require "halide-helpers.rkt")
 
 (provide get-all-substs-and-subterms)
 
@@ -244,4 +245,4 @@
                                      (apply-substitutions escaped-term subterms (list-ref combos i))))))))
 
 (define (get-all-substs-and-subterms halide-str)
-  (unique-elts (flatten (append (get-all-substitutions halide-str) (map get-all-substitutions (get-subterms halide-str))))))
+  (filter (λ (e) (< (set-count (get-halide-variables e)) 7)) (unique-elts (flatten (append (get-all-substitutions halide-str) (map get-all-substitutions (get-subterms halide-str)))))))
