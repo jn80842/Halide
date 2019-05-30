@@ -18,7 +18,7 @@ public:
                 formula += "false";
             }
         } else {
-            formula += std::to_string(imm->type.bits());
+            formula += std::to_string(imm->value);
         }
     }
     void visit(const UIntImm *imm) override {
@@ -29,7 +29,7 @@ public:
                 formula += "false";
             }
         } else {
-            formula += std::to_string(imm->type.bits());
+            formula += std::to_string(imm->value);
         }
     }
     void visit(const FloatImm *imm) override {
