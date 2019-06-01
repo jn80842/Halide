@@ -47,6 +47,14 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    if (not (expr_gt(x * x, x))) {
+        printf("Failed: x * x should be greater than x\n");
+    }
+
+    if (not (not (expr_gt(x * (x + y), y + y)))) {
+        printf("Failed: x * (x + y) should be greater than y + y\n");
+    }
+
     if (not (expr_gt(x * x, x + x))) {
         printf("Failed: x * x should be greater than x + x\n");
         return -1;
@@ -66,7 +74,7 @@ int main(int argc, char **argv) {
         printf("Failed: z3 equivalent check of x * 2 and x + y failed\n");
         return -1;
     }
-
+/*
     vector<Expr> ground_int_exprs;
     vector<Expr> ground_bool_exprs;
     ground_int_exprs.push_back(x);
@@ -86,7 +94,7 @@ int main(int argc, char **argv) {
             std::cout << "Equivalent to x * 2: " << working_expr << "\n";
         }
     }
-
+*/
     printf("Success!\n");
 
     return 0;
