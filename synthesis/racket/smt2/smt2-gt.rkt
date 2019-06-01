@@ -18,6 +18,61 @@
 (define (increment-histo h symbol . leaves)
   (hash-set! h symbol (add1 (hash-ref h symbol))))
 
+(define (increment-var-histo h varname)
+  (if (hash-has-key? h varname)
+      (hash-set! h varname (add1 (hash-ref h varname)))
+      (hash-set! h varname 1)))
+
+(define (build-smt2-var-histo expr-str)
+  (let* ([var-hash (make-hash)]
+         [p (parser
+             (start start)
+             (end newline EOF)
+             (tokens smt2-value-tokens smt2-op-tokens)
+             (error (lambda (a b c) (void)))
+
+             (precs (right EQ)
+                    (left < > GE LE)
+                    (left OR AND)
+                    (left - +)
+                    (left * DIV MOD)
+                    (left NEG)
+                    (left NOT))
+
+             (grammar
+
+              (start [() #f]
+                     ;; If there is an error, ignore everything before the error
+                     ;; and try to start over right after the error
+                     [(error start) $2]
+                     [(exp) $1])
+              (exp [(NUM) 'imm]
+                   [(TRUE) 'imm]
+                   [(VAR) (increment-var-histo var-hash (symbol->string $1))]
+                   [(FALSE) 'imm]
+                   [(OP EQ exp exp CP)  (void $3 $4)]
+                   [(OP MAX exp exp CP) (void $3 $4)]
+                   [(OP MIN exp exp CP) (void $3 $4)]
+                   [(OP NOT exp CP) (void $3)]
+                   [(OP ITE exp exp exp CP) (void $3 $4 $5)]
+                   [(OP AND exp exp CP) (void $3 $4)]
+                   [(OP OR exp exp CP) (void $3 $4)]
+                   [(OP + exp exp CP) (void $3 $4)]
+                   [(OP - exp exp CP) (void $3 $4)]
+                   [(OP * exp exp CP) (void $3 $4)]
+                   [(OP DIV exp exp CP) (void $3 $4)]
+                   [(OP < exp exp CP) (void $3 $4)]
+                   [(OP > exp exp CP) (void $3 $4)]
+                   [(OP MOD exp exp CP) (void $3 $4)]
+                   [(OP GE exp exp CP) (void $3 $4)]
+                   [(OP LE exp exp CP) (void $3 $4)]
+                   [(OP - exp CP) (prec NEG) (void $3)]
+                   [(- exp) (prec NEG) (void $2)]
+                   [(OP exp CP) $2]
+                   [(LII exp) $2])))]
+         [_ (evaluate-smt2-parser p expr-str)])
+    var-hash))
+
 (define (build-smt2-node-histo expr-str)
   (let* ([node-hash (get-node-histo)]
          [p (parser
@@ -81,6 +136,12 @@
 
 (define (root-sym-gt? e1 e2)
   (node-type-gt? (get-smt2-root-symbol e1) (get-smt2-root-symbol e2)))
+
+(define (valid-var-counts? e1 e2)
+  (let ([varcounts-e1 (build-smt2-var-histo e1)]
+        [varcounts-e2 (build-smt2-var-histo e2)])
+    (andmap (λ (k) (and (hash-has-key? varcounts-e1 k) (>= (hash-ref varcounts-e1 k) (hash-ref varcounts-e2 k))))
+            (hash-keys varcounts-e2))))
 
 (define (smt2-expr-gt? e1 e2)
   (let ([histo1 (build-smt2-node-histo e1)]
