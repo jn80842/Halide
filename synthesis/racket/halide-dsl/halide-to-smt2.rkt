@@ -52,7 +52,6 @@
          [(exp % exp) (format "(mod ~a ~a)" $1 $3)]
          [(exp GE exp) (format "(>= ~a ~a)" $1 $3)]
          [(exp LE exp) (format "(<= ~a ~a)" $1 $3)]
-         [(- exp) (prec NEG) (format "(- ~a)" $2)]
          [(OP exp CP) $2]
          [(LII exp) $2]))))
 

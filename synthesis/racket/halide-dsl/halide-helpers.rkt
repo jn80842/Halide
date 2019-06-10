@@ -52,7 +52,6 @@
                    [(exp % exp) (void $1 $3)]
                    [(exp GE exp) (void $1 $3)]
                    [(exp LE exp) (void $1 $3)]
-                   [(- exp) (prec NEG) (void $2)]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [_ (evaluate-halide-parser p expr-str)])

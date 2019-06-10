@@ -66,8 +66,6 @@
                    [(OP MOD exp exp CP) (void $3 $4)]
                    [(OP GE exp exp CP) (void $3 $4)]
                    [(OP LE exp exp CP) (void $3 $4)]
-                   [(OP - exp CP) (prec NEG) (void $3)]
-                   [(- exp) (prec NEG) (void $2)]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [_ (evaluate-smt2-parser p expr-str)])
@@ -117,8 +115,6 @@
                    [(OP MOD exp exp CP) (increment-histo node-hash 'mod $3 $4)]
                    [(OP GE exp exp CP) (increment-histo node-hash 'GE $3 $4)]
                    [(OP LE exp exp CP) (increment-histo node-hash 'LE $3 $4)]
-                   [(OP - exp CP) (prec NEG) (increment-histo node-hash 'sub $3)]
-                   [(- exp) (prec NEG) (increment-histo node-hash 'sub $2)]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [_ (evaluate-smt2-parser p expr-str)])

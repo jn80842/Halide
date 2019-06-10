@@ -97,9 +97,6 @@
                    [(exp LE exp) (let ([t (format "(~a <= ~a)" $1 $3)])
                                    (set-add! subterm-set t)
                                    t)]
-                   [(- exp) (prec NEG) (let ([t (format "(- ~a)" $2)])
-                                         (set-add! subterm-set t)
-                                         t)]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [full-expr (evaluate-halide-parser p str)])
@@ -150,7 +147,6 @@
                    [(exp % exp) (format "(~a % ~a)" $1 $3)]
                    [(exp GE exp) (format "(~a >= ~a)" $1 $3)]
                    [(exp LE exp) (format "(~a <= ~a)" $1 $3)]
-                   [(- exp) (prec NEG) (format "(- ~a)" $2)]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [full-expr (evaluate-halide-parser p expr-str)])
@@ -210,7 +206,6 @@
                    [(exp % exp) (format "(~a % ~a)" $1 $3)]
                    [(exp GE exp) (format "(~a >= ~a)" $1 $3)]
                    [(exp LE exp) (format "(~a <= ~a)" $1 $3)]
-                   [(- exp) (prec NEG) (format "(- ~a)" $2)]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [full-expr (evaluate-halide-parser p expr-str)])

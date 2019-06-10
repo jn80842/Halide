@@ -58,7 +58,6 @@
                    [(OP MOD exp exp CP) (format "(mod ~a ~a)" $3 $4)]
                    [(OP GE exp exp CP) (format "(>= ~a ~a)" $3 $4)]
                    [(OP LE exp exp CP) (format "(<= ~a ~a)" $3 $4)]
-                   [(- exp) (prec NEG) (format "(- ~a)" $2)]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [full-expr (evaluate-smt2-parser p expr-str)])

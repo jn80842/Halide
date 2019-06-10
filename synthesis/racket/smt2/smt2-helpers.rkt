@@ -50,8 +50,6 @@
                    [(OP MOD exp exp CP) 'integer]
                    [(OP GE exp exp CP) 'boolean]
                    [(OP LE exp exp CP) 'boolean]
-                   [(OP - exp CP) (prec NEG) 'integer]
-                   [(- exp) (prec NEG) 'integer]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [expr-type (evaluate-smt2-parser p expr-str)])
@@ -104,8 +102,6 @@
                    [(OP MOD exp exp CP) 'mod]
                    [(OP GE exp exp CP) 'GE]
                    [(OP LE exp exp CP) 'LE]
-                   [(OP - exp CP) (prec NEG) 'sub]
-                   [(- exp) (prec NEG) 'sub]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [root (evaluate-smt2-parser p expr-str)])
@@ -154,8 +150,6 @@
                    [(OP MOD exp exp CP) (add1 (+ $3 $4))]
                    [(OP GE exp exp CP) (add1 (+ $3 $4))]
                    [(OP LE exp exp CP) (add1 (+ $3 $4))]
-                   [(OP - exp CP) (prec NEG) (add1 $3)]
-                   [(- exp) (prec NEG) (add1 $2)]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [node-count (evaluate-smt2-parser p expr-str)])
@@ -207,8 +201,6 @@
                    [(OP MOD exp exp CP) (add1 (max $3 $4))]
                    [(OP GE exp exp CP) (add1 (max $3 $4))]
                    [(OP LE exp exp CP) (add1 (max $3 $4))]
-                   [(OP - exp CP) (prec NEG) (add1 $3)]
-                   [(- exp) (prec NEG) (add1 $2)]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [node-depth (evaluate-smt2-parser p expr-str)])
@@ -258,8 +250,6 @@
                    [(OP MOD exp exp CP) (void $3 $4)]
                    [(OP GE exp exp CP) (void $3 $4)]
                    [(OP LE exp exp CP) (void $3 $4)]
-                   [(OP - exp CP) (prec NEG) (void $3)]
-                   [(- exp) (prec NEG) (void $2)]
                    [(OP exp CP) $2]
                    [(LII exp) $2])))]
          [_ (evaluate-smt2-parser p expr-str)])

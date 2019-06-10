@@ -29,6 +29,7 @@
    ["VERIFYFAILURE" (halide-lexer input-port)] ;; throw away header
    ;; (token-newline) returns 'newline
    [#\newline (token-newline)]
+   [(:: (:? "-") (:+ digit)) (token-NUM (string->number lexeme))]
    ;; Since (token-=) returns '=, just return the symbol directly
    [(:or "+" "-" "*" "/" "<" ">" "!" "%") (string->symbol lexeme)]
    ["(uint1)1" 'UINT1]
@@ -49,7 +50,7 @@
    ["likely_if_innermost" 'LII]
    ;[(:+ (:or lower-letter upper-letter)) (token-VAR (string->symbol lexeme))]
    [(:: (union "v" "i" "t" "c") (:+ digit)) (token-VAR (string->symbol lexeme))]
-   [(:+ digit) (token-NUM (string->number lexeme))]
+
    [(:: (:+ digit) #\. (:* digit)) (token-NUM (string->number lexeme))]))
 
 (define (evaluate-halide-parser p s)
