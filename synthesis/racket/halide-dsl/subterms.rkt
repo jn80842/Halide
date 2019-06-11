@@ -5,7 +5,7 @@
 (require "lexer.rkt")
 (require "halide-helpers.rkt")
 
-(provide get-all-substs-and-subterms)
+(provide get-all-substs-and-subterms rename-vars-parse)
 
 (define (get-subterms str)
   (let* ([subterm-set (list->mutable-set '())]

@@ -5,7 +5,7 @@
 (require "lexer.rkt")
 
 (provide get-smt2-type get-smt2-root-symbol get-smt2-node-count get-smt2-node-depth
-         get-smt2-variables hash-smt2-terms-by-type sort-smt2-by-node-count)
+         get-smt2-variables hash-smt2-terms-by-type sort-smt2-by-node-count get-smt2-replaced-consts-expr)
 
 (define (get-smt2-type expr-str)
   (let* ([p (parser
@@ -13,7 +13,7 @@
              (end newline EOF)
              (tokens smt2-value-tokens smt2-op-tokens)
              (error (lambda (a b c) (void)))
-             
+
              (precs (right EQ)
                     (left < > GE LE)
                     (left OR AND)
@@ -21,15 +21,15 @@
                     (left * DIV MOD)
                     (left NEG)
                     (left NOT))
-             
+
              (grammar
-              
+
               (start [() #f]
                      ;; If there is an error, ignore everything before the error
                      ;; and try to start over right after the error
                      [(error start) $2]
                      [(exp) $1])
-               
+
               (exp [(NUM) 'integer]
                    [(VAR) 'unknown]
                    [(TRUE) 'boolean]
@@ -254,3 +254,54 @@
                    [(LII exp) $2])))]
          [_ (evaluate-smt2-parser p expr-str)])
     (set->list varset)))
+
+(define (get-smt2-replaced-consts-expr expr-str subst)
+  (let* ([p (parser
+             (start start)
+             (end newline EOF)
+             (tokens smt2-value-tokens smt2-op-tokens)
+             (error (lambda (a b c) (void)))
+
+             (precs (right EQ)
+                    (left < > GE LE)
+                    (left OR AND)
+                    (left - +)
+                    (left * DIV MOD)
+                    (left NEG)
+                    (left NOT))
+
+             (grammar
+
+              (start [() #f]
+                     ;; If there is an error, ignore everything before the error
+                     ;; and try to start over right after the error
+                     [(error start) $2]
+                     [(exp) $1])
+
+              (exp [(NUM) (let ([c $1])
+                            (if (hash-has-key? subst c)
+                                (hash-ref subst c)
+                                c))]
+                   [(VAR) (symbol->string $1)]
+                   [(TRUE) "true"]
+                   [(FALSE) "false"]
+                   [(OP EQ exp exp CP) (format "(= ~a ~a)" $3 $4)]
+                   [(OP MAX exp exp CP) (format "(max ~a ~a)" $3 $4)]
+                   [(OP MIN exp exp CP) (format "(min ~a ~a)" $3 $4)]
+                   [(OP NOT exp CP) (format "(not ~a)" $3)]
+                   [(OP ITE exp exp exp CP) (format "(ite ~a ~a ~a)" $3 $4 $5)]
+                   [(OP AND exp exp CP) (format "(and ~a ~a)" $3 $4)]
+                   [(OP OR exp exp CP) (format "(or ~a ~a)" $3 $4)]
+                   [(OP + exp exp CP) (format "(+ ~a ~a)" $3 $4)]
+                   [(OP - exp exp CP) (format "(- ~a ~a)" $3 $4)]
+                   [(OP * exp exp CP) (format "(* ~a ~a)" $3 $4)]
+                   [(OP DIV exp exp CP) (format "(div ~a ~a)" $3 $4)]
+                   [(OP < exp exp CP) (format "(< ~a ~a)" $3 $4)]
+                   [(OP > exp exp CP) (format "(> ~a ~a)" $3 $4)]
+                   [(OP MOD exp exp CP) (format "(mod ~a ~a)" $3 $4)]
+                   [(OP GE exp exp CP) (format "(>= ~a ~a)" $3 $4)]
+                   [(OP LE exp exp CP) (format "(<= ~a ~a)" $3 $4)]
+                   [(OP exp CP) $2]
+                   [(LII exp) $2])))]
+         [e (evaluate-smt2-parser p expr-str)])
+    e))

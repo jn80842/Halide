@@ -17,13 +17,7 @@
 (define (stderr-port->string p)
   (port->string (list-ref p 3)))
 
-;;
-
-#;(define (verify-expr-is-true e)
-  (let* ([p (process (format "echo '~a' | /usr/local/bin/z3 -smt2 -in" (testcase->smt2 e)))]
-         [expr-true? (string-contains? (stdout-port->string p) "unsat")])
-    (close-process-ports p)
-    expr-true?))
+;; z3 query methods
 
 (define (build-smt2-query int-vars bool-vars formula)
   (string-join (append
@@ -43,6 +37,9 @@
 
 (define (get-verify-true-formula int-vars bool-vars s1)
   (build-smt2-query int-vars bool-vars (format "(assert (not ~a))" s1)))
+
+(define (get-verify-true-formula-with-predicate int-vars bool-vars s1 pred)
+  (build-smt2-query int-vars bool-vars (format "(assert ~a)\n (assert (not ~a))" pred s1)))
 
 (define (get-verify-false-formula int-vars bool-vars s1)
   (build-smt2-query int-vars bool-vars (format "(assert ~a)" s1)))
