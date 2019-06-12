@@ -45,7 +45,9 @@ bool expr_gt(Expr e1, Expr e2);
 std::string smt2formula(Expr e);
 std::string smt2_declarations(Expr e);
 std::string z3query_verifyequal(Expr e1, Expr e2);
+std::string z3query_verifytrue(Expr e);
 
+bool query_true(Expr e);
 bool query_equivalence(Expr e1, Expr e2);
 
 }

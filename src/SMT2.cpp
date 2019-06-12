@@ -465,8 +465,8 @@ std::string smt2formula(Expr e) {
 }
 
 std::string z3query_body(std::string assert_smt) {
-    std::string phi = "(define-fun min ((x Int) (y Int)) Int (ite (> x y) x y)) ";
-    phi += "(define-fun max ((x Int) (y Int)) Int (ite (> x y) y x)) ";
+    std::string phi = "(define-fun min ((x Int) (y Int)) Int (ite (> x y) y x)) ";
+    phi += "(define-fun max ((x Int) (y Int)) Int (ite (> x y) x y)) ";
     phi += "(declare-const lanes Int) ";
     phi += "(assert (> lanes 1)) ";
     phi += assert_smt;
@@ -480,8 +480,19 @@ std::string z3query_verifyequal(Expr e1, Expr e2) {
     return smt2_declarations(e1) + z3query_body("(assert (not (= " + smt2formula(e1) + " " + smt2formula(e2) + ")))");
 }
 
+std::string z3query_verifytrue(Expr e) {
+    return smt2_declarations(e) + z3query_body("(assert (not " + smt2formula(e) + "))");
+}
+
+// we only care about the exit code to see if verification succeeded/failed
 bool query_equivalence(Expr e1, Expr e2) {
-    std::string system_call = "echo '" + z3query_verifyequal(e1,e2) + "' | z3 -in -smt2 -T:60 -memory:1000";
+    std::string system_call = "echo '" + z3query_verifyequal(e1,e2) + "' | z3 -in -smt2 -T:60 -memory:1000 &>/dev/null";
+    int exitcode = std::system(system_call.c_str());
+    return !(exitcode == 0);
+}
+
+bool query_true(Expr e) {
+    std::string system_call = "echo '" + z3query_verifytrue(e) + "' | z3 -in -smt2 -T:60 -memory:1000 &>/dev/null";
     int exitcode = std::system(system_call.c_str());
     return !(exitcode == 0);
 }
