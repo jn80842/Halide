@@ -127,10 +127,6 @@ make_sample() {
         ${D}/*.registration.cpp \
         ${D}/*.a \
         -o ${D}/bench \
-        -I/usr/local/homebrew/Cellar/jpeg/9c/include \
-        -L/usr/local/homebrew/Cellar/jpeg/9c/lib \
-        -I/usr/local/homebrew/Cellar/libpng/1.6.36/include \
-        -L/usr/local/homebrew/Cellar/libpng/1.6.36/lib \
         -ljpeg -ldl -lpthread -lz -lpng
 }
 
