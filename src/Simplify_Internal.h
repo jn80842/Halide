@@ -17,6 +17,7 @@
 
 #define LOG_EXPR_MUTATIONS 0
 #define LOG_STMT_MUTATIONS 0
+#define USE_SYNTHESIZED_RULES 1
 
 // On old compilers, some visitors would use large stack frames,
 // because they use expression templates that generate large numbers
