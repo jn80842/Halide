@@ -7,7 +7,7 @@
 (provide smt2-value-tokens smt2-op-tokens smt2-lexer evaluate-smt2-parser)
 
 (define-tokens smt2-value-tokens (NUM VAR))
-(define-empty-tokens smt2-op-tokens (newline OP CP COMMA + - * DIV MOD ^ < > NOT EQ GE LE EOF NEG OR AND MAX MIN ITE TRUE FALSE LII))
+(define-empty-tokens smt2-op-tokens (newline OP CP COMMA + - * DIV MOD ^ < > NOT EQ NEQ GE LE EOF NEG OR AND MAX MIN ITE TRUE FALSE LII))
 
 (define-lex-abbrevs
  (lower-letter (:/ "a" "z"))
@@ -32,6 +32,7 @@
    [">=" 'GE]
    ["<=" 'LE]
    ["=" 'EQ]
+   ["!=" 'NEQ]
    ["(" 'OP]
    [")" 'CP]
    ["," 'COMMA]

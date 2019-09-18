@@ -3,8 +3,10 @@
 (require parser-tools/yacc)
 
 (require "lexer.rkt")
+(require "../rosette-synthesis/lang.rkt")
 
-(provide get-smt2-type get-smt2-root-symbol get-smt2-node-count get-smt2-node-depth
+(provide (all-defined-out))
+#;(provide get-smt2-type get-smt2-root-symbol get-smt2-node-count get-smt2-node-depth
          get-smt2-variables hash-smt2-terms-by-type sort-smt2-by-node-count get-smt2-replaced-consts-expr)
 
 (define (get-smt2-type expr-str)
@@ -235,6 +237,7 @@
                    [(TRUE) (void)]
                    [(FALSE) (void)]
                    [(OP EQ exp exp CP) (void $3 $4)]
+                   [(OP NEQ exp exp CP) (void $3 $4)]
                    [(OP MAX exp exp CP) (void $3 $4)]
                    [(OP MIN exp exp CP) (void $3 $4)]
                    [(OP NOT exp CP) (void $3)]
@@ -243,6 +246,7 @@
                    [(OP OR exp exp CP) (void $3 $4)]
                    [(OP + exp exp CP) (void $3 $4)]
                    [(OP - exp exp CP) (void $3 $4)]
+                   [(OP - exp CP) (void $3)]
                    [(OP * exp exp CP) (void $3 $4)]
                    [(OP DIV exp exp CP) (void $3 $4)]
                    [(OP < exp exp CP) (void $3 $4)]
@@ -286,6 +290,7 @@
                    [(TRUE) "true"]
                    [(FALSE) "false"]
                    [(OP EQ exp exp CP) (format "(= ~a ~a)" $3 $4)]
+                   [(OP NEQ exp exp CP) (format "(!= ~a ~a)" $3 $4)]
                    [(OP MAX exp exp CP) (format "(max ~a ~a)" $3 $4)]
                    [(OP MIN exp exp CP) (format "(min ~a ~a)" $3 $4)]
                    [(OP NOT exp CP) (format "(not ~a)" $3)]
@@ -294,6 +299,7 @@
                    [(OP OR exp exp CP) (format "(or ~a ~a)" $3 $4)]
                    [(OP + exp exp CP) (format "(+ ~a ~a)" $3 $4)]
                    [(OP - exp exp CP) (format "(- ~a ~a)" $3 $4)]
+                   [(OP - exp CP) (format "(- ~a)" $3)]
                    [(OP * exp exp CP) (format "(* ~a ~a)" $3 $4)]
                    [(OP DIV exp exp CP) (format "(div ~a ~a)" $3 $4)]
                    [(OP < exp exp CP) (format "(< ~a ~a)" $3 $4)]
@@ -305,3 +311,223 @@
                    [(LII exp) $2])))]
          [e (evaluate-smt2-parser p expr-str)])
     e))
+
+(define (get-smt2-replaced-vars-expr expr-str subst)
+  (let* ([p (parser
+             (start start)
+             (end newline EOF)
+             (tokens smt2-value-tokens smt2-op-tokens)
+             (error (lambda (a b c) (void)))
+
+             (precs (right EQ)
+                    (left < > GE LE)
+                    (left OR AND)
+                    (left - +)
+                    (left * DIV MOD)
+                    (left NEG)
+                    (left NOT))
+
+             (grammar
+
+              (start [() #f]
+                     ;; If there is an error, ignore everything before the error
+                     ;; and try to start over right after the error
+                     [(error start) $2]
+                     [(exp) $1])
+
+              (exp [(NUM)  $1]
+                   [(VAR) (let ([v (symbol->string $1)])
+                            (if (hash-has-key? subst v)
+                                (hash-ref subst v)
+                                v))]
+                   [(TRUE) "true"]
+                   [(FALSE) "false"]
+                   [(OP EQ exp exp CP) (format "(= ~a ~a)" $3 $4)]
+                   [(OP NEQ exp exp CP) (format "(!= ~a ~a)" $3 $4)]
+                   [(OP MAX exp exp CP) (format "(max ~a ~a)" $3 $4)]
+                   [(OP MIN exp exp CP) (format "(min ~a ~a)" $3 $4)]
+                   [(OP NOT exp CP) (format "(not ~a)" $3)]
+                   [(OP ITE exp exp exp CP) (format "(ite ~a ~a ~a)" $3 $4 $5)]
+                   [(OP AND exp exp CP) (format "(and ~a ~a)" $3 $4)]
+                   [(OP OR exp exp CP) (format "(or ~a ~a)" $3 $4)]
+                   [(OP + exp exp CP) (format "(+ ~a ~a)" $3 $4)]
+                   [(OP - exp exp CP) (format "(- ~a ~a)" $3 $4)]
+                   [(OP - exp CP) (format "(- ~a)" $3)]
+                   [(OP * exp exp CP) (format "(* ~a ~a)" $3 $4)]
+                   [(OP DIV exp exp CP) (format "(div ~a ~a)" $3 $4)]
+                   [(OP < exp exp CP) (format "(< ~a ~a)" $3 $4)]
+                   [(OP > exp exp CP) (format "(> ~a ~a)" $3 $4)]
+                   [(OP MOD exp exp CP) (format "(mod ~a ~a)" $3 $4)]
+                   [(OP GE exp exp CP) (format "(>= ~a ~a)" $3 $4)]
+                   [(OP LE exp exp CP) (format "(<= ~a ~a)" $3 $4)]
+                   [(OP exp CP) $2]
+                   [(LII exp) $2])))]
+         [e (evaluate-smt2-parser p expr-str)])
+    e))
+
+(define (consistent-var-names-smt2-expr expr-str)
+  (let* ([counter (vector 0)]
+         [vars-hash (make-hash '())]
+         [p (parser
+             (start start)
+             (end newline EOF)
+             (tokens smt2-value-tokens smt2-op-tokens)
+             (error (lambda (a b c) (void)))
+
+             (precs (left OR AND)
+                    (right EQ)
+                    (left < > GE LE)
+                    (left - +)
+                    (left * DIV MOD)
+                    (left NEG)
+                    (left NOT))
+
+             (grammar
+
+              (start [() #f]
+                     ;; If there is an error, ignore everything before the error
+                     ;; and try to start over right after the error
+                     [(error start) $2]
+                     [(exp) $1])
+
+              (exp [(NUM) $1]
+                   [(VAR) (let ([var $1])
+                            (if (hash-has-key? vars-hash var)
+                                (hash-ref vars-hash var)
+                                (let* ([current-count (vector-ref counter 0)]
+                                       [new-varname (format "c~a" current-count)])
+                                  (vector-set! counter 0 (add1 current-count))
+                                  (hash-set! vars-hash var new-varname)
+                                  new-varname)))]
+                   [(TRUE) "true"]
+                   [(FALSE) "false"]
+                   [(OP EQ exp exp CP) (format "(= ~a ~a)" $3 $4)]
+                   [(OP NEQ exp exp CP) (format "(!= ~a ~a)" $3 $4)]
+                   [(OP MAX exp exp CP) (format "(max ~a ~a)" $3 $4)]
+                   [(OP MIN exp exp CP) (format "(min ~a ~a)" $3 $4)]
+                   [(OP NOT exp CP) (format "(not ~a)" $3)]
+                   [(OP ITE exp exp exp CP) (format "(ite ~a ~a ~a)" $3 $4 $5)]
+                   [(OP AND exp exp CP) (format "(and ~a ~a)" $3 $4)]
+                   [(OP OR exp exp CP) (format "(or ~a ~a)" $3 $4)]
+                   [(OP + exp exp CP) (format "(+ ~a ~a)" $3 $4)]
+                   [(OP - exp exp CP) (format "(- ~a ~a)" $3 $4)]
+                   [(OP - exp CP) (format "(- ~a)" $3)]
+                   [(OP * exp exp CP) (format "(* ~a ~a)" $3 $4)]
+                   [(OP DIV exp exp CP) (format "(div ~a ~a)" $3 $4)]
+                   [(OP < exp exp CP) (format "(< ~a ~a)" $3 $4)]
+                   [(OP > exp exp CP) (format "(> ~a ~a)" $3 $4)]
+                   [(OP MOD exp exp CP) (format "(mod ~a ~a)" $3 $4)]
+                   [(OP GE exp exp CP) (format "(>= ~a ~a)" $3 $4)]
+                   [(OP LE exp exp CP) (format "(<= ~a ~a)" $3 $4)]
+                   [(OP exp CP) $2]
+                   [(LII exp) $2])))]
+         [e (evaluate-smt2-parser p expr-str)])
+    e))
+
+(define (get-const-var-hash expr-str)
+  (let* ([counter (vector 0)]
+         [num-hash (make-hash '())]
+         [p (parser
+             (start start)
+             (end newline EOF)
+             (tokens smt2-value-tokens smt2-op-tokens)
+             (error (lambda (a b c) (void)))
+
+             (precs (left OR AND)
+                    (right EQ)
+                    (left < > GE LE)
+                    (left - +)
+                    (left * DIV MOD)
+                    (left NEG)
+                    (left NOT))
+
+             (grammar
+
+              (start [() #f]
+                     ;; If there is an error, ignore everything before the error
+                     ;; and try to start over right after the error
+                     [(error start) $2]
+                     [(exp) $1])
+
+              (exp [(NUM) (let ([num $1])
+                            (if (hash-has-key? num-hash num)
+                                num
+                                (let* ([current-count (vector-ref counter 0)]
+                                       [new-varname (format "c~a" current-count)])
+                                  (vector-set! counter 0 (add1 current-count))
+                                  (hash-set! num-hash num new-varname)
+                                  num)))]
+                   [(VAR) (symbol->string $1)]
+                   [(TRUE) "true"]
+                   [(FALSE) "false"]
+                   [(OP EQ exp exp CP) (format "(= ~a ~a)" $3 $4)]
+                   [(OP NEQ exp exp CP) (format "(!= ~a ~a)" $3 $4)]
+                   [(OP MAX exp exp CP) (format "(max ~a ~a)" $3 $4)]
+                   [(OP MIN exp exp CP) (format "(min ~a ~a)" $3 $4)]
+                   [(OP NOT exp CP) (format "(not ~a)" $3)]
+                   [(OP ITE exp exp exp CP) (format "(ite ~a ~a ~a)" $3 $4 $5)]
+                   [(OP AND exp exp CP) (format "(and ~a ~a)" $3 $4)]
+                   [(OP OR exp exp CP) (format "(or ~a ~a)" $3 $4)]
+                   [(OP + exp exp CP) (format "(+ ~a ~a)" $3 $4)]
+                   [(OP - exp exp CP) (format "(- ~a ~a)" $3 $4)]
+                   [(OP - exp CP) (format "(- ~a)" $3)]
+                   [(OP * exp exp CP) (format "(* ~a ~a)" $3 $4)]
+                   [(OP DIV exp exp CP) (format "(div ~a ~a)" $3 $4)]
+                   [(OP < exp exp CP) (format "(< ~a ~a)" $3 $4)]
+                   [(OP > exp exp CP) (format "(> ~a ~a)" $3 $4)]
+                   [(OP MOD exp exp CP) (format "(mod ~a ~a)" $3 $4)]
+                   [(OP GE exp exp CP) (format "(>= ~a ~a)" $3 $4)]
+                   [(OP LE exp exp CP) (format "(<= ~a ~a)" $3 $4)]
+                   [(OP exp CP) $2]
+                   [(LII exp) $2])))]
+         [e (evaluate-smt2-parser p expr-str)])
+    num-hash))
+
+(define (evaluate-smt2-expr expr-str)
+  (let ([p (parser
+            (start start)
+            (end newline EOF)
+            (tokens smt2-value-tokens smt2-op-tokens)
+            (error (lambda (a b c) (void)))
+
+             (precs (left OR AND)
+                    (right EQ)
+                    (left < > GE LE)
+                    (left - +)
+                    (left * DIV MOD)
+                    (left NEG)
+                    (left NOT))
+
+             (grammar
+
+              (start [() #f]
+                     ;; If there is an error, ignore everything before the error
+                     ;; and try to start over right after the error
+                     [(error start) $2]
+                     [(exp) $1])
+
+              (exp [(NUM) $1]
+                   [(VAR) $1]
+                   [(TRUE) #t]
+                   [(FALSE) #f]
+                   [(OP EQ exp exp CP) (eq? $3 $4)]
+                   [(OP NEQ exp exp CP) (not (eq? $3 $4))]
+                   [(OP MAX exp exp CP) (max $3 $4)]
+                   [(OP MIN exp exp CP) (min $3 $4)]
+                   [(OP NOT exp CP) (not $3)]
+                   [(OP ITE exp exp exp CP) (if $3 $4 $5)]
+                   [(OP AND exp exp CP) (and $3 $4)]
+                   [(OP OR exp exp CP) (or $3 $4)]
+                   [(OP + exp exp CP) (+ $3 $4)]
+                   [(OP - exp exp CP) (- $3 $4)]
+                   [(OP - exp CP) (- $3)]
+                   [(OP * exp exp CP) (* $3 $4)]
+                   [(OP DIV exp exp CP) (euclidean-div $3 $4)]
+                   [(OP < exp exp CP) (< $3 $4)]
+                   [(OP > exp exp CP) (> $3 $4)]
+                   [(OP MOD exp exp CP) (euclidean-mod $3 $4)]
+                   [(OP GE exp exp CP) (>= $3 $4)]
+                   [(OP LE exp exp CP) (<= $3 $4)]
+                   [(OP exp CP) $2]
+                   [(LII exp) $2])))])
+    (evaluate-smt2-parser p expr-str)))

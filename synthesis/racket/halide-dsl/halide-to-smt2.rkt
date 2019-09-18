@@ -14,9 +14,9 @@
    (tokens value-tokens op-tokens)
    (error (lambda (a b c) (void)))
 
-   (precs (right EQ)
+   (precs (left OR AND)
+          (right EQ)
           (left < > GE LE)
-          (left OR AND)
           (left - +)
           (left * / %)
           (left NEG)
@@ -39,7 +39,6 @@
          [(exp EQ exp) (format "(= ~a ~a)" $1 $3)]
          [(MAX OP exp COMMA exp CP) (format "(max ~a ~a)" $3 $5)]
          [(MIN OP exp COMMA exp CP) (format "(min ~a ~a)" $3 $5)]
-         [(! OP exp CP) (format "(not ~a)" $3)]
          [(SELECT OP exp COMMA exp COMMA exp CP) (format "(ite ~a ~a ~a)" $3 $5 $7)]
          [(exp AND exp) (format "(and ~a ~a)" $1 $3)]
          [(exp OR exp) (format "(or ~a ~a)" $1 $3)]
@@ -52,6 +51,7 @@
          [(exp % exp) (format "(mod ~a ~a)" $1 $3)]
          [(exp GE exp) (format "(>= ~a ~a)" $1 $3)]
          [(exp LE exp) (format "(<= ~a ~a)" $1 $3)]
+         [(! OP exp CP) (format "(not ~a)" $3)]
          [(OP exp CP) $2]
          [(LII exp) $2]))))
 
