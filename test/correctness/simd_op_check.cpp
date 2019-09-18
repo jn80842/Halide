@@ -20,7 +20,6 @@ using std::string;
 // width and height of test images
 constexpr int W = 256*3;
 constexpr int H = 128;
-constexpr int PAD = 128;
 
 constexpr int max_i8  = 127;
 constexpr int max_i16 = 32767;
@@ -81,8 +80,7 @@ struct Test {
             .with_feature(Target::NoBoundsQuery)
             .with_feature(Target::NoAsserts)
             .with_feature(Target::NoRuntime)
-            .with_feature(Target::DisableLLVMLoopUnroll)
-            .with_feature(Target::DisableLLVMLoopVectorize);
+            .with_feature(Target::DisableLLVMLoopOpt);
         // We only test the skylake variant of avx512 here
         use_avx512 = (target.has_feature(Target::AVX512_Cannonlake) ||
                       target.has_feature(Target::AVX512_Skylake));
@@ -104,33 +102,6 @@ struct Test {
         use_power_arch_2_07 = target.has_feature(Target::POWER_ARCH_2_07);
 
         use_wasm_simd128 = target.has_feature(Target::WasmSimd128);
-
-        // We are going to call realize, i.e. we are going to JIT code.
-        // Not all platforms support JITting. One indirect yet quick
-        // way of identifying this is to see if we can run code on the
-        // host. This check is in no ways really a complete check, but
-        // it works for now.
-        const bool can_run = can_run_code();
-        for (auto p : image_params) {
-            p.set_host_alignment(128);
-            p.dim(0).set_min(-PAD).set_extent(W + 2 * PAD);
-            if (can_run) {
-                // Make a buffer filled with noise to use as a sample input.
-                Buffer<> b(p.type(), W + 2 * PAD);
-                b.set_min(-PAD);
-                Expr r;
-                if (p.type().is_float()) {
-                    r = cast(p.type(), random_float() * 1024 - 512);
-                } else {
-                    // Avoid cases where vector vs scalar do different things
-                    // on signed integer overflow by limiting ourselves to 28
-                    // bit numbers.
-                    r = cast(p.type(), random_int() / 4);
-                }
-                lambda(x, r).realize(b, target);
-                p.set(b);
-            }
-        }
     }
 
     bool can_run_code() const {
@@ -220,6 +191,11 @@ struct Test {
         Func error("error_" + name);
         error() = cast<double>(maximum(absd(f(r.x, r.y), f_scalar(r.x, r.y))));
 
+        for (auto p : image_params) {
+            p.reset();
+            p.set_host_alignment(128);
+        }
+
         {
             // Compile just the vector Func to assembly.
             string asm_filename = output_directory + "check_" + name + ".s";
@@ -254,7 +230,40 @@ struct Test {
 
         bool can_run_the_code = can_run_code();
         if (can_run_the_code) {
-            Realization r = error.realize(target.without_feature(Target::NoRuntime));
+            Target run_target = target
+                .without_feature(Target::NoRuntime)
+                .without_feature(Target::NoAsserts)
+                .without_feature(Target::NoBoundsQuery);
+
+            error.compile_jit(run_target);
+            error.infer_input_bounds();
+            // Fill the inputs with noise
+            std::mt19937 rng(123);
+            for (auto p : image_params) {
+                Buffer<> buf = p.get();
+                if (!buf.defined()) continue;
+                assert(buf.data());
+                Type t = buf.type();
+                // For floats/doubles, we only use values that aren't
+                // subject to rounding error that may differ between
+                // vectorized and non-vectorized versions
+                if (t == Float(32)) {
+                    buf.as<float>().for_each_value([&](float &f) {f = (rng() & 0xfff) / 8.0f - 0xff;});
+                } else if (t == Float(64)) {
+                    buf.as<double>().for_each_value([&](double &f) {f = (rng() & 0xfff) / 8.0 - 0xff;});
+                } else {
+                    // Random bits is fine
+                    for (uint32_t *ptr = (uint32_t *)buf.data();
+                         ptr != (uint32_t *)buf.data() + buf.size_in_bytes() / 4;
+                         ptr++) {
+                        // Never use the top four bits, to avoid
+                        // signed integer overflow.
+                        *ptr = ((uint32_t)rng()) & 0x0fffffff;
+                    }
+                }
+
+            }
+            Realization r = error.realize();
             double e = Buffer<double>(r[0])();
             // Use a very loose tolerance for floating point tests. The
             // kinds of bugs we're looking for are codegen bugs that
@@ -341,7 +350,9 @@ struct Test {
             check("paddusw", 4*w, u16(min(u32(u16_1) + u32(u16_2), max_u16)));
             check("psubusw", 4*w, u16(max(i32(u16_1) - i32(u16_2), 0)));
             check("pmulhw",  4*w, i16((i32(i16_1) * i32(i16_2)) / (256*256)));
-            check("pmulhw",  4*w, i16((i32(i16_1) * i32(i16_2)) >> 16));
+            check("pmulhw",  4*w, i16((i32(i16_1) * i32(i16_2)) >> cast<unsigned>(16)));
+            check("pmulhw",  4*w, i16((i32(i16_1) * i32(i16_2)) >> cast<int>(16)));
+            check("pmulhw",  4*w, i16((i32(i16_1) * i32(i16_2)) << cast<int>(-16)));
 
             // Add a test with a constant as there was a bug on this.
             check("pmulhw",  4*w, i16((3 * i32(i16_2)) / (256*256)));
@@ -394,8 +405,10 @@ struct Test {
             check("pminub", 8*w, min(u8_1, u8_2));
 
             const char *check_pmulhuw = (use_avx2 && w > 3) ? "vpmulhuw*ymm" : "pmulhuw";
-            check(check_pmulhuw, 4*w, u16((u32(u16_1) * u32(u16_2))/(256*256)));
-            check(check_pmulhuw, 4*w, u16((u32(u16_1) * u32(u16_2))>>16));
+            check(check_pmulhuw, 4*w, u16((u32(u16_1) * u32(u16_2)) / (256*256)));
+            check(check_pmulhuw, 4*w, u16((u32(u16_1) * u32(u16_2)) >> cast<unsigned>(16)));
+            check(check_pmulhuw, 4*w, u16((u32(u16_1) * u32(u16_2)) >> cast<int>(16)));
+            check(check_pmulhuw, 4*w, u16((u32(u16_1) * u32(u16_2)) << cast<int>(-16)));
             check(check_pmulhuw, 4*w, u16_1 / 15);
 
             check("cmpeqps", 2*w, select(f32_1 == f32_2, 1.0f, 2.0f));
@@ -578,10 +591,10 @@ struct Test {
 
             check("vcvttps2dq*ymm", 8, i32(f32_1));
             check("vcvtdq2ps*ymm", 8, f32(i32_1));
-            check(use_avx512 ? "vcvttpd2dq*ymm" : "vcvttpd2dqy", 8, i32(f64_1));
+            check(use_avx512 ? "vcvttpd2dq*ymm" : "vcvttpd2dq*xmm", 8, i32(f64_1));
             check(use_avx512 ? "vcvtdq2pd*zmm" : "vcvtdq2pd*ymm", 8, f64(i32_1));
             check(use_avx512 ? "vcvtps2pd*zmm" : "vcvtps2pd*ymm", 8, f64(f32_1));
-            check(use_avx512 ? "vcvtpd2ps*ymm" : "vcvtpd2psy", 8, f32(f64_1));
+            check(use_avx512 ? "vcvtpd2ps*ymm" : "vcvtpd2ps*xmm", 8, f32(f64_1));
 
             // Newer llvms will just vpshufd straight from memory for reversed loads
             // check("vperm", 8, in_f32(100-x));
@@ -605,7 +618,9 @@ struct Test {
             check("vpaddd*ymm", 8, i32_1 + i32_2);
             check("vpsubd*ymm", 8, i32_1 - i32_2);
             check("vpmulhw*ymm", 16, i16((i32(i16_1) * i32(i16_2)) / (256*256)));
-            check("vpmulhw*ymm", 16, i16((i32(i16_1) * i32(i16_2)) >> 16));
+            check("vpmulhw*ymm", 16, i16((i32(i16_1) * i32(i16_2)) >> cast<unsigned>(16)));
+            check("vpmulhw*ymm", 16, i16((i32(i16_1) * i32(i16_2)) >> cast<int>(16)));
+            check("vpmulhw*ymm", 16, i16((i32(i16_1) * i32(i16_2)) << cast<int>(-16)));
             check("vpmullw*ymm", 16, i16_1 * i16_2);
 
             check("vpcmp*b*ymm", 32, select(u8_1 == u8_2, u8(1), u8(2)));
@@ -790,10 +805,16 @@ struct Test {
             check(arm32 ? "vadd.i64" : "add", 2*w, u64_1 + u64_2);
 
             // VADDHN   I       -       Add and Narrow Returning High Half
-            check(arm32 ? "vaddhn.i16" : "addhn", 8*w, i8((i16_1 + i16_2)/256));
-            check(arm32 ? "vaddhn.i16" : "addhn", 8*w, u8((u16_1 + u16_2)/256));
-            check(arm32 ? "vaddhn.i32" : "addhn", 4*w, i16((i32_1 + i32_2)/65536));
-            check(arm32 ? "vaddhn.i32" : "addhn", 4*w, u16((u32_1 + u32_2)/65536));
+            check(arm32 ? "vaddhn.i16" : "addhn", 8*w, i8((i16_1 + i16_2) / 256));
+            check(arm32 ? "vaddhn.i16" : "addhn", 8*w, u8((u16_1 + u16_2) / 256));
+            check(arm32 ? "vaddhn.i32" : "addhn", 4*w, i16((i32_1 + i32_2) / 65536));
+            check(arm32 ? "vaddhn.i32" : "addhn", 4*w, i16((i32_1 + i32_2) >> cast<unsigned>(16)));
+            check(arm32 ? "vaddhn.i32" : "addhn", 4*w, i16((i32_1 + i32_2) >> cast<int>(16)));
+            check(arm32 ? "vaddhn.i32" : "addhn", 4*w, i16((i32_1 + i32_2) << cast<int>(-16)));
+            check(arm32 ? "vaddhn.i32" : "addhn", 4*w, u16((u32_1 + u32_2) / 65536));
+            check(arm32 ? "vaddhn.i32" : "addhn", 4*w, u16((u32_1 + u32_2) >> cast<unsigned>(16)));
+            check(arm32 ? "vaddhn.i32" : "addhn", 4*w, u16((u32_1 + u32_2) >> cast<int>(16)));
+            check(arm32 ? "vaddhn.i32" : "addhn", 4*w, u16((u32_1 + u32_2) << cast<int>(-16)));
 
             // VADDL    I       -       Add Long
             check(arm32 ? "vaddl.s8"  : "saddl", 8*w, i16(i8_1) + i16(i8_2));
@@ -1670,10 +1691,18 @@ struct Test {
         check("vpacko(v*.h,v*.h)", hvx_width/1, u8(i16_1 >> 8));
         check("vpacko(v*.h,v*.h)", hvx_width/1, i8(u16_1 >> 8));
         check("vpacko(v*.h,v*.h)", hvx_width/1, i8(i16_1 >> 8));
-        check("vpacko(v*.w,v*.w)", hvx_width/2, u16(u32_1 >> 16));
-        check("vpacko(v*.w,v*.w)", hvx_width/2, u16(i32_1 >> 16));
-        check("vpacko(v*.w,v*.w)", hvx_width/2, i16(u32_1 >> 16));
-        check("vpacko(v*.w,v*.w)", hvx_width/2, i16(i32_1 >> 16));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, u16(u32_1 >> cast<unsigned>(16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, u16(u32_1 >> cast<int>(16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, u16(u32_1 << cast<int>(-16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, u16(i32_1 >> cast<unsigned>(16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, u16(i32_1 >> cast<int>(16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, u16(i32_1 << cast<int>(-16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, i16(u32_1 >> cast<unsigned>(16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, i16(u32_1 >> cast<int>(16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, i16(u32_1 << cast<int>(-16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, i16(i32_1 >> cast<unsigned>(16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, i16(i32_1 >> cast<int>(16)));
+        check("vpacko(v*.w,v*.w)", hvx_width/2, i16(i32_1 << cast<int>(-16)));
 
         // vpack doesn't interleave its inputs, which means it doesn't
         // simplify with widening. This is preferable for when the
@@ -1694,10 +1723,18 @@ struct Test {
         check("vshuffo(v*.b,v*.b)", hvx_width/1, u8((i16(i8_1) * 63) >> 8));
         check("vshuffo(v*.b,v*.b)", hvx_width/1, i8((u16(u8_1) * 127) >> 8));
         check("vshuffo(v*.b,v*.b)", hvx_width/1, i8((i16(i8_1) * 63) >> 8));
-        check("vshuffo(v*.h,v*.h)", hvx_width/2, u16((u32(u16_1) * 32767) >> 16));
-        check("vshuffo(v*.h,v*.h)", hvx_width/2, u16((i32(i16_1) * 16383) >> 16));
-        check("vshuffo(v*.h,v*.h)", hvx_width/2, i16((u32(u16_1) * 32767) >> 16));
-        check("vshuffo(v*.h,v*.h)", hvx_width/2, i16((i32(i16_1) * 16383) >> 16));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, u16((u32(u16_1) * 32767) >> cast<unsigned>(16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, u16((u32(u16_1) * 32767) >> cast<int>(16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, u16((u32(u16_1) * 32767) << cast<int>(-16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, u16((i32(i16_1) * 16383) >> cast<unsigned>(16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, u16((i32(i16_1) * 16383) >> cast<int>(16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, u16((i32(i16_1) * 16383) << cast<int>(-16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, i16((u32(u16_1) * 32767) >> cast<unsigned>(16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, i16((u32(u16_1) * 32767) >> cast<int>(16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, i16((u32(u16_1) * 32767) << cast<int>(-16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, i16((i32(i16_1) * 16383) >> cast<unsigned>(16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, i16((i32(i16_1) * 16383) >> cast<int>(16)));
+        check("vshuffo(v*.h,v*.h)", hvx_width/2, i16((i32(i16_1) * 16383) << cast<int>(-16)));
 
         check("vpacke(v*.h,v*.h)", hvx_width/1, in_u8(2*x));
         check("vpacke(v*.w,v*.w)", hvx_width/2, in_u16(2*x));

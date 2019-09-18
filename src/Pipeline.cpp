@@ -8,7 +8,7 @@
 #include "LLVM_Headers.h"
 #include "LLVM_Output.h"
 #include "Lower.h"
-#include "Outputs.h"
+#include "Module.h"
 #include "ParamMap.h"
 #include "Pipeline.h"
 #include "PrintLoopNest.h"
@@ -19,27 +19,33 @@ using namespace Halide::Internal;
 
 namespace Halide {
 
-using std::set;
 using std::string;
 using std::vector;
 
 namespace {
 
-std::string output_name(const string &filename, const string &fn_name, const char* ext) {
+std::string output_name(const string &filename, const string &fn_name, const string &ext) {
     return !filename.empty() ? filename : (fn_name + ext);
 }
 
-std::string output_name(const string &filename, const Module &m, const char* ext) {
+std::string output_name(const string &filename, const Module &m, const string &ext) {
     return output_name(filename, m.name(), ext);
 }
 
-Outputs static_library_outputs(const string &filename_prefix, const Target &target) {
-    Outputs outputs = Outputs().c_header(filename_prefix + ".h");
-    if (target.os == Target::Windows && !target.has_feature(Target::MinGW)) {
-        outputs = outputs.static_library(filename_prefix + ".lib");
-    } else {
-        outputs = outputs.static_library(filename_prefix + ".a");
-    }
+std::map<Output, std::string> single_output(const string &filename, const Module &m, Output output_type) {
+    auto ext = get_output_info(m.target());
+    std::map<Output, std::string> outputs = {
+        { output_type, output_name(filename, m, ext.at(output_type).extension) }
+    };
+    return outputs;
+}
+
+std::map<Output, std::string> static_library_outputs(const string &filename_prefix, const Target &target) {
+    auto ext = get_output_info(target);
+    std::map<Output, std::string> outputs = {
+        { Output::c_header, filename_prefix + ext.at(Output::c_header).extension },
+        { Output::static_library, filename_prefix + ext.at(Output::static_library).extension },
+    };
     return outputs;
 }
 
@@ -97,8 +103,10 @@ struct PipelineContents {
 
     std::vector<Stmt> requirements;
 
+    bool trace_pipeline;
+
     PipelineContents() :
-        module("", Target()) {
+        module("", Target()), trace_pipeline(false) {
         user_context_arg.arg = Argument("__user_context", Argument::InputScalar, type_of<const void*>(), 0, ArgumentEstimates{});
         user_context_arg.param = Parameter(Handle(), false, 0, "__user_context");
     }
@@ -157,24 +165,32 @@ vector<Func> Pipeline::outputs() const {
     return funcs;
 }
 
-std::function<std::string(Pipeline, const Target &, const MachineParams &)> *Pipeline::get_custom_auto_scheduler_ptr() {
-    static std::function<string(Pipeline, const Target &, const MachineParams &)> custom_auto_scheduler = nullptr;
+AutoSchedulerFn *Pipeline::get_custom_auto_scheduler_ptr() {
+    static AutoSchedulerFn custom_auto_scheduler = nullptr;
     return &custom_auto_scheduler;
 }
 
-string Pipeline::auto_schedule(const Target &target, const MachineParams &arch_params) {
+AutoSchedulerResults Pipeline::auto_schedule(const Target &target, const MachineParams &arch_params) {
+    AutoSchedulerResults results;
+    results.target = target;
+    results.machine_params_string = arch_params.to_string();
+
     auto custom_auto_scheduler = *get_custom_auto_scheduler_ptr();
     if (custom_auto_scheduler) {
-        return custom_auto_scheduler(*this, target, arch_params);
+        custom_auto_scheduler(*this, target, arch_params, &results);
+    } else {
+        user_assert(target.arch == Target::X86 || target.arch == Target::ARM ||
+                    target.arch == Target::POWERPC || target.arch == Target::MIPS)
+            << "Automatic scheduling is currently supported only on these architectures.";
+        results.scheduler_name = "src/AutoSchedule";  // TODO: find a better name (https://github.com/halide/Halide/issues/4057)
+        results.schedule_source = generate_schedules(contents->outputs, target, arch_params);
+        // this autoscheduler has no featurization
     }
 
-    user_assert(target.arch == Target::X86 || target.arch == Target::ARM ||
-                target.arch == Target::POWERPC || target.arch == Target::MIPS)
-        << "Automatic scheduling is currently supported only on these architectures.";
-    return generate_schedules(contents->outputs, target, arch_params);
+    return results;
 }
 
-void Pipeline::set_custom_auto_scheduler(std::function<string(Pipeline, const Target &, const MachineParams &)> auto_scheduler) {
+void Pipeline::set_custom_auto_scheduler(AutoSchedulerFn auto_scheduler) {
     *get_custom_auto_scheduler_ptr() = auto_scheduler;
 }
 
@@ -194,7 +210,7 @@ Func Pipeline::get_func(size_t index) {
     return Func(env.find(order[index])->second);
 }
 
-void Pipeline::compile_to(const Outputs &output_files,
+void Pipeline::compile_to(const std::map<Output, std::string> &output_files,
                           const vector<Argument> &args,
                           const string &fn_name,
                           const Target &target) {
@@ -207,7 +223,7 @@ void Pipeline::compile_to_bitcode(const string &filename,
                                   const string &fn_name,
                                   const Target &target) {
     Module m = compile_to_module(args, fn_name, target);
-    m.compile(Outputs().bitcode(output_name(filename, m, ".bc")));
+    m.compile(single_output(filename, m, Output::bitcode));
 }
 
 void Pipeline::compile_to_llvm_assembly(const string &filename,
@@ -215,7 +231,7 @@ void Pipeline::compile_to_llvm_assembly(const string &filename,
                                         const string &fn_name,
                                         const Target &target) {
     Module m = compile_to_module(args, fn_name, target);
-    m.compile(Outputs().llvm_assembly(output_name(filename, m, ".ll")));
+    m.compile(single_output(filename, m, Output::llvm_assembly));
 }
 
 void Pipeline::compile_to_object(const string &filename,
@@ -224,7 +240,7 @@ void Pipeline::compile_to_object(const string &filename,
                                  const Target &target) {
     Module m = compile_to_module(args, fn_name, target);
     const char* ext = target.os == Target::Windows && !target.has_feature(Target::MinGW) ? ".obj" : ".o";
-    m.compile(Outputs().object(output_name(filename, m, ext)));
+    m.compile({{Output::object, output_name(filename, m, ext)}});
 }
 
 void Pipeline::compile_to_header(const string &filename,
@@ -232,7 +248,7 @@ void Pipeline::compile_to_header(const string &filename,
                                  const string &fn_name,
                                  const Target &target) {
     Module m = compile_to_module(args, fn_name, target);
-    m.compile(Outputs().c_header(output_name(filename, m, ".h")));
+    m.compile(single_output(filename, m, Output::c_header));
 }
 
 void Pipeline::compile_to_assembly(const string &filename,
@@ -240,7 +256,7 @@ void Pipeline::compile_to_assembly(const string &filename,
                                    const string &fn_name,
                                    const Target &target) {
     Module m = compile_to_module(args, fn_name, target);
-    m.compile(Outputs().assembly(output_name(filename, m, ".s")));
+    m.compile(single_output(filename, m, Output::assembly));
 }
 
 
@@ -249,7 +265,7 @@ void Pipeline::compile_to_c(const string &filename,
                             const string &fn_name,
                             const Target &target) {
     Module m = compile_to_module(args, fn_name, target);
-    m.compile(Outputs().c_source(output_name(filename, m, ".c")));
+    m.compile(single_output(filename, m, Output::c_source));
 }
 
 void Pipeline::compile_to_python_extension(const string &filename,
@@ -257,7 +273,14 @@ void Pipeline::compile_to_python_extension(const string &filename,
                                            const string &fn_name,
                                            const Target &target) {
     Module m = compile_to_module(args, fn_name, target);
-    m.compile(Outputs().python_extension(output_name(filename, m, ".py.c")));
+    // Note that we deliberately default to ".py.cpp" (rather than .py.c) here;
+    // in theory, the Python extension file we generate can be compiled just
+    // fine as a plain-C file... but if we are building with cpp-name-mangling
+    // enabled in the target, we will include generated .h files that can't be compiled.
+    // We really don't want to vary the file extensions based on target flags,
+    // and in practice, it's extremely unlikely that anyone needs to rely on this
+    // being pure C output (vs possibly C++).
+    m.compile(single_output(filename, m, Output::python_extension));
 }
 
 void Pipeline::print_loop_nest() {
@@ -270,13 +293,7 @@ void Pipeline::compile_to_lowered_stmt(const string &filename,
                                        StmtOutputFormat fmt,
                                        const Target &target) {
     Module m = compile_to_module(args, "", target);
-    Outputs outputs;
-    if (fmt == HTML) {
-        outputs = Outputs().stmt_html(output_name(filename, m, ".html"));
-    } else {
-        outputs = Outputs().stmt(output_name(filename, m, ".stmt"));
-    }
-    m.compile(outputs);
+    m.compile(single_output(filename, m, fmt == HTML ? Output::stmt_html : Output::stmt));
 }
 
 void Pipeline::compile_to_static_library(const string &filename_prefix,
@@ -284,8 +301,7 @@ void Pipeline::compile_to_static_library(const string &filename_prefix,
                                          const std::string &fn_name,
                                          const Target &target) {
     Module m = compile_to_module(args, fn_name, target);
-    Outputs outputs = static_library_outputs(filename_prefix, target);
-    m.compile(outputs);
+    m.compile(static_library_outputs(filename_prefix, target));
 }
 
 void Pipeline::compile_to_multitarget_static_library(const std::string &filename_prefix,
@@ -294,7 +310,7 @@ void Pipeline::compile_to_multitarget_static_library(const std::string &filename
     auto module_producer = [this, &args](const std::string &name, const Target &target) -> Module {
         return compile_to_module(args, name, target);
     };
-    Outputs outputs = static_library_outputs(filename_prefix, targets.back());
+    auto outputs = static_library_outputs(filename_prefix, targets.back());
     compile_multitarget(generate_function_name(), outputs, targets, module_producer);
 }
 
@@ -303,13 +319,11 @@ void Pipeline::compile_to_file(const string &filename_prefix,
                                const std::string &fn_name,
                                const Target &target) {
     Module m = compile_to_module(args, fn_name, target);
-    Outputs outputs = Outputs().c_header(filename_prefix + ".h");
-
-    if (target.os == Target::Windows && !target.has_feature(Target::MinGW)) {
-        outputs = outputs.object(filename_prefix + ".obj");
-    } else {
-        outputs = outputs.object(filename_prefix + ".o");
-    }
+    auto ext = get_output_info(target);
+    std::map<Output, std::string> outputs = {
+        { Output::c_header, filename_prefix + ext.at(Output::c_header).extension },
+        { Output::object, filename_prefix + ext.at(Output::object).extension },
+    };
     m.compile(outputs);
 }
 
@@ -456,7 +470,8 @@ Module Pipeline::compile_to_module(const vector<Argument> &args,
         }
 
         contents->module = lower(contents->outputs, new_fn_name, target, lowering_args,
-                                 linkage_type, contents->requirements, custom_passes);
+                                 linkage_type, contents->requirements, contents->trace_pipeline,
+                                 custom_passes);
     }
 
     return contents->module;
@@ -565,7 +580,7 @@ void Pipeline::compile_jit(const Target &target_arg) {
         }
         string file_name = program_name + "_" + name + "_" + unique_name('g').substr(1) + ".bc";
         debug(4) << "Saving bitcode to: " << file_name << "\n";
-        module.compile(Outputs().bitcode(file_name));
+        module.compile({{Output::bitcode, file_name}});
     }
 
     contents->jit_module = jit_module;
@@ -710,6 +725,8 @@ Realization Pipeline::realize(const Target &target,
 }
 
 void Pipeline::add_requirement(Expr condition, std::vector<Expr> &error_args) {
+    user_assert(defined()) << "Pipeline is undefined\n";
+
     // It is an error for a requirement to reference a Func or a Var
     class Checker : public IRGraphVisitor {
         using IRGraphVisitor::visit;
@@ -736,6 +753,11 @@ void Pipeline::add_requirement(Expr condition, std::vector<Expr> &error_args) {
 
     Expr error = Internal::requirement_failed_error(condition, error_args);
     contents->requirements.emplace_back(Internal::AssertStmt::make(condition, error));
+}
+
+void Pipeline::trace_pipeline() {
+    user_assert(defined()) << "Pipeline is undefined\n";
+    contents->trace_pipeline = true;
 }
 
 namespace {
@@ -1105,9 +1127,12 @@ void Pipeline::realize(RealizationArg outputs, const Target &t,
 }
 
 void Pipeline::infer_input_bounds(RealizationArg outputs, const ParamMap &param_map) {
-    Target target = get_jit_target_from_environment();
-
-    compile_jit(target);
+    if (!contents->jit_module.compiled() ||
+        contents->jit_target.has_feature(Target::NoBoundsQuery)) {
+        Target target = get_jit_target_from_environment();
+        target.set_feature(Target::NoBoundsQuery, false);
+        compile_jit(target);
+    }
 
     // This has to happen after a runtime has been compiled in compile_jit.
     JITFuncCallContext jit_context(jit_handlers());
@@ -1115,7 +1140,7 @@ void Pipeline::infer_input_bounds(RealizationArg outputs, const ParamMap &param_
 
     size_t args_size = contents->inferred_args.size() + outputs.size();
     JITCallArgs args(args_size);
-    prepare_jit_call_arguments(outputs, target, param_map,
+    prepare_jit_call_arguments(outputs, contents->jit_target, param_map,
                                &user_context_storage, true, args);
 
     struct TrackedBuffer {
@@ -1157,7 +1182,7 @@ void Pipeline::infer_input_bounds(RealizationArg outputs, const ParamMap &param_
         }
 
         Internal::debug(2) << "Calling jitted function\n";
-        int exit_status = call_jit_code(target, args);
+        int exit_status = call_jit_code(contents->jit_target, args);
         jit_context.report_if_error(exit_status);
         Internal::debug(2) << "Back from jitted function\n";
         bool changed = false;

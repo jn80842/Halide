@@ -66,8 +66,8 @@ Interval find_constant_bounds(const Expr &e, const Scope<Interval> &scope) {
 
     // Note that we can get non-const but well-defined results (e.g. signed_integer_overflow);
     // for our purposes here, treat anything non-const as no-bound.
-    if (!is_const(interval.min)) interval.min = Interval::neg_inf;
-    if (!is_const(interval.max)) interval.max = Interval::pos_inf;
+    if (!is_const(interval.min)) interval.min = Interval::neg_inf();
+    if (!is_const(interval.max)) interval.max = Interval::pos_inf();
 
     return interval;
 }
@@ -440,11 +440,11 @@ private:
             } else if (is_positive_const(b.min) || op->type.is_uint()) {
                 interval = Interval(e1, e2);
             } else if (is_negative_const(b.min)) {
-                if (e1.same_as(Interval::neg_inf)) {
-                    e1 = Interval::pos_inf;
+                if (e1.same_as(Interval::neg_inf())) {
+                    e1 = Interval::pos_inf();
                 }
-                if (e2.same_as(Interval::pos_inf)) {
-                    e2 = Interval::neg_inf;
+                if (e2.same_as(Interval::pos_inf())) {
+                    e2 = Interval::neg_inf();
                 }
                 interval = Interval(e2, e1);
             } else if (a.is_bounded()) {
@@ -501,11 +501,11 @@ private:
             if (is_positive_const(b.min) || op->type.is_uint()) {
                 interval = Interval(e1, e2);
             } else if (is_negative_const(b.min)) {
-                if (e1.same_as(Interval::neg_inf)) {
-                    e1 = Interval::pos_inf;
+                if (e1.same_as(Interval::neg_inf())) {
+                    e1 = Interval::pos_inf();
                 }
-                if (e2.same_as(Interval::pos_inf)) {
-                    e2 = Interval::neg_inf;
+                if (e2.same_as(Interval::pos_inf())) {
+                    e2 = Interval::neg_inf();
                 }
                 interval = Interval(e2, e1);
             } else if (a.is_bounded()) {
@@ -805,7 +805,7 @@ private:
         Type t = op->type.element_of();
 
         if (!a.has_lower_bound() || !b.has_lower_bound()) {
-            interval.min = Interval::neg_inf;
+            interval.min = Interval::neg_inf();
         } else if (a.min.same_as(b.min)) {
             interval.min = a.min;
         } else if (cond.is_single_point()) {
@@ -835,7 +835,7 @@ private:
         }
 
         if (!a.has_upper_bound() || !b.has_upper_bound()) {
-            interval.max = Interval::pos_inf;
+            interval.max = Interval::pos_inf();
         } else if (a.max.same_as(b.max)) {
             interval.max = a.max;
         } else if (cond.is_single_point()) {
@@ -971,7 +971,7 @@ private:
                 }
             } else {
                 // If the argument is unbounded on one side, then the max is unbounded.
-                interval.max = Interval::pos_inf;
+                interval.max = Interval::pos_inf();
             }
         } else if (op->is_intrinsic(Call::absd)) {
             internal_assert(!t.is_handle());
@@ -1039,11 +1039,29 @@ private:
                     if (op->is_intrinsic(Call::shift_left)) {
                         if (t.is_int() && t.bits() >= 32) {
                             // Overflow is UB
-                            if (a_interval.has_lower_bound() && b_interval.has_lower_bound() && can_prove(b_interval.min >= 0 && b_interval.min < t.bits())) {
+                            if (a_interval.has_lower_bound() &&
+                                b_interval.has_lower_bound() &&
+                                can_prove(b_interval.min >= 0 &&
+                                          b_interval.min < t.bits())) {
                                 interval.min = a_interval.min << b_interval.min;
+                            } else if (a_interval.has_lower_bound() &&
+                                       b_interval.has_lower_bound() &&
+                                       !b_interval.min.type().is_uint() &&
+                                       can_prove(b_interval.min < 0 &&
+                                                 b_interval.min > -t.bits())) {
+                                interval.min = a_interval.min >> abs(b_interval.min);
                             }
-                            if (a_interval.has_upper_bound() && b_interval.has_upper_bound() && can_prove(b_interval.max >= 0 && b_interval.max < t.bits())) {
+                            if (a_interval.has_upper_bound() &&
+                                b_interval.has_upper_bound() &&
+                                can_prove(b_interval.max >= 0 &&
+                                          b_interval.max < t.bits())) {
                                 interval.max = a_interval.max << b_interval.max;
+                            } else if (a_interval.has_upper_bound() &&
+                                       b_interval.has_upper_bound() &&
+                                       !b_interval.max.type().is_uint() &&
+                                       can_prove(b_interval.max < 0 &&
+                                                 b_interval.max > -t.bits())) {
+                                interval.max = a_interval.max >> abs(b_interval.max);
                             }
                         } else if (is_const(b)) {
                             // We can normalize to multiplication
@@ -1054,26 +1072,48 @@ private:
                         // Only try to improve on bounds-of-type if we can prove 0 <= b < t.bits,
                         // as shift_right(a, b) is UB for b outside that range.
                         if (b_interval.is_bounded()) {
-                            bool b_min_ok = can_prove(b_interval.min >= 0 && b_interval.min < t.bits());
-                            bool b_max_ok = can_prove(b_interval.max >= 0 && b_interval.max < t.bits());
+                            bool b_min_ok_positive = can_prove(b_interval.min >= 0 &&
+                                                               b_interval.min < t.bits());
+                            bool b_max_ok_positive = can_prove(b_interval.max >= 0 &&
+                                                               b_interval.max < t.bits());
+                            bool b_min_ok_negative =
+                                !b_interval.min.type().is_uint() &&
+                                can_prove(b_interval.min < 0 && b_interval.min > -t.bits());
+                            bool b_max_ok_negative =
+                                !b_interval.max.type().is_uint() &&
+                                can_prove(b_interval.max < 0 && b_interval.max > -t.bits());
                             if (a_interval.has_lower_bound()) {
-                                if (can_prove(a_interval.min >= 0) && b_max_ok) {
+                                if (can_prove(a_interval.min >= 0) && b_max_ok_positive) {
                                     interval.min = a_interval.min >> b_interval.max;
-                                } else if (b_min_ok && b_max_ok) {
+                                } else if (can_prove(a_interval.min < 0) && b_max_ok_negative) {
+                                    interval.min = a_interval.min << abs(b_interval.max);
+                                } else if (b_min_ok_positive && b_max_ok_positive) {
                                     // if a < 0, the smallest value will be a >> b.min
                                     // if a > 0, the smallest value will be a >> b.max
                                     interval.min = min(a_interval.min >> b_interval.min,
                                                        a_interval.min >> b_interval.max);
+                                } else if (b_min_ok_negative && b_max_ok_negative) {
+                                    // if a < 0, the smallest value will be a << abs(b.min)
+                                    // if a > 0, the smallest value will be a << abs(b.max)
+                                    interval.min = min(a_interval.min << abs(b_interval.min),
+                                                       a_interval.min << abs(b_interval.max));
                                 }
                             }
                             if (a_interval.has_upper_bound()) {
-                                if (can_prove(a_interval.max >= 0) && b_min_ok) {
+                                if (can_prove(a_interval.max >= 0) && b_min_ok_positive) {
                                     interval.max = a_interval.max >> b_interval.min;
-                                } else if (b_min_ok && b_max_ok) {
+                                } else if (can_prove(a_interval.max < 0) && b_min_ok_negative) {
+                                    interval.max = a_interval.max << abs(b_interval.min);
+                                } else if (b_min_ok_positive && b_max_ok_positive) {
                                     // if a < 0, the largest value will be a >> b.max
                                     // if a > 0, the largest value will be a >> b.min
                                     interval.max = max(a_interval.max >> b_interval.max,
                                                        a_interval.max >> b_interval.min);
+                                } else if (b_min_ok_negative && b_max_ok_negative) {
+                                    // if a < 0, the largest value will be a << abs(b.max)
+                                    // if a > 0, the largest value will be a << abs(b.min)
+                                    interval.max = max(a_interval.max << abs(b_interval.max),
+                                                       a_interval.max << abs(b_interval.min));
                                 }
                             }
                         }
@@ -1181,7 +1221,7 @@ private:
             }
             interval = Interval(min, max);
         } else if (op->is_intrinsic(Call::memoize_expr)) {
-            internal_assert(op->args.size() >= 1);
+            internal_assert(!op->args.empty());
             op->args[0].accept(this);
         } else if (op->call_type == Call::Halide) {
             bounds_of_func(op->name, op->value_index, op->type);
@@ -1380,7 +1420,7 @@ void merge_boxes(Box &a, const Box &b) {
                 }
                 a[i].min = simplify(a[i].min);
             } else {
-                a[i].min = Interval::neg_inf;
+                a[i].min = Interval::neg_inf();
             }
         }
         if (!a[i].max.same_as(b[i].max)) {
@@ -1402,7 +1442,7 @@ void merge_boxes(Box &a, const Box &b) {
                 }
                 a[i].max = simplify(a[i].max);
             } else {
-                a[i].max = Interval::pos_inf;
+                a[i].max = Interval::pos_inf();
             }
         }
     }
@@ -1661,8 +1701,8 @@ private:
                 // Ignore crops that apply to a different buffer than the one being looked for.
                 if (in_buf != nullptr && (in_buf->name == (func + ".buffer"))) {
                     internal_assert(mins_struct != nullptr && extents_struct != nullptr &&
-                                    mins_struct->name == Call::make_struct &&
-                                    extents_struct->name == Call::make_struct) << "BoxesTouched::box_from_extended_crop -- unexpected buffer_crop form.\n";
+                                    mins_struct->is_intrinsic(Call::make_struct) &&
+                                    extents_struct->is_intrinsic(Call::make_struct)) << "BoxesTouched::box_from_extended_crop -- unexpected buffer_crop form.\n";
                     b.resize(mins_struct->args.size());
                     b.used = const_true();
                     for (size_t i = 0; i < mins_struct->args.size(); i++) {
@@ -2614,7 +2654,7 @@ void constant_bound_test() {
 
 
     check_constant_bound(Load::make(Int(32), "buf", 0, Buffer<>(), Parameter(), const_true(), ModulusRemainder()) * 20,
-                         Interval::neg_inf, Interval::pos_inf);
+                         Interval::neg_inf(), Interval::pos_inf());
 
     {
         // Ensure that unnecessary integer overflow doesn't happen
@@ -2630,7 +2670,7 @@ void constant_bound_test() {
 
         // bounds of an expression with impure >= 32 bit expr will be unbounded
         Expr e32 = sum(cast<int32_t>(r.x));
-        check_constant_bound(e32, Interval::neg_inf, Interval::pos_inf);
+        check_constant_bound(e32, Interval::neg_inf(), Interval::pos_inf());
 
         // bounds of an expression with impure < 32 bit expr will be bounds-of-type
         Expr e16 = sum(cast<int16_t>(r.x));
@@ -2709,7 +2749,7 @@ void bounds_test() {
     check(scope, Select::make(x < 4, x, x+100), 0, 110);
     check(scope, x+y, y, y+10);
     check(scope, x*y, min(y, 0)*10, max(y, 0)*10);
-    check(scope, x/(x+y), Interval::neg_inf, Interval::pos_inf);
+    check(scope, x/(x+y), Interval::neg_inf(), Interval::pos_inf());
     check(scope, 11/(x+1), 1, 11);
     check(scope, Load::make(Int(8), "buf", x, Buffer<>(), Parameter(), const_true(), ModulusRemainder()),
                  i8(-128), i8(127));
@@ -2825,9 +2865,9 @@ void bounds_test() {
         scope.push("y", i);
         Var x("x"), y("y");
         check(scope, select(x == y*2, y, y - 10),
-              7, Interval::pos_inf);
+              7, Interval::pos_inf());
         check(scope, select(x == y*2, y - 10, y),
-              7, Interval::pos_inf);
+              7, Interval::pos_inf());
     }
 
     vector<Expr> input_site_1 = {2*x};
