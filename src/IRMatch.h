@@ -86,6 +86,7 @@ std::string print_bfs_node_type_map(bfs_node_type_map &type_map);
 
 void increment_term(IRNodeType node_type, term_map &m);
 bool term_map_gt(term_map &m1, term_map &m2);
+int get_total_op_count(term_map &t);
 
 enum class CompIRNodeTypeStatus {
     GT, EQ, LT
@@ -399,7 +400,7 @@ void build_bfs_type_map(const WildConstInt<i> &c, bfs_node_type_map &type_map, i
 
 template<int i>
 void count_terms(const WildConstInt<i> &c, term_map &m) {
-    increment_term(IRNodeType::IntImm, m);
+    return;
 }
 
 template<int i>
@@ -520,7 +521,7 @@ void build_bfs_type_map(const WildConstUInt<i> &c, bfs_node_type_map &type_map, 
 
 template<int i>
 void count_terms(const WildConstUInt<i> &c, term_map &m) {
-    increment_term(IRNodeType::UIntImm, m);
+    return;
 }
 
 template<int i>
@@ -638,7 +639,7 @@ void build_bfs_type_map(const WildConstFloat<i> &c, bfs_node_type_map &type_map,
 
 template<int i>
 void count_terms(const WildConstFloat<i> &c, term_map &m) {
-    increment_term(IRNodeType::FloatImm, m);
+    return;
 }
 
 template<int i>
@@ -752,10 +753,9 @@ void build_bfs_type_map(const WildConst<i> &c, bfs_node_type_map &type_map, int 
     update_bfs_node_type_map(type_map, IRNodeType::UIntImm, current_depth);
 }
 
-// since numeric type is unknown here, choose the strongest term
 template<int i>
 void count_terms(const WildConst<i> &c, term_map &m) {
-    increment_term(IRNodeType::UIntImm, m);
+    return;
 }
 
 template<int i>
@@ -897,7 +897,7 @@ void build_bfs_type_map(const Wild<i> &op, bfs_node_type_map &type_map, int curr
 
 template<int i>
 void count_terms(const Wild<i> &op, term_map &m) {
-    increment_term(IRNodeType::Variable, m);
+    return;
 }
 
 template<int i>
@@ -1089,7 +1089,7 @@ inline void build_bfs_type_map(const Const &op, bfs_node_type_map &type_map, int
 
 // since type is not known, choose strongest term type
 inline void count_terms(const Const &op, term_map &m) {
-    increment_term(IRNodeType::UIntImm, m);
+    return;
 }
 
 inline IRNodeType get_node_type(const Const &op) {
@@ -1440,7 +1440,7 @@ template<typename A, typename B>
 void count_terms(const BinOp<Add, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::Add, m);
+    increment_term(IRNodeType::Sub, m); // adds and subs count for the same now
 }
 
 template<typename A, typename B>
@@ -3551,7 +3551,6 @@ void build_leaf_vec(const CastOp<A> &op, leaf_vec &v) {
 template<typename A>
 void count_terms(const CastOp<A> &op, term_map &m) {
     count_terms(op.a, m);
-    increment_term(IRNodeType::Cast, m);
 }
 
 template<typename A>
@@ -3664,7 +3663,7 @@ void build_leaf_vec(const Fold<A> &op, leaf_vec &v) {
 // folds are constants; choose strongest possible constant
 template<typename A>
 void count_terms(const Fold<A> &op, term_map &m) {
-    increment_term(IRNodeType::UIntImm, m);
+    return;
 }
 
 template<typename A>
@@ -3837,7 +3836,7 @@ inline void build_leaf_vec(const Indeterminate &op, leaf_vec &v) {
 }
 
 inline void count_terms(const Indeterminate &op, term_map &m) {
-    increment_term(IRNodeType::Variable, m);
+    return;
 }
 
 // is this the right node type to return?
@@ -3925,7 +3924,7 @@ inline void build_leaf_vec(const Overflow &op, leaf_vec &v) {
 }
 
 inline void count_terms(const Overflow &op, term_map &m) {
-    increment_term(IRNodeType::Variable, m);
+    return;
 }
 
 // is this the right node type to return?
@@ -4036,7 +4035,7 @@ void build_leaf_vec(const IsConst<A> &op, leaf_vec &v) {
 // don't think this can occur in before/after terms (?)
 template<typename A>
 void count_terms(const IsConst<A> &op, term_map &m) {
-    increment_term(IRNodeType::Variable, m);
+    return;
 }
 
 // is this the right node type to return?
@@ -4289,17 +4288,55 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     count_terms(before, LHS_term_map);
     count_terms(after, RHS_term_map);
 
-    if (get_variable_count(before) >= get_variable_count(after)) {
+//    debug(0) << "TOTAL OPS -- LHS: " << get_total_op_count(LHS_term_map) << " " << before << "\n";
+//    debug(0) << "TOTAL OPS -- RHS: " << get_total_op_count(RHS_term_map) << " " << after << "\n";
+/*
+    if (get_total_op_count(LHS_term_map) > get_total_op_count(RHS_term_map)) {
+        debug(0) << before << " ; " << after << " ; TOTAL OP COUNT SUCCESS (" << get_total_op_count(LHS_term_map) << "> " << get_total_op_count(RHS_term_map) << "\n";
+    } else if (get_total_op_count(LHS_term_map) < get_total_op_count(RHS_term_map)) {
+        debug(0) << before << " ; " << after << " ; TOTAL OP COUNT FAILURE (" << get_total_op_count(LHS_term_map) << "> " << get_total_op_count(RHS_term_map) << "\n";
+    } else {
+        debug(0) << before << " ; " << after << " ; TOTAL OP CONNT EQUAL (" << get_total_op_count(LHS_term_map) << "> " << get_total_op_count(RHS_term_map) << "\n";
+    }
+*/
+ /*   
+    if (get_total_op_count(LHS_term_map) == get_total_op_count(RHS_term_map)) {
         if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::GT) {
-            debug(0) << "HISTO COUNT SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
+            debug(0) << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
         }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
-            debug(0) << "HISTO COUNT FAILURE: " << " LHS " << before << " RHS " << after << "\n";
-        } else if (compare_node_types(get_node_type(after),get_node_type(before)) == CompIRNodeTypeStatus::GT) {
-            debug(0) << "ROOT NODE TYPE SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
-        } else if (compare_node_types(get_node_type(after),get_node_type(before)) == CompIRNodeTypeStatus::LT) {
-            debug(0) << "ROOT NODE TYPE FAILURE: " << " LHS " << before << " RHS " << after << "\n";
+            debug(0) << before << " ; " << after << " ; HISTO COUNT FAILURE\n"; 
         } else {
-            debug(0) << "FAILURE: TERMS ARE EQUAL UNDER ORDERING: " << " LHS " << before << " RHS " << after << "\n";
+            debug(0) << before << " ; " << after << " ; FAILURE: TERMS ARE EQUAL UNDER ORDERING\n";
+        }
+    }
+    */
+/*
+    if (get_total_op_count(LHS_term_map) == get_total_op_count(RHS_term_map) && (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::EQ)) {
+        if (compare_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::GT) {
+            debug(0) << before << " ; " << after << " ; ROOT NODE SUCCESS\n"; 
+        } else if (compare_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::LT) {
+            debug(0) << before << " ; " << after << " ; ROOT NODE FAILURE\n"; 
+        } else {
+            debug(0) << before << " ; " << after << " ; TERMS ARE EQUAL UNDER ORDERING\n"; 
+        }
+    }
+*/
+
+    if (get_variable_count(before) >= get_variable_count(after)) {
+        if (get_total_op_count(LHS_term_map) > get_total_op_count(RHS_term_map)) {
+            debug(0) << before << " ; " << after << " ; TOTAL OP COUNT SUCCESS\n";
+        } else if (get_total_op_count(LHS_term_map) < get_total_op_count(RHS_term_map)) {
+            debug(0) << before << " ; " << after << " ; TOTAL OP COUNT FAILURE\n";
+        } else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::GT) {
+            debug(0) << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
+        }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
+            debug(0) << before << " ; " << after << " ; HISTO COUNT FAILURE\n"; 
+        } else if (compare_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::LT) {
+            debug(0) << before << " ; " << after << " ; ROOT NODE SUCCESS\n"; 
+        } else if (compare_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::GT) {
+            debug(0) << before << " ; " << after << " ; ROOT NODE FAILURE\n"; 
+        } else {
+            debug(0) << before << " ; " << after << " ; FAILURE: TERMS ARE EQUAL UNDER ORDERING\n"; 
         }
 
       /*  if (term_map_gt(LHS_term_map,RHS_term_map)) {
@@ -4309,8 +4346,9 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
         } else {
             debug(0) << "ORDER FAILURE: LHS " << before << " RHS " << after << "\n";
         } */
+       
     } else {
-        debug(0) << "VARIABLE COUNT FAILURE: LHS " << before << " RHS " << after << "\n";
+        debug(0) << before << " ; " << after << " ; VARIABLE COUNT FAILURE\n"; 
     }
 
 }
@@ -4551,7 +4589,7 @@ bool evaluate_predicate(Pattern p, MatcherState &state) {
 #define HALIDE_VERIFY_SIMPLIFY_RULES 0
 
 // check various properties of rules when they match
-#define HALIDE_CHECK_RULES_PROPERTIES 0
+#define HALIDE_CHECK_RULES_PROPERTIES 1
 
 template<typename Instance>
 struct Rewriter {

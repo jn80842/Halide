@@ -366,7 +366,7 @@ node_type_ordering nto = {
     {IRNodeType::Mul,19},
     {IRNodeType::Mod,18},
     {IRNodeType::Sub,17},
-    {IRNodeType::Add,16},
+    {IRNodeType::Add,17},
     {IRNodeType::Max,14},
     {IRNodeType::Min,14},
     {IRNodeType::Not,13},
@@ -377,12 +377,16 @@ node_type_ordering nto = {
     {IRNodeType::LE,8},
     {IRNodeType::LT,7},
     {IRNodeType::NE,6},
-    {IRNodeType::EQ,5},
-    {IRNodeType::Cast,4},
-    {IRNodeType::FloatImm,2},
-    {IRNodeType::UIntImm,1},
-    {IRNodeType::IntImm,0}
+    {IRNodeType::EQ,5}
 };
+
+int get_total_op_count(term_map &t) {
+    int total = 0;
+    for (auto const& term_entry : t) {
+        total += term_entry.second;
+    }
+    return total;
+}
 
 CompIRNodeTypeStatus compare_node_types(IRNodeType n1, IRNodeType n2) {
     if (nto[n1] == nto[n2]) {
@@ -500,12 +504,12 @@ CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2) {
     } else if (m1[IRNodeType::Mod] != m2[IRNodeType::Mod]) {
         debug(0) << "Terms count tie breaker " << " Mod " << m1[IRNodeType::Mod] << " " << m2[IRNodeType::Mod] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Mod],m2[IRNodeType::Mod])) << "\n";
         return ternary_comp(m1[IRNodeType::Mod], m2[IRNodeType::Mod]);
-    } else if (m1[IRNodeType::Sub] != m2[IRNodeType::Sub]) {
-        debug(0) << "Terms count tie breaker " << " Sub " << m1[IRNodeType::Sub] << " " << m2[IRNodeType::Sub] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Sub],m2[IRNodeType::Sub])) << "\n";
+    } else if (m1[IRNodeType::Sub] != m2[IRNodeType::Sub]) { // Adds also go in this bucket
+        debug(0) << "Terms count tie breaker " << " AddSub " << m1[IRNodeType::Sub] << " " << m2[IRNodeType::Sub] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Sub],m2[IRNodeType::Sub])) << "\n";
         return ternary_comp(m1[IRNodeType::Sub], m2[IRNodeType::Sub]);
-    } else if (m1[IRNodeType::Add] != m2[IRNodeType::Add]) {
-        debug(0) << "Terms count tie breaker " << " Add " << m1[IRNodeType::Add] << " " << m2[IRNodeType::Add] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Add],m2[IRNodeType::Add])) << "\n";
-        return ternary_comp(m1[IRNodeType::Add], m2[IRNodeType::Add]);
+ //   } else if (m1[IRNodeType::Add] != m2[IRNodeType::Add]) {
+ //       debug(0) << "Terms count tie breaker " << " Add " << m1[IRNodeType::Add] << " " << m2[IRNodeType::Add] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Add],m2[IRNodeType::Add])) << "\n";
+ //       return ternary_comp(m1[IRNodeType::Add], m2[IRNodeType::Add]);
     } else if (m1[IRNodeType::Min] != m2[IRNodeType::Min]) { // max ops go in this bucket too
         debug(0) << "Terms count tie breaker " << " MaxMin " << m1[IRNodeType::Min] << " " << m2[IRNodeType::Min] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Min],m2[IRNodeType::Min])) << "\n";
         return ternary_comp(m1[IRNodeType::Min], m2[IRNodeType::Min]);
@@ -536,6 +540,7 @@ CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2) {
     } else if (m1[IRNodeType::EQ] != m2[IRNodeType::EQ]) {
         debug(0) << "Terms count tie breaker " << " EQ " << m1[IRNodeType::EQ] << " " << m2[IRNodeType::EQ] << " " << comp_to_s(ternary_comp(m1[IRNodeType::EQ],m2[IRNodeType::EQ])) << "\n";
         return ternary_comp(m1[IRNodeType::EQ], m2[IRNodeType::EQ]);
+        /*
     } else if (m1[IRNodeType::Cast] != m2[IRNodeType::Cast]) {
         debug(0) << "Terms count tie breaker " << " Cast " << m1[IRNodeType::Cast] << " " << m2[IRNodeType::Cast] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Cast],m2[IRNodeType::Cast])) << "\n";
         return ternary_comp(m1[IRNodeType::Cast], m2[IRNodeType::Cast]);
@@ -548,6 +553,7 @@ CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2) {
     } else if (m1[IRNodeType::IntImm] != m2[IRNodeType::IntImm]) {
         debug(0) << "Terms count tie breaker " << " IntImm " << m1[IRNodeType::IntImm] << " " << m2[IRNodeType::IntImm] << " " << comp_to_s(ternary_comp(m1[IRNodeType::IntImm],m2[IRNodeType::IntImm])) << "\n";
         return ternary_comp(m1[IRNodeType::IntImm], m2[IRNodeType::IntImm]);
+        */
     } else {
         return CompIRNodeTypeStatus::EQ; // two histograms are equiv
     }
