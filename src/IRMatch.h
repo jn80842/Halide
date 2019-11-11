@@ -4637,11 +4637,15 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     build_variable_count_map(before, LHS_var_count_map);
     build_variable_count_map(after, RHS_var_count_map);
 
-    if (variable_counts_geq(LHS_var_count_map, RHS_var_count_map)) {
-        if (LHS_term_map[IRNodeType::Ramp] > RHS_term_map[IRNodeType::Ramp]) {
+    if (LHS_term_map[IRNodeType::Ramp] > RHS_term_map[IRNodeType::Ramp]) {
             debug(0) << before << " ; " << after << " ; RAMP COUNT SUCCESS\n";
-        } else if (LHS_term_map[IRNodeType::Ramp] < RHS_term_map[IRNodeType::Ramp]) {
-            debug(0) << before << " ; " << after << " ; RAMP COUNT FAILURE\n";
+    } else if (LHS_term_map[IRNodeType::Ramp] < RHS_term_map[IRNodeType::Ramp]) {
+        debug(0) << before << " ; " << after << " ; RAMP COUNT FAILURE\n";
+    // after ramp check, make sure all variable occurrences are equal or less in RHS
+    } else if (variable_counts_geq(LHS_var_count_map, RHS_var_count_map)) {
+        // if at least one variable count goes down, the rule is good
+        if (variable_counts_atleastone_gt(LHS_var_count_map, RHS_var_count_map)) {
+            debug(0) << before << " ; " << after << " ; VARIABLE OCCURRENCE SUCCESS\n";
         } else if (get_expensive_arith_count(LHS_term_map) > get_expensive_arith_count(RHS_term_map)) {
             debug(0) << before << " ; " << after << " ; ARITH COUNT SUCCESS\n";
         } else if (get_expensive_arith_count(LHS_term_map) < get_expensive_arith_count(RHS_term_map)) {
@@ -4650,9 +4654,6 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
             debug(0) << before << " ; " << after << " ; TOTAL OP COUNT SUCCESS\n";
         } else if (get_total_op_count(LHS_term_map) < get_total_op_count(RHS_term_map)) {
             debug(0) << before << " ; " << after << " ; TOTAL OP COUNT FAILURE\n";
-        } else if (variable_counts_atleastone_gt(LHS_var_count_map, RHS_var_count_map)) {
-            // we already screened out the failure case of variable counts
-            debug(0) << before << " ; " << after << " ; VARIABLE OCCURRENCE SUCCESS\n";
         } else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::GT) {
             debug(0) << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
         }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
