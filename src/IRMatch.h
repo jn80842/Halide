@@ -4637,10 +4637,13 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     build_variable_count_map(before, LHS_var_count_map);
     build_variable_count_map(after, RHS_var_count_map);
 
-    if (LHS_term_map[IRNodeType::Ramp] > RHS_term_map[IRNodeType::Ramp]) {
-            debug(0) << before << " ; " << after << " ; RAMP COUNT SUCCESS\n";
-    } else if (LHS_term_map[IRNodeType::Ramp] < RHS_term_map[IRNodeType::Ramp]) {
-        debug(0) << before << " ; " << after << " ; RAMP COUNT FAILURE\n";
+    int LHS_vector_count = LHS_term_map[IRNodeType::Ramp] + LHS_term_map[IRNodeType::Broadcast];
+    int RHS_vector_count = RHS_term_map[IRNodeType::Ramp] + RHS_term_map[IRNodeType::Broadcast];
+
+    if (LHS_vector_count > RHS_vector_count) {
+            debug(0) << before << " ; " << after << " ;  VECTOR COUNT SUCCESS\n";
+    } else if (LHS_vector_count < RHS_vector_count) {
+        debug(0) << before << " ; " << after << " ; VECTOR COUNT FAILURE\n";
     // after ramp check, make sure all variable occurrences are equal or less in RHS
     } else if (variable_counts_geq(LHS_var_count_map, RHS_var_count_map)) {
         // if at least one variable count goes down, the rule is good
