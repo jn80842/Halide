@@ -73,6 +73,7 @@ namespace IRMatcher {
 constexpr int max_wild = 6;
 
 typedef std::map<std::string, halide_type_t> variable_map;
+typedef std::map<std::string, int> variable_count_map;
 typedef std::map<IRNodeType, int> term_map;
 typedef std::vector<int> leaf_vec;
 typedef std::map<IRNodeType, int> node_type_ordering;
@@ -87,12 +88,17 @@ std::string print_bfs_node_type_map(bfs_node_type_map &type_map);
 void increment_term(IRNodeType node_type, term_map &m);
 bool term_map_gt(term_map &m1, term_map &m2);
 int get_total_op_count(term_map &t);
+int get_expensive_arith_count(term_map &t);
+bool variable_counts_geq(variable_count_map &m1, variable_count_map &m2);
+bool variable_counts_gt(variable_count_map &m1, variable_count_map &m2);
+bool variable_counts_atleastone_gt(variable_count_map &m1, variable_count_map &m2);
 
 enum class CompIRNodeTypeStatus {
     GT, EQ, LT
 };
 
 CompIRNodeTypeStatus compare_node_types(IRNodeType n1, IRNodeType n2);
+CompIRNodeTypeStatus compare_root_node_types(IRNodeType n1, IRNodeType n2);
 bool compare_node_type_lists(node_type_list before_list, node_type_list after_list);
 CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2);
 CompIRNodeTypeStatus compare_bfs_node_type_maps(bfs_node_type_map &map1, bfs_node_type_map &map2);
@@ -302,8 +308,20 @@ inline void build_variable_map(SpecificExpr e, variable_map &varmap, halide_type
     return;
 }
 
+inline void build_variable_count_map(SpecificExpr e, variable_count_map &varcountmap) {
+    return;
+}
+
 inline void build_leaf_vec(SpecificExpr e, leaf_vec &v) {
     return;
+}
+
+inline bool is_right_child_constant(SpecificExpr e) {
+    return false;
+}
+
+inline bool is_constant(SpecificExpr e ) {
+    return false;
 }
 
 template<int i>
@@ -419,8 +437,23 @@ void build_variable_map(const WildConstInt<i> &c, variable_map &varmap, halide_t
 }
 
 template<int i>
+void build_variable_count_map(const WildConstInt<i> &c, variable_count_map &varcountmap) {
+    return;
+}
+
+template<int i>
 void build_leaf_vec(const WildConstInt<i> &c, leaf_vec &v) {
     v.push_back(1);
+}
+
+template<int i>
+bool is_right_child_constant(const WildConstInt<i> &c) {
+    return false;
+}
+
+template<int i>
+bool is_constant(const WildConstInt<i> &c) {
+    return true;
 }
 
 template<int i>
@@ -540,8 +573,23 @@ void build_variable_map(const WildConstUInt<i> &c, variable_map &varmap, halide_
 }
 
 template<int i>
+void build_variable_count_map(const WildConstUInt<i> &c, variable_count_map &varcountmap) {
+    return;
+}
+
+template<int i>
 void build_leaf_vec(const WildConstUInt<i> &c, leaf_vec &v) {
     v.push_back(1);
+}
+
+template<int i>
+bool is_right_child_constant(const WildConstUInt<i> &c) {
+    return false;
+}
+
+template<int i>
+bool is_constant(const WildConstUInt<i> &c) {
+    return true;
 }
 
 template<int i>
@@ -658,8 +706,23 @@ void build_variable_map(const WildConstFloat<i> &c, variable_map &varmap, halide
 }
 
 template<int i>
+void build_variable_count_map(const WildConstFloat<i> &c, variable_count_map &varcountmap) {
+    return;
+}
+
+template<int i>
 void build_leaf_vec(const WildConstFloat<i> &c, leaf_vec &v) {
     v.push_back(1);
+}
+
+template<int i>
+bool is_right_child_constant(const WildConstFloat<i> &c) {
+    return false;
+}
+
+template<int i>
+bool is_constant(const WildConstFloat<i> &c) {
+    return true;
 }
 
 // Matches and binds to any constant Expr. Does not support constant-folding.
@@ -795,8 +858,23 @@ void build_variable_map(const WildConst<i> &c, variable_map &varmap, halide_type
 }
 
 template<int i>
+void build_variable_count_map(const WildConst<i> &c, variable_count_map &varcountmap) {
+    return;
+}
+
+template<int i>
 void build_leaf_vec(const WildConst<i> &c, leaf_vec &v) {
     v.push_back(1);
+}
+
+template<int i>
+bool is_right_child_constant(const WildConst<i> &c) {
+    return false;
+}
+
+template<int i>
+bool is_constant(const WildConst<i> &c) {
+    return true;
 }
 
 // Matches and binds to any Expr
@@ -937,8 +1015,32 @@ void build_variable_map(const Wild<i> &c, variable_map &varmap, halide_type_t ty
 }
 
 template<int i>
+void build_variable_count_map(const Wild<i> &c, variable_count_map &varcountmap) {
+    std::ostringstream s;
+    s << c;
+    std::string varname = s.str();
+
+    auto search = varcountmap.find(varname);
+    if (search != varcountmap.end()) {
+        varcountmap[varname] += 1;
+    } else {
+        varcountmap[varname] = 1;
+    }
+}
+
+template<int i>
 void build_leaf_vec(const Wild<i> &c, leaf_vec &v) {
     v.push_back(0);
+}
+
+template<int i>
+bool is_right_child_constant(const Wild<i> &c) {
+    return false;
+}
+
+template<int i>
+bool is_constant(const Wild<i> &c) {
+    return false;
 }
 
 // Matches a specific constant or broadcast of that constant. The
@@ -1104,8 +1206,20 @@ inline void build_variable_map(const Const &op, variable_map &varmap, halide_typ
     return;
 }
 
+inline void build_variable_count_map(const Const &op, variable_count_map &varcountmap) {
+    return;
+}
+
 inline void build_leaf_vec(const Const &op, leaf_vec &v) {
     v.push_back(1);
+}
+
+inline bool is_right_child_constant(const Const &op) {
+    return false;
+}
+
+inline bool is_constant(const Const &op) {
+    return true;
 }
 
 template<typename Op>
@@ -1352,6 +1466,17 @@ void build_leaf_vec(const CmpOp<Op, A, B> &op, leaf_vec &v) {
 }
 
 template<typename Op, typename A, typename B>
+bool is_right_child_constant(const CmpOp<Op, A, B> &op) {
+ //   debug(0) << nt_string_lookup[get_node_type(op.b)] << "\n";
+    return is_constant(op.b);
+}
+
+template<typename Op, typename A, typename B>
+bool is_constant(const CmpOp<Op, A, B> &op) {
+    return false;
+}
+
+template<typename Op, typename A, typename B>
 int get_variable_count(const BinOp<Op, A, B> &op) {
     return get_variable_count(op.a) + get_variable_count(op.b);
 }
@@ -1390,6 +1515,17 @@ void build_leaf_vec(const BinOp<Op, A, B> &op, leaf_vec &v) {
 }
 
 template<typename Op, typename A, typename B>
+bool is_right_child_constant(const BinOp<Op, A, B> &op) {
+  //  debug(0) << nt_string_lookup[get_node_type(op.b)] << "\n";
+    return is_constant(op.b);
+}
+
+template<typename Op, typename A, typename B>
+bool is_constant(const BinOp<Op, A, B> &op) {
+    return false;
+}
+
+template<typename Op, typename A, typename B>
 void build_node_type_list(const CmpOp<Op, A, B> &op, node_type_list &l) {
     l.push_back(get_node_type(op));
     build_node_type_list(op.a,l);
@@ -1397,10 +1533,22 @@ void build_node_type_list(const CmpOp<Op, A, B> &op, node_type_list &l) {
 }
 
 template<typename Op, typename A, typename B>
+void build_variable_count_map(const CmpOp<Op, A, B> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
+    build_variable_count_map(op.b, varcountmap);
+}
+
+template<typename Op, typename A, typename B>
 void build_node_type_list(const BinOp<Op, A, B> &op, node_type_list &l) {
     l.push_back(get_node_type(op));
     build_node_type_list(op.a,l);
     build_node_type_list(op.b,l);
+}
+
+template<typename Op, typename A, typename B>
+void build_variable_count_map(const BinOp<Op, A, B> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
+    build_variable_count_map(op.b, varcountmap);
 }
 // for later: bitwidths use bvadd, etc, not + etc
 template<typename A, typename B>
@@ -2675,8 +2823,23 @@ void build_variable_map(const Intrin<Args...> &op, variable_map &varmap, halide_
 }
 
 template<typename... Args>
+void build_variable_count_map(const Intrin<Args...> &op, variable_count_map &varcountmap) {
+    return;
+}
+
+template<typename... Args>
 void build_leaf_vec(const Intrin<Args...> &op, leaf_vec &v) {
     return;
+}
+
+template<typename... Args>
+bool is_right_child_constant(const Intrin<Args...> &op) {
+    return false;
+}
+
+template<typename... Args>
+bool is_constant(const Intrin<Args...> &op) {
+    return false;
 }
 
 template<typename... Args>
@@ -2815,8 +2978,23 @@ void build_variable_map(const NotOp<A> &op, variable_map &varmap, halide_type_t 
 }
 
 template<typename A>
+void build_variable_count_map(const NotOp<A> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
+}
+
+template<typename A>
 void build_leaf_vec(const NotOp<A> &op, leaf_vec &v) {
     build_leaf_vec(op.a, v);
+}
+
+template<typename A>
+bool is_right_child_constant(const NotOp<A> &op) {
+    return false;
+}
+
+template<typename A>
+bool is_constant(const NotOp<A> &op) {
+    return false;
 }
 
 template<typename A>
@@ -2964,10 +3142,30 @@ void build_variable_map(const SelectOp<C, T, F> &op, variable_map &varmap, halid
 }
 
 template<typename C, typename T, typename F>
+void build_variable_count_map(const SelectOp<C, T, F> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.c, varcountmap);
+    build_variable_count_map(op.t, varcountmap);
+    build_variable_count_map(op.f, varcountmap);
+}
+
+template<typename C, typename T, typename F>
 void build_leaf_vec(const SelectOp<C, T, F> &op, leaf_vec &v) {
     build_leaf_vec(op.c, v);
     build_leaf_vec(op.t, v);
     build_leaf_vec(op.f, v);
+}
+
+template<typename C, typename T, typename F>
+bool is_right_child_constant(const SelectOp<C, T, F> &op) {
+    // not sure that we care about moving constants to false branches
+  //  debug(0) << nt_string_lookup[get_node_type(op.f)] << "\n";
+  //  return is_constant(op.f);
+    return false;
+}
+
+template<typename C, typename T, typename F>
+bool is_constant(const SelectOp<C, T, F> &op) {
+    return false;
 }
 
 template<typename C, typename T, typename F>
@@ -3096,9 +3294,24 @@ void build_leaf_vec(const BroadcastOp<A, known_lanes> &op, leaf_vec &v) {
     build_leaf_vec(op.a, v);
 }
 
+template<typename A, bool known_lanes>
+bool is_right_child_constant(const BroadcastOp<A, known_lanes> &op) {
+    return false;
+}
+
+template<typename A, bool known_lanes>
+bool is_constant(const BroadcastOp<A, known_lanes> &op) {
+    return false;
+}
+
 template<typename A>
 void build_variable_map(const BroadcastOp<A, true> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
+}
+
+template<typename A, bool known_lanes>
+void build_variable_count_map(const BroadcastOp<A, known_lanes> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
 }
 
 template<typename A, bool known_lanes>
@@ -3237,6 +3450,12 @@ void build_variable_map(const RampOp<A, B, known_lanes> &op, variable_map &varma
 }
 
 template<typename A, typename B, bool known_lanes>
+void build_variable_count_map(const RampOp<A, B, known_lanes> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
+    build_variable_count_map(op.b, varcountmap);
+}
+
+template<typename A, typename B, bool known_lanes>
 void count_terms(const RampOp<A, B, known_lanes> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
@@ -3259,6 +3478,17 @@ template<typename A, typename B, bool known_lanes>
 void build_leaf_vec(const RampOp<A, B, known_lanes> &op, leaf_vec &v) {
     build_leaf_vec(op.a, v);
     build_leaf_vec(op.b, v);
+}
+
+template<typename A, typename B, bool known_lanes>
+bool is_right_child_constant(const RampOp<A, B, known_lanes> &op) {
+    // don't care about moving constants to stride
+    return false;
+}
+
+template<typename A, typename B, bool known_lanes>
+bool is_constant(const RampOp<A, B, known_lanes> &op) {
+    return false;
 }
 
 template<typename A, typename B, bool known_lanes>
@@ -3427,8 +3657,23 @@ void build_variable_map(const NegateOp<A> &op, variable_map &varmap, halide_type
 }
 
 template<typename A>
+void build_variable_count_map(const NegateOp<A> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
+}
+
+template<typename A>
 void build_leaf_vec(const NegateOp<A> &op, leaf_vec &v) {
     build_leaf_vec(op.a, v);
+}
+
+template<typename A>
+bool is_right_child_constant(const NegateOp<A> &op) {
+    return false;
+}
+
+template<typename A>
+bool is_constant(const NegateOp<A> &op) {
+    return false;
 }
 
 template<typename A>
@@ -3544,8 +3789,23 @@ void build_variable_map(const CastOp<A> &op, variable_map &varmap, halide_type_t
 }
 
 template<typename A>
+void build_variable_count_map(const CastOp<A> &op, variable_count_map &varcountmap) {
+    return;
+}
+
+template<typename A>
 void build_leaf_vec(const CastOp<A> &op, leaf_vec &v) {
     build_leaf_vec(op.a, v);
+}
+
+template<typename A>
+bool is_right_child_constant(const CastOp<A> &op) {
+    return false;
+}
+
+template<typename A>
+bool is_constant(const CastOp<A> &op) {
+    return false;
 }
 
 template<typename A>
@@ -3656,8 +3916,23 @@ void build_variable_map(const Fold<A> &op, variable_map &varmap, halide_type_t t
 }
 
 template<typename A>
+void build_variable_count_map(const Fold<A> &op, variable_count_map &varcountmap) {
+    return;
+}
+
+template<typename A>
 void build_leaf_vec(const Fold<A> &op, leaf_vec &v) {
     v.push_back(1);
+}
+
+template<typename A>
+bool is_right_child_constant(const Fold<A> &op) {
+    return true;
+}
+
+template<typename A>
+bool is_constant(const Fold<A> &op) {
+    return true;
 }
 
 // folds are constants; choose strongest possible constant
@@ -3831,8 +4106,20 @@ inline void build_variable_map(const Indeterminate &op, variable_map &varmap, ha
     return;
 }
 
+inline void build_variable_count_map(const Indeterminate &op, variable_count_map &varcountmap) {
+    return;
+}
+
 inline void build_leaf_vec(const Indeterminate &op, leaf_vec &v) {
     v.push_back(0); // assume position of Indeterminates doesn't matter
+}
+
+inline bool is_right_child_constant(const Indeterminate &op) {
+    return false;
+}
+
+inline bool is_constant(const Indeterminate &op) {
+    return false;
 }
 
 inline void count_terms(const Indeterminate &op, term_map &m) {
@@ -3919,8 +4206,20 @@ inline void build_variable_map(const Overflow &op, variable_map &varmap, halide_
     return;
 }
 
+inline void build_variable_count_map(const Overflow &op, variable_count_map &varcountmap) {
+    return;
+}
+
 inline void build_leaf_vec(const Overflow &op, leaf_vec &v) {
     v.push_back(0); // assume the position of overflows doesn't matter
+}
+
+inline bool is_right_child_constant(const Overflow &op) {
+    return false;
+}
+
+inline bool is_constant(const Overflow &op) {
+    return false;
 }
 
 inline void count_terms(const Overflow &op, term_map &m) {
@@ -4028,8 +4327,23 @@ void build_variable_map(const IsConst<A> &op, variable_map &varmap, halide_type_
 }
 
 template<typename A>
+void build_variable_count_map(const IsConst<A> &op, variable_count_map &varcountmap) {
+    return;
+}
+
+template<typename A>
 void build_leaf_vec(const IsConst<A> &op, leaf_vec &v) {
     return;
+}
+
+template<typename A>
+bool is_right_child_constant(const IsConst<A> &op) {
+    return false;
+}
+
+template<typename A>
+bool is_constant(const IsConst<A> &op) {
+    return false;
 }
 
 // don't think this can occur in before/after terms (?)
@@ -4130,8 +4444,23 @@ void build_variable_map(const CanProve<A, Prover> &op, variable_map &varmap, hal
 }
 
 template<typename A, typename Prover>
+void build_variable_count_map(const CanProve<A, Prover> &op, variable_count_map &varcountmap) {
+    return;
+}
+
+template<typename A, typename Prover>
 void build_leaf_vec(const CanProve<A, Prover> &op, leaf_vec &v) {
     return;
+}
+
+template<typename A, typename Prover>
+bool is_right_child_constant(const CanProve<A, Prover> &op) {
+    return false;
+}
+
+template<typename A, typename Prover>
+bool is_constant(const CanProve<A, Prover> &op) {
+    return false;
 }
 
 // can't occur in before/after terms (can't or doesn't?)
@@ -4235,8 +4564,23 @@ void build_variable_map(const IsFloat<A> &op, variable_map &varmap, halide_type_
 }
 
 template<typename A>
+void build_variable_count_map(const IsFloat<A> &op, variable_count_map &varcountmap) {
+    return;
+}
+
+template<typename A>
 void build_leaf_vec(const IsFloat<A> &op, leaf_vec &v) {
     return;
+}
+
+template<typename A>
+bool is_right_child_constant(const IsFloat<A> &op) {
+    return false;
+}
+
+template<typename A>
+bool is_constant(const IsFloat<A> &op) {
+    return false;
 }
 
 // can't (or doesn't?) appear in before/after terms
@@ -4288,65 +4632,48 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     count_terms(before, LHS_term_map);
     count_terms(after, RHS_term_map);
 
-//    debug(0) << "TOTAL OPS -- LHS: " << get_total_op_count(LHS_term_map) << " " << before << "\n";
-//    debug(0) << "TOTAL OPS -- RHS: " << get_total_op_count(RHS_term_map) << " " << after << "\n";
-/*
-    if (get_total_op_count(LHS_term_map) > get_total_op_count(RHS_term_map)) {
-        debug(0) << before << " ; " << after << " ; TOTAL OP COUNT SUCCESS (" << get_total_op_count(LHS_term_map) << "> " << get_total_op_count(RHS_term_map) << "\n";
-    } else if (get_total_op_count(LHS_term_map) < get_total_op_count(RHS_term_map)) {
-        debug(0) << before << " ; " << after << " ; TOTAL OP COUNT FAILURE (" << get_total_op_count(LHS_term_map) << "> " << get_total_op_count(RHS_term_map) << "\n";
-    } else {
-        debug(0) << before << " ; " << after << " ; TOTAL OP CONNT EQUAL (" << get_total_op_count(LHS_term_map) << "> " << get_total_op_count(RHS_term_map) << "\n";
-    }
-*/
- /*   
-    if (get_total_op_count(LHS_term_map) == get_total_op_count(RHS_term_map)) {
-        if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::GT) {
-            debug(0) << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
-        }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
-            debug(0) << before << " ; " << after << " ; HISTO COUNT FAILURE\n"; 
-        } else {
-            debug(0) << before << " ; " << after << " ; FAILURE: TERMS ARE EQUAL UNDER ORDERING\n";
-        }
-    }
-    */
-/*
-    if (get_total_op_count(LHS_term_map) == get_total_op_count(RHS_term_map) && (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::EQ)) {
-        if (compare_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::GT) {
-            debug(0) << before << " ; " << after << " ; ROOT NODE SUCCESS\n"; 
-        } else if (compare_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::LT) {
-            debug(0) << before << " ; " << after << " ; ROOT NODE FAILURE\n"; 
-        } else {
-            debug(0) << before << " ; " << after << " ; TERMS ARE EQUAL UNDER ORDERING\n"; 
-        }
-    }
-*/
+    variable_count_map LHS_var_count_map;
+    variable_count_map RHS_var_count_map;
+    build_variable_count_map(before, LHS_var_count_map);
+    build_variable_count_map(after, RHS_var_count_map);
 
-    if (get_variable_count(before) >= get_variable_count(after)) {
-        if (get_total_op_count(LHS_term_map) > get_total_op_count(RHS_term_map)) {
+    if (variable_counts_geq(LHS_var_count_map, RHS_var_count_map)) {
+        if (LHS_term_map[IRNodeType::Ramp] > RHS_term_map[IRNodeType::Ramp]) {
+            debug(0) << before << " ; " << after << " ; RAMP COUNT SUCCESS\n";
+        } else if (LHS_term_map[IRNodeType::Ramp] < RHS_term_map[IRNodeType::Ramp]) {
+            debug(0) << before << " ; " << after << " ; RAMP COUNT FAILURE\n";
+        } else if (get_expensive_arith_count(LHS_term_map) > get_expensive_arith_count(RHS_term_map)) {
+            debug(0) << before << " ; " << after << " ; ARITH COUNT SUCCESS\n";
+        } else if (get_expensive_arith_count(LHS_term_map) < get_expensive_arith_count(RHS_term_map)) {
+            debug(0) << before << " ; " << after << " ; ARITH COUNT FAILURE\n";
+        } else if (get_total_op_count(LHS_term_map) > get_total_op_count(RHS_term_map)) {
             debug(0) << before << " ; " << after << " ; TOTAL OP COUNT SUCCESS\n";
         } else if (get_total_op_count(LHS_term_map) < get_total_op_count(RHS_term_map)) {
             debug(0) << before << " ; " << after << " ; TOTAL OP COUNT FAILURE\n";
+        } else if (variable_counts_atleastone_gt(LHS_var_count_map, RHS_var_count_map)) {
+            // we already screened out the failure case of variable counts
+            debug(0) << before << " ; " << after << " ; VARIABLE OCCURRENCE SUCCESS\n";
         } else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::GT) {
             debug(0) << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
         }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
             debug(0) << before << " ; " << after << " ; HISTO COUNT FAILURE\n"; 
-        } else if (compare_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::LT) {
+        } else if (!((get_node_type(before) == IRNodeType::Add) || (get_node_type(before) == IRNodeType::Sub))
+                         && ((get_node_type(after) == IRNodeType::Add) || (get_node_type(after) == IRNodeType::Sub))) {
+            debug(0) << before << " ; " << after << " ; PROMOTING ADD TO ROOT SUCCESS\n";
+        } else if (((get_node_type(before) == IRNodeType::Add) || (get_node_type(before) == IRNodeType::Sub))
+                         && !((get_node_type(after) == IRNodeType::Add) || (get_node_type(after) == IRNodeType::Sub))) {
+            debug(0) << before << " ; " << after << " ; PROMOTING ADD TO ROOT FAILURE\n";
+        } else if (!(is_right_child_constant(before)) && is_right_child_constant(after)) {
+            debug(0) << before << " ; " << after << " ; RIGHT CONSTANT SUCCESS\n";
+        } else if (is_right_child_constant(before) && !(is_right_child_constant(after))) {
+            debug(0) << before << " ; " << after << " ; RIGHT CONSTANT FAILURE\n";
+        } else if (compare_root_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::LT) {
             debug(0) << before << " ; " << after << " ; ROOT NODE SUCCESS\n"; 
-        } else if (compare_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::GT) {
+        } else if (compare_root_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::GT) {
             debug(0) << before << " ; " << after << " ; ROOT NODE FAILURE\n"; 
         } else {
-            debug(0) << before << " ; " << after << " ; FAILURE: TERMS ARE EQUAL UNDER ORDERING\n"; 
-        }
-
-      /*  if (term_map_gt(LHS_term_map,RHS_term_map)) {
-            debug(0) << "HISTO COUNT SUCCESS: " << " LHS " << before << " RHS " << after << "\n";
-        } else if (compare_node_types(get_node_type(after),get_node_type(before)) == CompIRNodeTypeStatus::GT) {
-            debug(0) << "ROOT NODE TYPE SUCCESS: LHS" << before << " RHS " << after << "\n";
-        } else {
-            debug(0) << "ORDER FAILURE: LHS " << before << " RHS " << after << "\n";
-        } */
-       
+            debug(0) << before << " ; " << after << " ; FAILURE TERMS ARE EQUAL UNDER ORDERING\n";
+        }     
     } else {
         debug(0) << before << " ; " << after << " ; VARIABLE COUNT FAILURE\n"; 
     }

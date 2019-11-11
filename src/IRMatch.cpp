@@ -369,7 +369,7 @@ node_type_ordering nto = {
     {IRNodeType::Add,17},
     {IRNodeType::Max,14},
     {IRNodeType::Min,14},
-    {IRNodeType::Not,13},
+
     {IRNodeType::Or,12},
     {IRNodeType::And,11},
     {IRNodeType::GE,10},
@@ -377,7 +377,31 @@ node_type_ordering nto = {
     {IRNodeType::LE,8},
     {IRNodeType::LT,7},
     {IRNodeType::NE,6},
-    {IRNodeType::EQ,5}
+    {IRNodeType::EQ,5},
+    {IRNodeType::Not,4},
+};
+
+node_type_ordering root_nto = {
+    {IRNodeType::Ramp,23},
+    {IRNodeType::Broadcast,22},
+    {IRNodeType::Select,21},
+    {IRNodeType::Div,20},
+    {IRNodeType::Mul,19},
+    {IRNodeType::Mod,18},
+
+    {IRNodeType::Max,17},
+    {IRNodeType::Min,17},
+    {IRNodeType::Sub,15},
+    {IRNodeType::Add,15},
+    {IRNodeType::Or,12},
+    {IRNodeType::And,11},
+    {IRNodeType::GE,10},
+    {IRNodeType::GT,9},
+    {IRNodeType::LE,8},
+    {IRNodeType::LT,7},
+    {IRNodeType::NE,6},
+    {IRNodeType::EQ,5},
+    {IRNodeType::Not,4},
 };
 
 int get_total_op_count(term_map &t) {
@@ -392,6 +416,16 @@ CompIRNodeTypeStatus compare_node_types(IRNodeType n1, IRNodeType n2) {
     if (nto[n1] == nto[n2]) {
         return CompIRNodeTypeStatus::EQ;
     } else if (nto[n1] > nto[n2]) {
+        return CompIRNodeTypeStatus::GT;
+    } else {
+        return CompIRNodeTypeStatus::LT;
+    }
+}
+
+CompIRNodeTypeStatus compare_root_node_types(IRNodeType n1, IRNodeType n2) {
+    if (root_nto[n1] == root_nto[n2]) {
+        return CompIRNodeTypeStatus::EQ;
+    } else if (root_nto[n1] > root_nto[n2]) {
         return CompIRNodeTypeStatus::GT;
     } else {
         return CompIRNodeTypeStatus::LT;
@@ -431,6 +465,38 @@ bool compare_node_type_lists(node_type_list before_list, node_type_list after_li
     return false;
 }
 
+int get_expensive_arith_count(term_map &t) {
+    return t[IRNodeType::Div] + t[IRNodeType::Mod] + t[IRNodeType::Mul];
+}
+
+bool variable_counts_geq(variable_count_map &m1, variable_count_map &m2) {
+    for (auto const& var : m2) {
+        if (var.first[0] != 'c' && !(m1[var.first] >= var.second)) {
+            debug(0) << "failed variable count geq: not " << m1[var.first] << " >= " << var.second << "\n";
+            return false;
+        }
+    }
+    return true;
+}
+
+bool variable_counts_gt(variable_count_map &m1, variable_count_map &m2) {
+    for (auto const& var : m2) {
+        if (var.first[0] != 'c' && !(m1[var.first] > var.second)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool variable_counts_atleastone_gt(variable_count_map &m1, variable_count_map &m2) {
+    for (auto const& var : m2) {
+        if (var.first[0] != 'c' && (m1[var.first] > var.second)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool term_map_gt(term_map &m1, term_map &m2) {
     if (m1[IRNodeType::Ramp] != m2[IRNodeType::Ramp]) {
         return m1[IRNodeType::Ramp] > m2[IRNodeType::Ramp];
@@ -454,8 +520,6 @@ bool term_map_gt(term_map &m1, term_map &m2) {
         return m1[IRNodeType::Min] > m2[IRNodeType::Min]; */
     } else if ((m1[IRNodeType::Max] + m1[IRNodeType::Min]) != (m2[IRNodeType::Max] + m2[IRNodeType::Min])) {
         return (m1[IRNodeType::Max] + m1[IRNodeType::Min]) > (m2[IRNodeType::Max] + m2[IRNodeType::Min]);
-    } else if (m1[IRNodeType::Not] != m2[IRNodeType::Not]) {
-        return m1[IRNodeType::Not] > m2[IRNodeType::Not];
     } else if (m1[IRNodeType::Or] != m2[IRNodeType::Or]) {
         return m1[IRNodeType::Or] > m2[IRNodeType::Or];
     } else if (m1[IRNodeType::And] != m2[IRNodeType::And]) {
@@ -472,6 +536,8 @@ bool term_map_gt(term_map &m1, term_map &m2) {
         return m1[IRNodeType::NE] > m2[IRNodeType::NE];
     } else if (m1[IRNodeType::EQ] != m2[IRNodeType::EQ]) {
         return m1[IRNodeType::EQ] > m2[IRNodeType::EQ];
+    } else if (m1[IRNodeType::Not] != m2[IRNodeType::Not]) {
+        return m1[IRNodeType::Not] > m2[IRNodeType::Not];
     } else if (m1[IRNodeType::Cast] != m2[IRNodeType::Cast]) {
         return m1[IRNodeType::Cast] > m2[IRNodeType::Cast];
     } else if (m1[IRNodeType::FloatImm] != m2[IRNodeType::FloatImm]) {
@@ -513,9 +579,6 @@ CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2) {
     } else if (m1[IRNodeType::Min] != m2[IRNodeType::Min]) { // max ops go in this bucket too
         debug(0) << "Terms count tie breaker " << " MaxMin " << m1[IRNodeType::Min] << " " << m2[IRNodeType::Min] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Min],m2[IRNodeType::Min])) << "\n";
         return ternary_comp(m1[IRNodeType::Min], m2[IRNodeType::Min]);
-    } else if (m1[IRNodeType::Not] != m2[IRNodeType::Not]) {
-        debug(0) << "Terms count tie breaker " << " Not " << m1[IRNodeType::Not] << " " << m2[IRNodeType::Not] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Not],m2[IRNodeType::Not])) << "\n";
-        return ternary_comp(m1[IRNodeType::Not], m2[IRNodeType::Not]);
     } else if (m1[IRNodeType::Or] != m2[IRNodeType::Or]) {
         debug(0) << "Terms count tie breaker " << " Or " << m1[IRNodeType::Or] << " " << m2[IRNodeType::Or] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Or],m2[IRNodeType::Or])) << "\n";
         return ternary_comp(m1[IRNodeType::Or], m2[IRNodeType::Or]);
@@ -540,6 +603,9 @@ CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2) {
     } else if (m1[IRNodeType::EQ] != m2[IRNodeType::EQ]) {
         debug(0) << "Terms count tie breaker " << " EQ " << m1[IRNodeType::EQ] << " " << m2[IRNodeType::EQ] << " " << comp_to_s(ternary_comp(m1[IRNodeType::EQ],m2[IRNodeType::EQ])) << "\n";
         return ternary_comp(m1[IRNodeType::EQ], m2[IRNodeType::EQ]);
+    } else if (m1[IRNodeType::Not] != m2[IRNodeType::Not]) {
+        debug(0) << "Terms count tie breaker " << " Not " << m1[IRNodeType::Not] << " " << m2[IRNodeType::Not] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Not],m2[IRNodeType::Not])) << "\n";
+        return ternary_comp(m1[IRNodeType::Not], m2[IRNodeType::Not]);
         /*
     } else if (m1[IRNodeType::Cast] != m2[IRNodeType::Cast]) {
         debug(0) << "Terms count tie breaker " << " Cast " << m1[IRNodeType::Cast] << " " << m2[IRNodeType::Cast] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Cast],m2[IRNodeType::Cast])) << "\n";
