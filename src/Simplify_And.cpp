@@ -19,7 +19,6 @@ Expr Simplify::visit(const And *op, ExprInfo *bounds) {
     auto rewrite = IRMatcher::rewriter(IRMatcher::and_op(a, b), op->type);
 
     if (EVAL_IN_LAMBDA
-
         (rewrite(x && true, a) ||
          rewrite(x && false, b) ||
          rewrite(x && x, a) ||
@@ -118,5 +117,5 @@ Expr Simplify::visit(const And *op, ExprInfo *bounds) {
     }
 }
 
-}
-}
+}  // namespace Internal
+}  // namespace Halide

@@ -40,14 +40,10 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
         const int lanes = op->type.lanes();
 
         if (rewrite(c0 + c1, fold(c0 + c1)) ||
-            //rewrite(IRMatcher::Indeterminate() + x, a) ||
-            rewrite(IRMatcher::Indeterminate() + x, IRMatcher::Indeterminate()) ||
-            //rewrite(x + IRMatcher::Indeterminate(), b) ||
-            rewrite(x + IRMatcher::Indeterminate(), IRMatcher::Indeterminate()) ||
-            //rewrite(IRMatcher::Overflow() + x, a) ||
-            rewrite(IRMatcher::Overflow() + x, IRMatcher::Overflow()) ||
-            //rewrite(x + IRMatcher::Overflow(), b) ||
-            rewrite(x + IRMatcher::Overflow(), IRMatcher::Overflow()) ||
+            rewrite(IRMatcher::Indeterminate() + x, a) ||
+            rewrite(x + IRMatcher::Indeterminate(), b) ||
+            rewrite(IRMatcher::Overflow() + x, a) ||
+            rewrite(x + IRMatcher::Overflow(), b) ||
             rewrite(x + 0, x) ||
             rewrite(0 + x, x)) {
             return rewrite.result;
@@ -133,15 +129,15 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
                rewrite(max(x, y) + min(x, y), x + y) ||
                rewrite(max(x, y) + min(y, x), x + y))) ||
              (no_overflow_int(op->type) &&
-              (rewrite((x/c0)*c0 + x%c0, x, c0 != 0) ||
-               rewrite((z + x/c0)*c0 + x%c0, z*c0 + x, c0 != 0) ||
-               rewrite((x/c0 + z)*c0 + x%c0, x + z*c0, c0 != 0) ||
-               rewrite(x%c0 + ((x/c0)*c0 + z), x + z, c0 != 0) ||
-               rewrite(x%c0 + ((x/c0)*c0 - z), x - z, c0 != 0) ||
-               rewrite(x%c0 + (z + (x/c0)*c0), x + z, c0 != 0) ||
-               rewrite((x/c0)*c0 + (x%c0 + z), x + z, c0 != 0) ||
-               rewrite((x/c0)*c0 + (x%c0 - z), x - z, c0 != 0) ||
-               rewrite((x/c0)*c0 + (z + x%c0), x + z, c0 != 0) ||
+              (rewrite((x/y)*y + x%y, x) ||
+               rewrite((z + x/y)*y + x%y, z*y + x) ||
+               rewrite((x/y + z)*y + x%y, x + z*y) ||
+               rewrite(x%y + ((x/y)*y + z), x + z) ||
+               rewrite(x%y + ((x/y)*y - z), x - z) ||
+               rewrite(x%y + (z + (x/y)*y), x + z) ||
+               rewrite((x/y)*y + (x%y + z), x + z) ||
+               rewrite((x/y)*y + (x%y - z), x - z) ||
+               rewrite((x/y)*y + (z + x%y), x + z) ||
                rewrite(x/2 + x%2, (x + 1) / 2) ||
 
                rewrite(x + ((c0 - x)/c1)*c1, c0 - ((c0 - x) % c1), c1 > 0) ||
@@ -170,5 +166,5 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
     }
 }
 
-}
-}
+}  // namespace Internal
+}  // namespace Halide

@@ -36,14 +36,10 @@ Expr Simplify::visit(const Sub *op, ExprInfo *bounds) {
         const int lanes = op->type.lanes();
 
         if (rewrite(c0 - c1, fold(c0 - c1)) ||
-            // rewrite(IRMatcher::Indeterminate() - x, a) ||
-            rewrite(IRMatcher::Indeterminate() - x, IRMatcher::Indeterminate()) ||
-            // rewrite(x - IRMatcher::Indeterminate(), b) ||
-            rewrite(x - IRMatcher::Indeterminate(), IRMatcher::Indeterminate()) ||
-            // rewrite(IRMatcher::Overflow() - x, a) ||
-            rewrite(IRMatcher::Overflow() - x, IRMatcher::Overflow()) ||
-            // rewrite(x - IRMatcher::Overflow(), b) ||
-            rewrite(x - IRMatcher::Overflow(), IRMatcher::Overflow()) ||
+            rewrite(IRMatcher::Indeterminate() - x, a) ||
+            rewrite(x - IRMatcher::Indeterminate(), b) ||
+            rewrite(IRMatcher::Overflow() - x, a) ||
+            rewrite(x - IRMatcher::Overflow(), b) ||
             rewrite(x - 0, x)) {
             return rewrite.result;
         }
@@ -301,6 +297,5 @@ Expr Simplify::visit(const Sub *op, ExprInfo *bounds) {
     }
 }
 
-
-}
-}
+}  // namespace Internal
+}  // namespace Halide

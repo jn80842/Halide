@@ -92,14 +92,10 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
 
         auto rewrite = IRMatcher::rewriter(IRMatcher::div(a, b), op->type);
 
-        if (//rewrite(IRMatcher::Indeterminate() / x, a) ||
-            rewrite(IRMatcher::Indeterminate() / x, IRMatcher::Indeterminate()) ||
-            //rewrite(x / IRMatcher::Indeterminate(), b) ||
-            rewrite(x / IRMatcher::Indeterminate(), IRMatcher::Indeterminate()) ||
-            //rewrite(IRMatcher::Overflow() / x, a) ||
-            rewrite(IRMatcher::Overflow() / x, IRMatcher::Overflow()) ||
-            //rewrite(x / IRMatcher::Overflow(), b) ||
-            rewrite(x / IRMatcher::Overflow(), IRMatcher::Overflow()) ||
+        if (rewrite(IRMatcher::Indeterminate() / x, a) ||
+            rewrite(x / IRMatcher::Indeterminate(), b) ||
+            rewrite(IRMatcher::Overflow() / x, a) ||
+            rewrite(x / IRMatcher::Overflow(), b) ||
             rewrite(x / 1, x) ||
             (!op->type.is_float() &&
              rewrite(x / 0, IRMatcher::Indeterminate())) ||
@@ -165,8 +161,8 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
                rewrite(((y + x) + z)/x, (y + z)/x + 1) ||
                rewrite((z + (x + y))/x, (z + y)/x + 1) ||
                rewrite((z + (y + x))/x, (z + y)/x + 1) ||
-               rewrite((x*y)/x, y, can_prove(x != 0, this)) ||
-               rewrite((y*x)/x, y, can_prove(x != 0, this)) ||
+               rewrite((x*y)/x, y) ||
+               rewrite((y*x)/x, y) ||
                rewrite((x*y + z)/x, y + z/x) ||
                rewrite((y*x + z)/x, y + z/x) ||
                rewrite((z + x*y)/x, z/x + y) ||
@@ -203,5 +199,5 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
     }
 }
 
-}
-}
+}  // namespace Internal
+}  // namespace Halide

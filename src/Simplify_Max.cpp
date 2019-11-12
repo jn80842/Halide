@@ -45,93 +45,53 @@ Expr Simplify::visit(const Max *op, ExprInfo *bounds) {
         if (EVAL_IN_LAMBDA
             (rewrite(max(x, x), x) ||
              rewrite(max(c0, c1), fold(max(c0, c1))) ||
-             //rewrite(max(IRMatcher::Indeterminate(), x), a) ||
-             rewrite(max(IRMatcher::Indeterminate(), x), IRMatcher::Indeterminate()) ||
-             //rewrite(max(x, IRMatcher::Indeterminate()), b) ||
-             rewrite(max(x, IRMatcher::Indeterminate()), IRMatcher::Indeterminate()) ||
-             //rewrite(max(IRMatcher::Overflow(), x), a) ||
-             rewrite(max(IRMatcher::Overflow(), x), IRMatcher::Overflow()) ||
-             //rewrite(max(x,IRMatcher::Overflow()), b) ||
-             rewrite(max(x,IRMatcher::Overflow()), IRMatcher::Overflow()) ||
+             rewrite(max(IRMatcher::Indeterminate(), x), a) ||
+             rewrite(max(x, IRMatcher::Indeterminate()), b) ||
+             rewrite(max(IRMatcher::Overflow(), x), a) ||
+             rewrite(max(x,IRMatcher::Overflow()), b) ||
              // Cases where one side dominates:
-             //rewrite(max(x, op->type.max()), b) ||
-             rewrite(max(x, op->type.max()), op->type.max()) || // note this does not output verification rule
+             rewrite(max(x, op->type.max()), b) ||
              rewrite(max(x, op->type.min()), x) ||
-             //rewrite(max((x/c0)*c0, x), b, c0 > 0) ||
-             rewrite(max((x/c0)*c0, x), x, c0 > 0) ||
-             //rewrite(max(x, (x/c0)*c0), a, c0 > 0) ||
-             rewrite(max(x, (x/c0)*c0), x, c0 > 0) ||
-             //rewrite(max(max(x, y), x), a) ||
-             rewrite(max(max(x, y), x), max(x, y)) ||
-             //rewrite(max(max(x, y), y), a) ||
-             rewrite(max(max(x, y), y), max(x, y)) ||
-             //rewrite(max(max(max(x, y), z), x), a) ||
-             rewrite(max(max(max(x, y), z), x), max(max(x, y), z)) ||
-             //rewrite(max(max(max(x, y), z), y), a) ||
-             rewrite(max(max(max(x, y), z), y), max(max(x, y), z)) ||
-             //rewrite(max(max(max(max(x, y), z), w), x), a) ||
-             rewrite(max(max(max(max(x, y), z), w), x), max(max(max(x, y), z), w)) ||
-             //rewrite(max(max(max(max(x, y), z), w), y), a) ||
-             rewrite(max(max(max(max(x, y), z), w), y), max(max(max(x, y), z), w)) ||
-             //rewrite(max(max(max(max(max(x, y), z), w), u), x), a) ||
-             rewrite(max(max(max(max(max(x, y), z), w), u), x), max(max(max(max(x, y), z), w), u)) ||
-             //rewrite(max(max(max(max(max(x, y), z), w), u), y), a) ||
-             rewrite(max(max(max(max(max(x, y), z), w), u), y), max(max(max(max(x, y), z), w), u)) ||
-             //rewrite(max(x, min(x, y)), a) ||
-             rewrite(max(x, min(x, y)), x) ||
-             //rewrite(max(x, min(y, x)), a) ||
-             rewrite(max(x, min(y, x)), x) ||
-             //rewrite(max(max(x, y), min(x, y)), a) ||
-             rewrite(max(max(x, y), min(x, y)), max(x, y)) ||
-             //rewrite(max(max(x, y), min(y, x)), a) ||
-             rewrite(max(max(x, y), min(y, x)), max(x, y)) ||
-             //rewrite(max(min(x, y), x), b) ||
-             rewrite(max(min(x, y), x), x) ||
-             //rewrite(max(min(y, x), x), b) ||
-             rewrite(max(min(y, x), x), x) ||
-             //rewrite(max(min(x, c0), c1), b, c1 >= c0) ||
-             rewrite(max(min(x, c0), c1), c1, c1 >= c0) ||
+             rewrite(max((x/c0)*c0, x), b, c0 > 0) ||
+             rewrite(max(x, (x/c0)*c0), a, c0 > 0) ||
+             rewrite(max(max(x, y), x), a) ||
+             rewrite(max(max(x, y), y), a) ||
+             rewrite(max(max(max(x, y), z), x), a) ||
+             rewrite(max(max(max(x, y), z), y), a) ||
+             rewrite(max(max(max(max(x, y), z), w), x), a) ||
+             rewrite(max(max(max(max(x, y), z), w), y), a) ||
+             rewrite(max(max(max(max(max(x, y), z), w), u), x), a) ||
+             rewrite(max(max(max(max(max(x, y), z), w), u), y), a) ||
+             rewrite(max(x, min(x, y)), a) ||
+             rewrite(max(x, min(y, x)), a) ||
+             rewrite(max(max(x, y), min(x, y)), a) ||
+             rewrite(max(max(x, y), min(y, x)), a) ||
+             rewrite(max(min(x, y), x), b) ||
+             rewrite(max(min(y, x), x), b) ||
+             rewrite(max(min(x, c0), c1), b, c1 >= c0) ||
 
-             //rewrite(max(intrin(Call::likely, x), x), a) ||
-             rewrite(max(intrin(Call::likely, x), x), intrin(Call::likely, x)) ||
-             //rewrite(max(x, intrin(Call::likely, x)), b) ||
-             rewrite(max(x, intrin(Call::likely, x)), intrin(Call::likely, x)) ||
-             //rewrite(max(intrin(Call::likely_if_innermost, x), x), a) ||
-             rewrite(max(intrin(Call::likely_if_innermost, x), x), intrin(Call::likely_if_innermost, x)) ||
-             //rewrite(max(x, intrin(Call::likely_if_innermost, x)), b) ||
-             rewrite(max(x, intrin(Call::likely_if_innermost, x)), intrin(Call::likely_if_innermost, x)) ||
+             rewrite(max(intrin(Call::likely, x), x), a) ||
+             rewrite(max(x, intrin(Call::likely, x)), b) ||
+             rewrite(max(intrin(Call::likely_if_innermost, x), x), a) ||
+             rewrite(max(x, intrin(Call::likely_if_innermost, x)), b) ||
 
              (no_overflow(op->type) &&
-              (//rewrite(max(ramp(x, y), broadcast(z)), a, can_prove(x + y * (lanes - 1) >= z && x >= z, this)) ||
-              rewrite(max(ramp(x, y), broadcast(z)), ramp(x, y), can_prove(x + y * (lanes - 1) >= z && x >= z, this)) ||
-               //rewrite(max(ramp(x, y), broadcast(z)), b, can_prove(x + y * (lanes - 1) <= z && x <= z, this)) ||
-               rewrite(max(ramp(x, y), broadcast(z)), broadcast(z), can_prove(x + y * (lanes - 1) <= z && x <= z, this)) ||
+              (rewrite(max(ramp(x, y), broadcast(z)), a, can_prove(x + y * (lanes - 1) >= z && x >= z, this)) ||
+               rewrite(max(ramp(x, y), broadcast(z)), b, can_prove(x + y * (lanes - 1) <= z && x <= z, this)) ||
                // Compare x to a stair-step function in x
-               //rewrite(max(((x + c0)/c1)*c1 + c2, x), a, c1 > 0 && c0 + c2 >= c1 - 1) ||
-               rewrite(max(((x + c0)/c1)*c1 + c2, x), ((x + c0)/c1)*c1 + c2, c1 > 0 && c0 + c2 >= c1 - 1) ||
-               //rewrite(max(x, ((x + c0)/c1)*c1 + c2), b, c1 > 0 && c0 + c2 >= c1 - 1) ||
-               rewrite(max(x, ((x + c0)/c1)*c1 + c2), ((x + c0)/c1)*c1 + c2, c1 > 0 && c0 + c2 >= c1 - 1) ||
-               //rewrite(max(((x + c0)/c1)*c1 + c2, x), b, c1 > 0 && c0 + c2 <= 0) ||
-               rewrite(max(((x + c0)/c1)*c1 + c2, x), x, c1 > 0 && c0 + c2 <= 0) ||
-               //rewrite(max(x, ((x + c0)/c1)*c1 + c2), a, c1 > 0 && c0 + c2 <= 0) ||
-               rewrite(max(x, ((x + c0)/c1)*c1 + c2), x, c1 > 0 && c0 + c2 <= 0) ||
+               rewrite(max(((x + c0)/c1)*c1 + c2, x), a, c1 > 0 && c0 + c2 >= c1 - 1) ||
+               rewrite(max(x, ((x + c0)/c1)*c1 + c2), b, c1 > 0 && c0 + c2 >= c1 - 1) ||
+               rewrite(max(((x + c0)/c1)*c1 + c2, x), b, c1 > 0 && c0 + c2 <= 0) ||
+               rewrite(max(x, ((x + c0)/c1)*c1 + c2), a, c1 > 0 && c0 + c2 <= 0) ||
                // Special cases where c0 or c2 is zero
-               //rewrite(max((x/c1)*c1 + c2, x), a, c1 > 0 && c2 >= c1 - 1) ||
-               rewrite(max((x/c1)*c1 + c2, x), (x/c1)*c1 + c2, c1 > 0 && c2 >= c1 - 1) ||
-               //rewrite(max(x, (x/c1)*c1 + c2), b, c1 > 0 && c2 >= c1 - 1) ||
-               rewrite(max(x, (x/c1)*c1 + c2), (x/c1)*c1 + c2, c1 > 0 && c2 >= c1 - 1) ||
-               //rewrite(max(((x + c0)/c1)*c1, x), a, c1 > 0 && c0 >= c1 - 1) ||
-               rewrite(max(((x + c0)/c1)*c1, x), ((x + c0)/c1)*c1, c1 > 0 && c0 >= c1 - 1) ||
-               //rewrite(max(x, ((x + c0)/c1)*c1), b, c1 > 0 && c0 >= c1 - 1) ||
-               rewrite(max(x, ((x + c0)/c1)*c1), ((x + c0)/c1)*c1, c1 > 0 && c0 >= c1 - 1) ||
-               //rewrite(max((x/c1)*c1 + c2, x), b, c1 > 0 && c2 <= 0) ||
-               rewrite(max((x/c1)*c1 + c2, x), x, c1 > 0 && c2 <= 0) ||
-               //rewrite(max(x, (x/c1)*c1 + c2), a, c1 > 0 && c2 <= 0) ||
-               rewrite(max(x, (x/c1)*c1 + c2), x, c1 > 0 && c2 <= 0) ||
-               //rewrite(max(((x + c0)/c1)*c1, x), b, c1 > 0 && c0 <= 0) ||
-               rewrite(max(((x + c0)/c1)*c1, x), x, c1 > 0 && c0 <= 0) ||
-               //rewrite(max(x, ((x + c0)/c1)*c1), a, c1 > 0 && c0 <= 0))))) {
-                rewrite(max(x, ((x + c0)/c1)*c1), x, c1 > 0 && c0 <= 0))))) {
+               rewrite(max((x/c1)*c1 + c2, x), a, c1 > 0 && c2 >= c1 - 1) ||
+               rewrite(max(x, (x/c1)*c1 + c2), b, c1 > 0 && c2 >= c1 - 1) ||
+               rewrite(max(((x + c0)/c1)*c1, x), a, c1 > 0 && c0 >= c1 - 1) ||
+               rewrite(max(x, ((x + c0)/c1)*c1), b, c1 > 0 && c0 >= c1 - 1) ||
+               rewrite(max((x/c1)*c1 + c2, x), b, c1 > 0 && c2 <= 0) ||
+               rewrite(max(x, (x/c1)*c1 + c2), a, c1 > 0 && c2 <= 0) ||
+               rewrite(max(((x + c0)/c1)*c1, x), b, c1 > 0 && c0 <= 0) ||
+               rewrite(max(x, ((x + c0)/c1)*c1), a, c1 > 0 && c0 <= 0))))) {
             return rewrite.result;
         }
 
@@ -144,8 +104,7 @@ Expr Simplify::visit(const Max *op, ExprInfo *bounds) {
              rewrite(max(max(y, x), max(z, x)), max(max(y, z), x)) ||
              rewrite(max(max(x, y), max(z, w)), max(max(max(x, y), z), w)) ||
              rewrite(max(broadcast(x), broadcast(y)), broadcast(max(x, y), lanes)) ||
-             //rewrite(max(broadcast(x), ramp(y, z)), max(b, a)) ||
-             rewrite(max(broadcast(x), ramp(y, z)), max(ramp(y, z), broadcast(x))) ||
+             rewrite(max(broadcast(x), ramp(y, z)), max(b, a)) ||
              rewrite(max(max(x, broadcast(y)), broadcast(z)), max(x, broadcast(max(y, z), lanes))) ||
              rewrite(max(min(x, y), min(x, z)), min(x, max(y, z))) ||
              rewrite(max(min(x, y), min(z, x)), min(x, max(y, z))) ||
@@ -268,5 +227,5 @@ Expr Simplify::visit(const Max *op, ExprInfo *bounds) {
     }
 }
 
-}
-}
+}  // namespace Internal
+}  // namespace Halide

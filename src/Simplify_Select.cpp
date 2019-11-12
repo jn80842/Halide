@@ -30,14 +30,10 @@ Expr Simplify::visit(const Select *op, ExprInfo *bounds) {
              rewrite(select(1, x, y), x) ||
              rewrite(select(0, x, y), y) ||
              rewrite(select(x, y, y), y) ||
-             // rewrite(select(x, intrin(Call::likely, y), y), true_value) ||
-             rewrite(select(x, intrin(Call::likely, y), y), true) ||
-             // rewrite(select(x, y, intrin(Call::likely, y)), false_value) ||
-             rewrite(select(x, y, intrin(Call::likely, y)), false) ||
-             // rewrite(select(x, intrin(Call::likely_if_innermost, y), y), true_value) ||
-             rewrite(select(x, intrin(Call::likely_if_innermost, y), y), true) ||
-             // rewrite(select(x, y, intrin(Call::likely_if_innermost, y)), false_value))) {
-             rewrite(select(x, y, intrin(Call::likely_if_innermost, y)), false) ||
+             rewrite(select(x, intrin(Call::likely, y), y), true_value) ||
+             rewrite(select(x, y, intrin(Call::likely, y)), false_value) ||
+             rewrite(select(x, intrin(Call::likely_if_innermost, y), y), true_value) ||
+             rewrite(select(x, y, intrin(Call::likely_if_innermost, y)), false_value) ||
 
              // Select evaluates both sides, so if we have an
              // unreachable expression on one side we can't use a
@@ -50,7 +46,6 @@ Expr Simplify::visit(const Select *op, ExprInfo *bounds) {
 
              rewrite(select(x, y, IRMatcher::Indeterminate()), y) ||
              rewrite(select(x, IRMatcher::Indeterminate(), y), y))) {
-
             return rewrite.result;
         }
 
@@ -147,8 +142,7 @@ Expr Simplify::visit(const Select *op, ExprInfo *bounds) {
     } else {
         return Select::make(std::move(condition), std::move(true_value), std::move(false_value));
     }
-
 }
 
-}
-}
+}  // namespace Internal
+}  // namespace Halide
