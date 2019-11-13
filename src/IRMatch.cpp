@@ -332,19 +332,27 @@ std::string print_bfs_node_type_map(bfs_node_type_map &type_map) {
 }
 
 CompIRNodeTypeStatus compare_bfs_node_type_maps(bfs_node_type_map &map1, bfs_node_type_map &map2) {
-    int map_size;
-    if (map1.size() > map2.size()) {
-        map_size = map2.size();
-    } else {
-        map_size = map1.size();
-    }
-    for (int i=0; i<map_size; i++) {
-        for(auto it1 = map1[i].begin(), it2 = map2[i].begin(); it1 != map1[i].end() || it2 != map2[i].end(); ++it1, ++it2) {
-            if (not (compare_node_types(*it1, *it2) == CompIRNodeTypeStatus::EQ)) {
-                return compare_node_types(*it1, *it2);
-            }
+    std::vector<IRNodeType> vec1;
+    std::vector<IRNodeType> vec2;
+    int map1size = map1.size();
+    for (int i = 0; i<map1size; i++) {
+        for (auto it1 = map1[i].begin(); it1 != map1[i].end(); ++it1) {
+            vec1.push_back(*it1);
         }
     }
+    int map2size = map2.size();
+    for (int i = 0; i<map2size; i++) {
+        for (auto it2 = map2[i].begin(); it2 != map2[i].end(); ++it2) {
+            vec2.push_back(*it2);
+        }
+    }
+
+    for(auto it1 = vec1.begin(), it2 = vec2.begin(); it1 != vec1.end() || it2 != vec2.end(); ++it1, ++it2) {
+        if (not (compare_node_types(*it1, *it2) == CompIRNodeTypeStatus::EQ)) {
+            return compare_node_types(*it1, *it2);
+        }
+    }
+
     return CompIRNodeTypeStatus::EQ;
 }
 
@@ -371,25 +379,32 @@ node_type_ordering nto = {
     {IRNodeType::Not,4},
 };
 
-// lexico sort st. adds and subs are less than all other ops
 CompIRNodeTypeStatus compare_bfs_node_adds(bfs_node_type_map &map1, bfs_node_type_map &map2) {
-    int map_size;
-    if (map1.size() > map2.size()) {
-        map_size = map2.size();
-    } else {
-        map_size = map1.size();
+    std::vector<IRNodeType> vec1;
+    std::vector<IRNodeType> vec2;
+    int map1size = map1.size();
+    for (int i = 0; i < map1size; i++) {
+        for (auto it1 = map1[i].begin(); it1 != map1[i].end(); ++it1) {
+            vec1.push_back(*it1);
+        }
     }
-    for (int i=0; i<map_size; i++) {
-        for(auto it1 = map1[i].begin(), it2 = map2[i].begin(); it1 != map1[i].end() || it2 != map2[i].end(); ++it1, ++it2) {
-            if (not (compare_node_types(*it1, *it2) == CompIRNodeTypeStatus::EQ)) {
-                if ((nto[*it1] != nto[IRNodeType::Add]) && (nto[*it2] == nto[IRNodeType::Add])) {
-                    return CompIRNodeTypeStatus::GT;
-                } else if ((nto[*it1] == nto[IRNodeType::Add]) && (nto[*it2] != nto[IRNodeType::Add])) {
-                    return CompIRNodeTypeStatus::LT;
-                }
+    int map2size = map2.size();
+    for (int i = 0; i < map2size; i++) {
+        for (auto it2 = map2[i].begin(); it2 != map2[i].end(); ++it2) {
+            vec2.push_back(*it2);
+        }
+    }
+
+    for(auto it1 = vec1.begin(), it2 = vec2.begin(); it1 != vec1.end() || it2 != vec2.end(); ++it1, ++it2) {
+        if (not (compare_node_types(*it1, *it2) == CompIRNodeTypeStatus::EQ)) {
+            if ((nto[*it1] != nto[IRNodeType::Add]) && (nto[*it2] == nto[IRNodeType::Add])) {
+               return CompIRNodeTypeStatus::GT;
+            } else if ((nto[*it1] == nto[IRNodeType::Add]) && (nto[*it2] != nto[IRNodeType::Add])) {
+                return CompIRNodeTypeStatus::LT;
             }
         }
     }
+
     return CompIRNodeTypeStatus::EQ;
 }
 

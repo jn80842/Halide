@@ -3864,8 +3864,7 @@ bool is_vector_term(const CastOp<A> &op) {
 
 template<typename A>
 void build_bfs_type_map(const CastOp<A> &op, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
-    build_bfs_type_map(op.a, type_map, current_depth + 1);
+    return;
 }
 
 template<typename A>
@@ -3996,8 +3995,7 @@ bool is_vector_term(const Fold<A> &op) {
 
 template<typename A>
 void build_bfs_type_map(const Fold<A> &op, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
-    build_bfs_type_map(op.a, type_map, current_depth + 1);
+    return;
 }
 
 template<typename A>
@@ -4126,8 +4124,7 @@ bool is_vector_term(const Overflows<A> &op) {
 
 template<typename A>
 void build_bfs_type_map(const Overflows<A> &op, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
-    build_bfs_type_map(op.a, type_map, current_depth + 1);
+    return;
 }
 
 struct Indeterminate {
@@ -4194,7 +4191,7 @@ inline bool is_vector_term(const Indeterminate &op) {
 }
 
 inline void build_bfs_type_map(const Indeterminate &op, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, IRNodeType::Variable, current_depth);
+    return;
 }
 
 inline void build_variable_map(const Indeterminate &op, variable_map &varmap, halide_type_t type_hint) {
