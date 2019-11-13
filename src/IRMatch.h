@@ -102,6 +102,7 @@ CompIRNodeTypeStatus compare_root_node_types(IRNodeType n1, IRNodeType n2);
 bool compare_node_type_lists(node_type_list before_list, node_type_list after_list);
 CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2);
 CompIRNodeTypeStatus compare_bfs_node_type_maps(bfs_node_type_map &map1, bfs_node_type_map &map2);
+CompIRNodeTypeStatus compare_bfs_node_adds(bfs_node_type_map &map1, bfs_node_type_map &map2);
 
 /** To save stack space, the matcher objects are largely stateless and
  * immutable. This state object is built up during matching and then
@@ -288,7 +289,7 @@ inline bool is_vector_term(SpecificExpr e) {
 }
 
 inline void build_bfs_type_map(SpecificExpr e, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map,IRNodeType::UIntImm,current_depth);
+    return;
 }
 
 inline void count_terms(SpecificExpr e, term_map &m) {
@@ -313,6 +314,10 @@ inline void build_variable_count_map(SpecificExpr e, variable_count_map &varcoun
 }
 
 inline void build_leaf_vec(SpecificExpr e, leaf_vec &v) {
+    return;
+}
+
+inline void wildcardconst_str(SpecificExpr e, std::string &s) {
     return;
 }
 
@@ -413,7 +418,7 @@ bool is_vector_term(const WildConstInt<i> &c) {
 
 template<int i>
 void build_bfs_type_map(const WildConstInt<i> &c, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map,IRNodeType::IntImm,current_depth);
+    return;
 }
 
 template<int i>
@@ -444,6 +449,12 @@ void build_variable_count_map(const WildConstInt<i> &c, variable_count_map &varc
 template<int i>
 void build_leaf_vec(const WildConstInt<i> &c, leaf_vec &v) {
     v.push_back(1);
+}
+
+template<int i>
+void wildcardconst_str(const WildConstInt<i> &c, std::string &s) {
+    s += "b";
+    return;
 }
 
 template<int i>
@@ -549,7 +560,7 @@ bool is_vector_term(const WildConstUInt<i> &c) {
 
 template<int i>
 void build_bfs_type_map(const WildConstUInt<i> &c, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, IRNodeType::UIntImm, current_depth);
+    return;
 }
 
 template<int i>
@@ -580,6 +591,12 @@ void build_variable_count_map(const WildConstUInt<i> &c, variable_count_map &var
 template<int i>
 void build_leaf_vec(const WildConstUInt<i> &c, leaf_vec &v) {
     v.push_back(1);
+}
+
+template<int i>
+void wildcardconst_str(const WildConstUInt<i> &c, std::string &s) {
+    s += "b";
+    return;
 }
 
 template<int i>
@@ -682,7 +699,7 @@ bool is_vector_term(const WildConstFloat<i> &c) {
 
 template<int i>
 void build_bfs_type_map(const WildConstFloat<i> &c, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, IRNodeType::FloatImm, current_depth);
+    return;
 }
 
 template<int i>
@@ -713,6 +730,12 @@ void build_variable_count_map(const WildConstFloat<i> &c, variable_count_map &va
 template<int i>
 void build_leaf_vec(const WildConstFloat<i> &c, leaf_vec &v) {
     v.push_back(1);
+}
+
+template<int i>
+void wildcardconst_str(const WildConstFloat<i> &c, std::string &s) {
+    s += "b";
+    return;
 }
 
 template<int i>
@@ -813,7 +836,7 @@ bool is_vector_term(const WildConst<i> &c) {
 
 template<int i>
 void build_bfs_type_map(const WildConst<i> &c, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, IRNodeType::UIntImm, current_depth);
+    return;
 }
 
 template<int i>
@@ -865,6 +888,12 @@ void build_variable_count_map(const WildConst<i> &c, variable_count_map &varcoun
 template<int i>
 void build_leaf_vec(const WildConst<i> &c, leaf_vec &v) {
     v.push_back(1);
+}
+
+template<int i>
+void wildcardconst_str(const WildConst<i> &c, std::string &s) {
+    s += "b";
+    return;
 }
 
 template<int i>
@@ -970,7 +999,7 @@ bool is_vector_term(const Wild<i> &op) {
 
 template<int i>
 void build_bfs_type_map(const Wild<i> &op, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, IRNodeType::Variable, current_depth);
+    return;
 }
 
 template<int i>
@@ -1031,6 +1060,12 @@ void build_variable_count_map(const Wild<i> &c, variable_count_map &varcountmap)
 template<int i>
 void build_leaf_vec(const Wild<i> &c, leaf_vec &v) {
     v.push_back(0);
+}
+
+template<int i>
+void wildcardconst_str(const Wild<i> &c, std::string &s) {
+    s += "a";
+    return;
 }
 
 template<int i>
@@ -1186,7 +1221,7 @@ inline bool is_vector_term(const Const &op) {
 }
 
 inline void build_bfs_type_map(const Const &op, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, IRNodeType::UIntImm, current_depth);
+    return;
 }
 
 // since type is not known, choose strongest term type
@@ -1212,6 +1247,11 @@ inline void build_variable_count_map(const Const &op, variable_count_map &varcou
 
 inline void build_leaf_vec(const Const &op, leaf_vec &v) {
     v.push_back(1);
+}
+
+inline void wildcardconst_str(const Const &op, std::string &s) {
+    s += "b";
+    return;
 }
 
 inline bool is_right_child_constant(const Const &op) {
@@ -1466,6 +1506,12 @@ void build_leaf_vec(const CmpOp<Op, A, B> &op, leaf_vec &v) {
 }
 
 template<typename Op, typename A, typename B>
+void wildcardconst_str(const CmpOp<Op, A, B> &op, std::string &s) {
+    wildcardconst_str(op.a, s);
+    wildcardconst_str(op.b, s);
+}
+
+template<typename Op, typename A, typename B>
 bool is_right_child_constant(const CmpOp<Op, A, B> &op) {
  //   debug(0) << nt_string_lookup[get_node_type(op.b)] << "\n";
     return is_constant(op.b);
@@ -1512,6 +1558,12 @@ template<typename Op, typename A, typename B>
 void build_leaf_vec(const BinOp<Op, A, B> &op, leaf_vec &v) {
     build_leaf_vec(op.a, v);
     build_leaf_vec(op.b, v);
+}
+
+template<typename Op, typename A, typename B>
+void wildcardconst_str(const BinOp<Op, A, B> &op, std::string &s) {
+    wildcardconst_str(op.a, s);
+    wildcardconst_str(op.b, s);
 }
 
 template<typename Op, typename A, typename B>
@@ -2814,7 +2866,7 @@ bool is_vector_term(const Intrin<Args...> &op) {
 
 template<typename... Args>
 void build_bfs_type_map(const Intrin<Args...> &op, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, IRNodeType::IntImm, current_depth);
+    return;
 }
 
 template<typename... Args>
@@ -2829,6 +2881,11 @@ void build_variable_count_map(const Intrin<Args...> &op, variable_count_map &var
 
 template<typename... Args>
 void build_leaf_vec(const Intrin<Args...> &op, leaf_vec &v) {
+    return;
+}
+
+template<typename... Args>
+void wildcardconst_str(const Intrin<Args...> &op, std::string &s) {
     return;
 }
 
@@ -2985,6 +3042,11 @@ void build_variable_count_map(const NotOp<A> &op, variable_count_map &varcountma
 template<typename A>
 void build_leaf_vec(const NotOp<A> &op, leaf_vec &v) {
     build_leaf_vec(op.a, v);
+}
+
+template<typename A>
+void wildcardconst_str(const NotOp<A> &op, std::string &s) {
+    wildcardconst_str(op.a, s);
 }
 
 template<typename A>
@@ -3156,6 +3218,13 @@ void build_leaf_vec(const SelectOp<C, T, F> &op, leaf_vec &v) {
 }
 
 template<typename C, typename T, typename F>
+void wildcardconst_str(const SelectOp<C, T, F> &op, std::string &s) {
+    wildcardconst_str(op.c, s);
+    wildcardconst_str(op.t, s);
+    wildcardconst_str(op.f, s);
+}
+
+template<typename C, typename T, typename F>
 bool is_right_child_constant(const SelectOp<C, T, F> &op) {
     // not sure that we care about moving constants to false branches
   //  debug(0) << nt_string_lookup[get_node_type(op.f)] << "\n";
@@ -3292,6 +3361,11 @@ void build_bfs_type_map(const BroadcastOp<A, known_lanes> &op, bfs_node_type_map
 template<typename A, bool known_lanes>
 void build_leaf_vec(const BroadcastOp<A, known_lanes> &op, leaf_vec &v) {
     build_leaf_vec(op.a, v);
+}
+
+template<typename A, bool known_lanes>
+void wildcardconst_str(const BroadcastOp<A, known_lanes> &op, std::string &s) {
+    wildcardconst_str(op.a, s);
 }
 
 template<typename A, bool known_lanes>
@@ -3481,6 +3555,12 @@ void build_leaf_vec(const RampOp<A, B, known_lanes> &op, leaf_vec &v) {
 }
 
 template<typename A, typename B, bool known_lanes>
+void wildcardconst_str(const RampOp<A, B, known_lanes> &op, std::string &s) {
+    wildcardconst_str(op.a, s);
+    wildcardconst_str(op.b, s);
+}
+
+template<typename A, typename B, bool known_lanes>
 bool is_right_child_constant(const RampOp<A, B, known_lanes> &op) {
     // don't care about moving constants to stride
     return false;
@@ -3667,6 +3747,11 @@ void build_leaf_vec(const NegateOp<A> &op, leaf_vec &v) {
 }
 
 template<typename A>
+void wildcardconst_str(const NegateOp<A> &op, std::string &s) {
+    wildcardconst_str(op.a, s);
+}
+
+template<typename A>
 bool is_right_child_constant(const NegateOp<A> &op) {
     return false;
 }
@@ -3799,6 +3884,11 @@ void build_leaf_vec(const CastOp<A> &op, leaf_vec &v) {
 }
 
 template<typename A>
+void wildcardconst_str(const CastOp<A> &op, std::string &s) {
+    wildcardconst_str(op.a, s);
+}
+
+template<typename A>
 bool is_right_child_constant(const CastOp<A> &op) {
     return false;
 }
@@ -3923,6 +4013,11 @@ void build_variable_count_map(const Fold<A> &op, variable_count_map &varcountmap
 template<typename A>
 void build_leaf_vec(const Fold<A> &op, leaf_vec &v) {
     v.push_back(1);
+}
+
+template<typename A>
+void wildcardconst_str(const Fold<A> &op, std::string &s) {
+    s += "b";
 }
 
 template<typename A>
@@ -4112,6 +4207,10 @@ inline void build_variable_count_map(const Indeterminate &op, variable_count_map
 
 inline void build_leaf_vec(const Indeterminate &op, leaf_vec &v) {
     v.push_back(0); // assume position of Indeterminates doesn't matter
+}
+
+inline void wildcardconst_str(const Indeterminate &op, std::string &s) {
+    return;
 }
 
 inline bool is_right_child_constant(const Indeterminate &op) {
@@ -4337,6 +4436,11 @@ void build_leaf_vec(const IsConst<A> &op, leaf_vec &v) {
 }
 
 template<typename A>
+void wildcardconst_str(const IsConst<A> &op, std::string &s) {
+    return;
+}
+
+template<typename A>
 bool is_right_child_constant(const IsConst<A> &op) {
     return false;
 }
@@ -4450,6 +4554,11 @@ void build_variable_count_map(const CanProve<A, Prover> &op, variable_count_map 
 
 template<typename A, typename Prover>
 void build_leaf_vec(const CanProve<A, Prover> &op, leaf_vec &v) {
+    return;
+}
+
+template<typename A, typename Prover>
+void wildcardconst_str(const CanProve<A, Prover> &op, std::string &s) {
     return;
 }
 
@@ -4574,6 +4683,11 @@ void build_leaf_vec(const IsFloat<A> &op, leaf_vec &v) {
 }
 
 template<typename A>
+void wildcardconst_str(const IsFloat<A> &op, std::string &s) {
+    return;
+}
+
+template<typename A>
 bool is_right_child_constant(const IsFloat<A> &op) {
     return false;
 }
@@ -4637,8 +4751,18 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     build_variable_count_map(before, LHS_var_count_map);
     build_variable_count_map(after, RHS_var_count_map);
 
+    bfs_node_type_map LHS_bfs_node_type_map;
+    bfs_node_type_map RHS_bfs_node_type_map;
+    build_bfs_type_map(before, LHS_bfs_node_type_map,0);
+    build_bfs_type_map(after, RHS_bfs_node_type_map,0);
+
     int LHS_vector_count = LHS_term_map[IRNodeType::Ramp] + LHS_term_map[IRNodeType::Broadcast];
     int RHS_vector_count = RHS_term_map[IRNodeType::Ramp] + RHS_term_map[IRNodeType::Broadcast];
+
+    std::string LHS_wildcardstr;
+    wildcardconst_str(before,LHS_wildcardstr);
+    std::string RHS_wildcardstr;
+    wildcardconst_str(after,RHS_wildcardstr);
 
     if (LHS_vector_count > RHS_vector_count) {
             debug(0) << before << " ; " << after << " ;  VECTOR COUNT SUCCESS\n";
@@ -4661,22 +4785,14 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
             debug(0) << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
         }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
             debug(0) << before << " ; " << after << " ; HISTO COUNT FAILURE\n"; 
-        } else if (!((get_node_type(before) == IRNodeType::Add) || (get_node_type(before) == IRNodeType::Sub))
-                         && ((get_node_type(after) == IRNodeType::Add) || (get_node_type(after) == IRNodeType::Sub))) {
-            debug(0) << before << " ; " << after << " ; PROMOTING ADD TO ROOT SUCCESS\n";
-        } else if (((get_node_type(before) == IRNodeType::Add) || (get_node_type(before) == IRNodeType::Sub))
-                         && !((get_node_type(after) == IRNodeType::Add) || (get_node_type(after) == IRNodeType::Sub))) {
-            debug(0) << before << " ; " << after << " ; PROMOTING ADD TO ROOT FAILURE\n";
-        } else if (!(is_right_child_constant(before)) && is_right_child_constant(after)) {
-            debug(0) << before << " ; " << after << " ; RIGHT CONSTANT SUCCESS\n";
-        } else if (is_right_child_constant(before) && !(is_right_child_constant(after))) {
-            debug(0) << before << " ; " << after << " ; RIGHT CONSTANT FAILURE\n";
-        } else if (compare_root_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::LT) {
-            debug(0) << before << " ; " << after << " ; ROOT NODE SUCCESS\n"; 
-        } else if (compare_root_node_types(get_node_type(before),get_node_type(after)) == CompIRNodeTypeStatus::GT) {
-            debug(0) << before << " ; " << after << " ; ROOT NODE FAILURE\n"; 
-        } else {
-            debug(0) << before << " ; " << after << " ; FAILURE TERMS ARE EQUAL UNDER ORDERING\n";
+        } else if (compare_bfs_node_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
+            debug(0) << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT SUCCESS\n";
+        } else if (compare_bfs_node_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
+            debug(0) << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT FAILURE\n";
+        } else if (LHS_wildcardstr.compare(RHS_wildcardstr) > 0) {
+            debug(0) << before << " ; " << after << " ; RIGHT CONSTANT STRING SUCCESS\n";
+        } else if (LHS_wildcardstr.compare(RHS_wildcardstr) < 0) {
+            debug(0) << before << " ; " << after << " ; RIGHT CONSTANT STRING FAILURE\n";
         }     
     } else {
         debug(0) << before << " ; " << after << " ; VARIABLE COUNT FAILURE\n"; 

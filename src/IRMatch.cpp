@@ -348,16 +348,6 @@ CompIRNodeTypeStatus compare_bfs_node_type_maps(bfs_node_type_map &map1, bfs_nod
     return CompIRNodeTypeStatus::EQ;
 }
 
-void increment_term(IRNodeType node_type, term_map &m) {
-    if (m.count(node_type) == 0) {
-        m[node_type] = 1;
-    } else {
-        m[node_type] = m[node_type] + 1;
-    }
-}
-
-
-
 node_type_ordering nto = {
     {IRNodeType::Ramp,23},
     {IRNodeType::Broadcast,22},
@@ -380,6 +370,36 @@ node_type_ordering nto = {
     {IRNodeType::EQ,5},
     {IRNodeType::Not,4},
 };
+
+// lexico sort st. adds and subs are less than all other ops
+CompIRNodeTypeStatus compare_bfs_node_adds(bfs_node_type_map &map1, bfs_node_type_map &map2) {
+    int map_size;
+    if (map1.size() > map2.size()) {
+        map_size = map2.size();
+    } else {
+        map_size = map1.size();
+    }
+    for (int i=0; i<map_size; i++) {
+        for(auto it1 = map1[i].begin(), it2 = map2[i].begin(); it1 != map1[i].end() || it2 != map2[i].end(); ++it1, ++it2) {
+            if (not (compare_node_types(*it1, *it2) == CompIRNodeTypeStatus::EQ)) {
+                if ((nto[*it1] != nto[IRNodeType::Add]) && (nto[*it2] == nto[IRNodeType::Add])) {
+                    return CompIRNodeTypeStatus::GT;
+                } else if ((nto[*it1] == nto[IRNodeType::Add]) && (nto[*it2] != nto[IRNodeType::Add])) {
+                    return CompIRNodeTypeStatus::LT;
+                }
+            }
+        }
+    }
+    return CompIRNodeTypeStatus::EQ;
+}
+
+void increment_term(IRNodeType node_type, term_map &m) {
+    if (m.count(node_type) == 0) {
+        m[node_type] = 1;
+    } else {
+        m[node_type] = m[node_type] + 1;
+    }
+}
 
 node_type_ordering root_nto = {
     {IRNodeType::Ramp,23},
