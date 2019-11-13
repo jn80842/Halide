@@ -4793,7 +4793,9 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
             debug(0) << before << " ; " << after << " ; RIGHT CONSTANT STRING SUCCESS\n";
         } else if (LHS_wildcardstr.compare(RHS_wildcardstr) < 0) {
             debug(0) << before << " ; " << after << " ; RIGHT CONSTANT STRING FAILURE\n";
-        }     
+        } else {
+            debug(0) << before << " ; " << after << " ; TERMS ARE EQUAL UNDER ORDERING FAILURE\n";
+        }
     } else {
         debug(0) << before << " ; " << after << " ; VARIABLE COUNT FAILURE\n"; 
     }
