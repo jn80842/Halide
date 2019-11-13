@@ -4793,6 +4793,10 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
             debug(0) << before << " ; " << after << " ; RIGHT CONSTANT STRING SUCCESS\n";
         } else if (LHS_wildcardstr.compare(RHS_wildcardstr) < 0) {
             debug(0) << before << " ; " << after << " ; RIGHT CONSTANT STRING FAILURE\n";
+        } else if (compare_bfs_node_type_maps(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
+            debug(0) << before << " ; " << after << " ; ORDERING OVER BFS OPS SUCCESS\n";
+        } else if (compare_bfs_node_type_maps(LHS_bfs_node_type_map,RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
+            debug(0) << before << " ; " << after << " ; ORDERING OVER BFS OPS FAILURE\n";
         } else {
             debug(0) << before << " ; " << after << " ; TERMS ARE EQUAL UNDER ORDERING FAILURE\n";
         }
