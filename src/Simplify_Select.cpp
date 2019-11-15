@@ -80,8 +80,8 @@ Expr Simplify::visit(const Select *op, ExprInfo *bounds) {
              rewrite(select(x < y, y, x), max(x, y)) ||
 
              (no_overflow_int(op->type) &&
-              (rewrite(select(x, y * c0, c1), select(x, y, fold(c1 / c0)) * c0, c1 % c0 == 0) ||
-               rewrite(select(x, c0, y * c1), select(x, fold(c0 / c1), y) * c1, c0 % c1 == 0) ||
+              ((exclude_invalid_ordering_rules && rewrite(select(x, y * c0, c1), select(x, y, fold(c1 / c0)) * c0, c1 % c0 == 0)) ||
+               (exclude_invalid_ordering_rules && rewrite(select(x, c0, y * c1), select(x, fold(c0 / c1), y) * c1, c0 % c1 == 0)) ||
 
                // Selects that are equivalent to mins/maxes
                rewrite(select(c0 < x, x + c1, c2), max(x + c1, c2), c2 == c0 + c1 || c2 == c0 + c1 + 1) ||
@@ -100,10 +100,8 @@ Expr Simplify::visit(const Select *op, ExprInfo *bounds) {
               (rewrite(select(x, true, false), cast(op->type, x)) ||
                rewrite(select(x, false, true), cast(op->type, !x)) ||
                rewrite(select(x, y, false), x && y) ||
-                #ifdef EXCLUDE_INVALID_ORDERING_RULES
-               rewrite(select(x, y, true), !x || y) ||
-               rewrite(select(x, false, y), !x && y) ||
-               #endif
+               (exclude_invalid_ordering_rules && rewrite(select(x, y, true), !x || y)) ||
+               (exclude_invalid_ordering_rules && rewrite(select(x, false, y), !x && y)) ||
                rewrite(select(x, true, y), x || y))))) {
             return mutate(std::move(rewrite.result), bounds);
         }
