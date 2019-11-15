@@ -76,8 +76,8 @@ Expr Simplify::visit(const EQ *op, ExprInfo *bounds) {
         #endif
         (no_overflow(delta.type()) && rewrite(x * y == 0, (x == 0) || (y == 0))) ||
         rewrite(select(x, 0, y) == 0, x || (y == 0)) ||
-        (exclude_invalid_ordering_rules && rewrite(select(x, c0, y) == 0, !x && (y == 0), c0 != 0)) ||
-        (exclude_invalid_ordering_rules && rewrite(select(x, y, 0) == 0, !x || (y == 0))) ||
+        (!exclude_invalid_ordering_rules && rewrite(select(x, c0, y) == 0, !x && (y == 0), c0 != 0)) ||
+        (!exclude_invalid_ordering_rules && rewrite(select(x, y, 0) == 0, !x || (y == 0))) ||
         rewrite(select(x, y, c0) == 0, x && (y == 0), c0 != 0) ||
         rewrite(max(x, y) - y == 0, x <= y) ||
         rewrite(min(x, y) - y == 0, y <= x) ||
