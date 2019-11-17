@@ -331,31 +331,6 @@ std::string print_bfs_node_type_map(bfs_node_type_map &type_map) {
     return retval;
 }
 
-CompIRNodeTypeStatus compare_bfs_node_type_maps(bfs_node_type_map &map1, bfs_node_type_map &map2) {
-    std::vector<IRNodeType> vec1;
-    std::vector<IRNodeType> vec2;
-    int map1size = map1.size();
-    for (int i = 0; i<map1size; i++) {
-        for (auto it1 = map1[i].begin(); it1 != map1[i].end(); ++it1) {
-            vec1.push_back(*it1);
-        }
-    }
-    int map2size = map2.size();
-    for (int i = 0; i<map2size; i++) {
-        for (auto it2 = map2[i].begin(); it2 != map2[i].end(); ++it2) {
-            vec2.push_back(*it2);
-        }
-    }
-
-    for(auto it1 = vec1.begin(), it2 = vec2.begin(); it1 != vec1.end() || it2 != vec2.end(); ++it1, ++it2) {
-        if (not (compare_node_types(*it1, *it2) == CompIRNodeTypeStatus::EQ)) {
-            return compare_node_types(*it1, *it2);
-        }
-    }
-
-    return CompIRNodeTypeStatus::EQ;
-}
-
 node_type_ordering nto = {
     {IRNodeType::Ramp,23},
     {IRNodeType::Broadcast,22},
@@ -379,33 +354,78 @@ node_type_ordering nto = {
     {IRNodeType::Not,4},
 };
 
-CompIRNodeTypeStatus compare_bfs_node_adds(bfs_node_type_map &map1, bfs_node_type_map &map2) {
-    std::vector<IRNodeType> vec1;
-    std::vector<IRNodeType> vec2;
-    int map1size = map1.size();
-    for (int i = 0; i < map1size; i++) {
-        for (auto it1 = map1[i].begin(); it1 != map1[i].end(); ++it1) {
-            vec1.push_back(*it1);
-        }
+// add and sub are least, all others are greatest
+node_type_ordering nto_adds = {
+    {IRNodeType::Ramp,100},
+    {IRNodeType::Broadcast,100},
+    {IRNodeType::Select,100},
+    {IRNodeType::Div,100},
+    {IRNodeType::Mul,100},
+    {IRNodeType::Mod,100},
+    {IRNodeType::Sub,1},
+    {IRNodeType::Add,1},
+    {IRNodeType::Max,100},
+    {IRNodeType::Min,100},
+
+    {IRNodeType::Or,100},
+    {IRNodeType::And,100},
+    {IRNodeType::GE,100},
+    {IRNodeType::GT,100},
+    {IRNodeType::LE,100},
+    {IRNodeType::LT,100},
+    {IRNodeType::NE,100},
+    {IRNodeType::EQ,100},
+    {IRNodeType::Not,100},
+};
+
+CompIRNodeTypeStatus multiset_node_order(std::list<IRNodeType> &m1, std::list<IRNodeType> &m2, node_type_ordering &comparator) {
+    int max_m1 = 0;
+    int max_m2 = 0;
+    for (IRNodeType node_type : m1) {
+        if (comparator[node_type] > max_m1)
+            max_m1 = comparator[node_type];
     }
-    int map2size = map2.size();
-    for (int i = 0; i < map2size; i++) {
-        for (auto it2 = map2[i].begin(); it2 != map2[i].end(); ++it2) {
-            vec2.push_back(*it2);
-        }
+    for (IRNodeType node_type : m2) {
+        if (comparator[node_type] > max_m2) 
+            max_m2 = comparator[node_type];
+    }
+    if (max_m1 > max_m2) {
+        return CompIRNodeTypeStatus::GT;
+    } else if (max_m1 < max_m2) {
+        return CompIRNodeTypeStatus::LT;
+    } else {
+        return CompIRNodeTypeStatus::EQ;
+    }
+}
+
+// not implementing the full recursive checks; root and first layer should be sufficient
+CompIRNodeTypeStatus mpo(bfs_node_type_map &map1, bfs_node_type_map &map2, node_type_ordering &comparator) {
+    // if t2 is variable and t1 is not, t1 > t2
+    if (!(map1.empty()) && map2.empty()) {
+        return CompIRNodeTypeStatus::GT;
+    }
+    // if roots are different, compare roots
+    if ((map1.count(0) != 0) && (map2.count(0) != 0)) {
+        CompIRNodeTypeStatus root_status = multiset_node_order(map1[0],map2[0],comparator);
+        if (!(root_status == CompIRNodeTypeStatus::EQ)) {
+            return root_status;
+        }  
+    }
+    // compare first depth
+    if ((map1.count(1) != 0) && (map2.count(1) != 0)) {
+        return multiset_node_order(map1[1],map2[1],comparator);
+    } else {
+        return CompIRNodeTypeStatus::EQ;
     }
 
-    for(auto it1 = vec1.begin(), it2 = vec2.begin(); it1 != vec1.end() || it2 != vec2.end(); ++it1, ++it2) {
-        if (not (compare_node_types(*it1, *it2) == CompIRNodeTypeStatus::EQ)) {
-            if ((nto[*it1] != nto[IRNodeType::Add]) && (nto[*it2] == nto[IRNodeType::Add])) {
-               return CompIRNodeTypeStatus::GT;
-            } else if ((nto[*it1] == nto[IRNodeType::Add]) && (nto[*it2] != nto[IRNodeType::Add])) {
-                return CompIRNodeTypeStatus::LT;
-            }
-        }
-    }
+}
 
-    return CompIRNodeTypeStatus::EQ;
+CompIRNodeTypeStatus mpo_adds(bfs_node_type_map &map1, bfs_node_type_map &map2) {
+    return mpo(map1,map2,nto_adds);
+}
+
+CompIRNodeTypeStatus mpo_full(bfs_node_type_map &map1, bfs_node_type_map &map2) {
+    return mpo(map1,map1,nto);
 }
 
 void increment_term(IRNodeType node_type, term_map &m) {

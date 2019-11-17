@@ -101,8 +101,8 @@ CompIRNodeTypeStatus compare_node_types(IRNodeType n1, IRNodeType n2);
 CompIRNodeTypeStatus compare_root_node_types(IRNodeType n1, IRNodeType n2);
 bool compare_node_type_lists(node_type_list before_list, node_type_list after_list);
 CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2);
-CompIRNodeTypeStatus compare_bfs_node_type_maps(bfs_node_type_map &map1, bfs_node_type_map &map2);
-CompIRNodeTypeStatus compare_bfs_node_adds(bfs_node_type_map &map1, bfs_node_type_map &map2);
+CompIRNodeTypeStatus mpo_adds(bfs_node_type_map &map1, bfs_node_type_map &map2);
+CompIRNodeTypeStatus mpo_full(bfs_node_type_map &map1, bfs_node_type_map &map2);
 
 /** To save stack space, the matcher objects are largely stateless and
  * immutable. This state object is built up during matching and then
@@ -3993,9 +3993,10 @@ bool is_vector_term(const Fold<A> &op) {
     return false;
 }
 
+// everything under the fold is promoted one depth level
 template<typename A>
 void build_bfs_type_map(const Fold<A> &op, bfs_node_type_map &type_map, int current_depth) {
-    return;
+    build_bfs_type_map(op.a, type_map, current_depth);
 }
 
 template<typename A>
@@ -4015,7 +4016,7 @@ void build_leaf_vec(const Fold<A> &op, leaf_vec &v) {
 
 template<typename A>
 void wildcardconst_str(const Fold<A> &op, std::string &s) {
-    s += "b";
+    wildcardconst_str(op.a,s);
 }
 
 template<typename A>
@@ -4028,15 +4029,15 @@ bool is_constant(const Fold<A> &op) {
     return true;
 }
 
-// folds are constants; choose strongest possible constant
 template<typename A>
 void count_terms(const Fold<A> &op, term_map &m) {
-    return;
+    count_terms(op.a,m);
 }
 
 template<typename A>
 IRNodeType get_node_type(const Fold<A> &op) {
-    return IRNodeType::UIntImm;
+   // return IRNodeType::UIntImm;
+    return get_node_type(op.a);
 }
 
 template<typename A>
@@ -4716,7 +4717,6 @@ template<typename Before,
 HALIDE_ALWAYS_INLINE
 void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
                             halide_type_t wildcard_type, halide_type_t output_type) noexcept {
-    debug(0) << "called check rule properties\n";
 
     // Check that any divisor terms in RHS are present in LHS
     // TODO: Check that new divisor terms are constants & guaranteed to be non-zero via predicates
@@ -4752,7 +4752,6 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     bfs_node_type_map RHS_bfs_node_type_map;
     build_bfs_type_map(before, LHS_bfs_node_type_map,0);
     build_bfs_type_map(after, RHS_bfs_node_type_map,0);
-
     int LHS_vector_count = LHS_term_map[IRNodeType::Ramp] + LHS_term_map[IRNodeType::Broadcast];
     int RHS_vector_count = RHS_term_map[IRNodeType::Ramp] + RHS_term_map[IRNodeType::Broadcast];
 
@@ -4782,17 +4781,17 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
             debug(0) << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
         }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
             debug(0) << before << " ; " << after << " ; HISTO COUNT FAILURE\n"; 
-        } else if (compare_bfs_node_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
+        } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
             debug(0) << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT SUCCESS\n";
-        } else if (compare_bfs_node_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
+        } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
             debug(0) << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT FAILURE\n";
         } else if (LHS_wildcardstr.compare(RHS_wildcardstr) > 0) {
             debug(0) << before << " ; " << after << " ; RIGHT CONSTANT STRING SUCCESS\n";
         } else if (LHS_wildcardstr.compare(RHS_wildcardstr) < 0) {
             debug(0) << before << " ; " << after << " ; RIGHT CONSTANT STRING FAILURE\n";
-        } else if (compare_bfs_node_type_maps(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
+        } else if (mpo_full(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
             debug(0) << before << " ; " << after << " ; ORDERING OVER BFS OPS SUCCESS\n";
-        } else if (compare_bfs_node_type_maps(LHS_bfs_node_type_map,RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
+        } else if (mpo_full(LHS_bfs_node_type_map,RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
             debug(0) << before << " ; " << after << " ; ORDERING OVER BFS OPS FAILURE\n";
         } else {
             debug(0) << before << " ; " << after << " ; TERMS ARE EQUAL UNDER ORDERING FAILURE\n";
