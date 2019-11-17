@@ -44,7 +44,7 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
 
         if (EVAL_IN_LAMBDA
             (rewrite(min(x, x), x) ||
-             rewrite(min(c0, c1), fold(min(c0, c1))) ||
+             (!exclude_invalid_ordering_rules && rewrite(min(c0, c1), fold(min(c0, c1)))) ||
              rewrite(min(IRMatcher::Indeterminate(), x), a) ||
              rewrite(min(x, IRMatcher::Indeterminate()), b) ||
              rewrite(min(IRMatcher::Overflow(), x), a) ||
@@ -102,7 +102,7 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
              rewrite(min(min(y, x), min(x, z)), min(min(y, z), x)) ||
              rewrite(min(min(x, y), min(z, x)), min(min(y, z), x)) ||
              rewrite(min(min(y, x), min(z, x)), min(min(y, z), x)) ||
-             rewrite(min(min(x, y), min(z, w)), min(min(min(x, y), z), w)) ||
+             (!exclude_invalid_ordering_rules && rewrite(min(min(x, y), min(z, w)), min(min(min(x, y), z), w))) ||
              rewrite(min(broadcast(x), broadcast(y)), broadcast(min(x, y), lanes)) ||
              rewrite(min(broadcast(x), ramp(y, z)), min(b, a)) ||
              rewrite(min(min(x, broadcast(y)), broadcast(z)), min(x, broadcast(min(y, z), lanes))) ||
@@ -112,10 +112,10 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
              rewrite(min(max(y, x), max(z, x)), max(min(y, z), x)) ||
              rewrite(min(max(min(x, y), z), y), min(max(x, z), y)) ||
              rewrite(min(max(min(y, x), z), y), min(y, max(x, z))) ||
-             rewrite(min(min(x, c0), c1), min(x, fold(min(c0, c1)))) ||
+             (!exclude_invalid_ordering_rules && rewrite(min(min(x, c0), c1), min(x, fold(min(c0, c1))))) ||
 
              // Canonicalize a clamp
-             rewrite(min(max(x, c0), c1), max(min(x, c1), c0), c0 <= c1) ||
+             (!exclude_invalid_ordering_rules && rewrite(min(max(x, c0), c1), max(min(x, c1), c0), c0 <= c1)) ||
              (no_overflow(op->type) &&
               (rewrite(min(min(x, y) + c0, x), min(x, y + c0), c0 > 0) ||
                rewrite(min(min(x, y) + c0, x), min(x, y) + c0, c0 < 0) ||
@@ -127,10 +127,10 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
                rewrite(min(x, min(y, x) + c0), min(x, y + c0), c0 > 0) ||
                rewrite(min(x, min(y, x) + c0), min(x, y) + c0, c0 < 0) ||
 
-               rewrite(min(x + c0, c1), min(x, fold(c1 - c0)) + c0) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x + c0, c1), min(x, fold(c1 - c0)) + c0)) ||
 
-               rewrite(min(x + c0, y + c1), min(x, y + fold(c1 - c0)) + c0, c1 > c0) ||
-               rewrite(min(x + c0, y + c1), min(x + fold(c0 - c1), y) + c1, c0 > c1) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x + c0, y + c1), min(x, y + fold(c1 - c0)) + c0, c1 > c0)) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x + c0, y + c1), min(x + fold(c0 - c1), y) + c1, c0 > c1)) ||
 
                rewrite(min(x + y, x + z), x + min(y, z)) ||
                rewrite(min(x + y, z + x), x + min(y, z)) ||
@@ -181,15 +181,15 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
                rewrite(min(z + (x - y), x), min(0, z - y) + x) ||
                rewrite(min((x - y) - z, x), x - max(0, y + z)) ||
 
-               rewrite(min(x * c0, c1), min(x, fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0) ||
-               rewrite(min(x * c0, c1), max(x, fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x * c0, c1), min(x, fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0)) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x * c0, c1), max(x, fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0)) ||
 
-               rewrite(min(x * c0, y * c1), min(x, y * fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0) ||
-               rewrite(min(x * c0, y * c1), max(x, y * fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0) ||
-               rewrite(min(x * c0, y * c1), min(x * fold(c0 / c1), y) * c1, c1 > 0 && c0 % c1 == 0) ||
-               rewrite(min(x * c0, y * c1), max(x * fold(c0 / c1), y) * c1, c1 < 0 && c0 % c1 == 0) ||
-               rewrite(min(x * c0, y * c0 + c1), min(x, y + fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0) ||
-               rewrite(min(x * c0, y * c0 + c1), max(x, y + fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x * c0, y * c1), min(x, y * fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0)) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x * c0, y * c1), max(x, y * fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0)) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x * c0, y * c1), min(x * fold(c0 / c1), y) * c1, c1 > 0 && c0 % c1 == 0)) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x * c0, y * c1), max(x * fold(c0 / c1), y) * c1, c1 < 0 && c0 % c1 == 0)) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x * c0, y * c0 + c1), min(x, y + fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0)) ||
+               (!exclude_invalid_ordering_rules && rewrite(min(x * c0, y * c0 + c1), max(x, y + fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0)) ||
 
                rewrite(min(x / c0, y / c0), min(x, y) / c0, c0 > 0) ||
                rewrite(min(x / c0, y / c0), max(x, y) / c0, c0 < 0) ||
@@ -204,7 +204,7 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
 
                rewrite(min(select(x, y, z), select(x, w, u)), select(x, min(y, w), min(z, u))) ||
 
-               rewrite(min(c0 - x, c1), c0 - max(x, fold(c0 - c1))))))) {
+               (!exclude_invalid_ordering_rules && rewrite(min(c0 - x, c1), c0 - max(x, fold(c0 - c1)))))))) {
             return mutate(std::move(rewrite.result), bounds);
         }
 

@@ -70,14 +70,11 @@ Expr Simplify::visit(const EQ *op, ExprInfo *bounds) {
 
     auto rewrite = IRMatcher::rewriter(IRMatcher::eq(delta, 0), op->type, delta.type());
 
-    if (
-        #ifdef EXCLUDE_INVALID_ORDERING_RULES
-        rewrite(broadcast(x) == 0, broadcast(x == 0, lanes)) ||
-        #endif
+    if ((!exclude_invalid_ordering_rules && rewrite(broadcast(x) == 0, broadcast(x == 0, lanes))) ||
         (no_overflow(delta.type()) && rewrite(x * y == 0, (x == 0) || (y == 0))) ||
         rewrite(select(x, 0, y) == 0, x || (y == 0)) ||
-        rewrite(select(x, c0, y) == 0, !x && (y == 0), c0 != 0) ||
-        rewrite(select(x, y, 0) == 0, !x || (y == 0)) ||
+        (!exclude_invalid_ordering_rules && rewrite(select(x, c0, y) == 0, !x && (y == 0), c0 != 0)) ||
+        (!exclude_invalid_ordering_rules && rewrite(select(x, y, 0) == 0, !x || (y == 0))) ||
         rewrite(select(x, y, c0) == 0, x && (y == 0), c0 != 0) ||
         rewrite(max(x, y) - y == 0, x <= y) ||
         rewrite(min(x, y) - y == 0, y <= x) ||
@@ -97,7 +94,7 @@ Expr Simplify::visit(const EQ *op, ExprInfo *bounds) {
         return mutate(std::move(rewrite.result), bounds);
     }
 
-    if (rewrite(c0 == 0, fold(c0 == 0)) ||
+    if ((!exclude_invalid_ordering_rules && rewrite(c0 == 0, fold(c0 == 0))) ||
         rewrite((x - y) + c0 == 0, x == y + fold(-c0)) ||
         rewrite(x + c0 == 0, x == fold(-c0)) ||
         rewrite(c0 - x == 0, x == c0)) {

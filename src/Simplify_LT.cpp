@@ -31,7 +31,7 @@ Expr Simplify::visit(const LT *op, ExprInfo *bounds) {
         auto rewrite = IRMatcher::rewriter(IRMatcher::lt(a, b), op->type, ty);
 
         if (EVAL_IN_LAMBDA
-            (rewrite(c0 < c1, fold(c0 < c1)) ||
+            ((!exclude_invalid_ordering_rules && rewrite(c0 < c1, fold(c0 < c1))) ||
              rewrite(x < x, false) ||
              rewrite(x < ty.min(), false) ||
              rewrite(ty.max() < x, false) ||
@@ -57,27 +57,27 @@ Expr Simplify::visit(const LT *op, ExprInfo *bounds) {
              (rewrite(ramp(x, y) < ramp(z, y), broadcast(x < z, lanes)) ||
               // Merge RHS constant additions with a constant LHS
               rewrite(x + c0 < c1, x < fold(c1 - c0)) ||
-              rewrite(c0 < x + c1, fold(c0 - c1) < x) ||
+              (!exclude_invalid_ordering_rules && rewrite(c0 < x + c1, fold(c0 - c1) < x)) ||
 
               // Move constants to the RHS
-              rewrite(x + c0 < y, x < y + fold(-c0)) ||
+              (!exclude_invalid_ordering_rules && rewrite(x + c0 < y, x < y + fold(-c0))) ||
 
               // Normalize subtractions to additions to cut down on cases to consider
 
-              rewrite(x - y < z, x < z + y) ||
-              rewrite(z < x - y, z + y < x) ||
-              rewrite((x - y) + z < w, x + z < y + w) ||
-              rewrite(z + (x - y) < w, x + z < y + w) ||
-              rewrite(w < (x - y) + z, w + y < x + z) ||
-              rewrite(w < z + (x - y), w + y < x + z) ||
-              rewrite(((x - y) + z) + u < w, x + z + u < w + y) ||
-              rewrite((z + (x - y)) + u < w, x + z + u < w + y) ||
-              rewrite(u + ((x - y) + z) < w, x + z + u < w + y) ||
-              rewrite(u + (z + (x - y)) < w, x + z + u < w + y) ||
-              rewrite(w < ((x - y) + z) + u, w + y < x + z + u) ||
-              rewrite(w < (z + (x - y)) + u, w + y < x + z + u) ||
-              rewrite(w < u + ((x - y) + z), w + y < x + z + u) ||
-              rewrite(w < u + (z + (x - y)), w + y < x + z + u) ||
+              (!exclude_invalid_ordering_rules && rewrite(x - y < z, x < z + y)) ||
+              (!exclude_invalid_ordering_rules && rewrite(z < x - y, z + y < x)) ||
+              (!exclude_invalid_ordering_rules && rewrite((x - y) + z < w, x + z < y + w)) ||
+              (!exclude_invalid_ordering_rules && rewrite(z + (x - y) < w, x + z < y + w)) ||
+              (!exclude_invalid_ordering_rules && rewrite(w < (x - y) + z, w + y < x + z)) ||
+              (!exclude_invalid_ordering_rules && rewrite(w < z + (x - y), w + y < x + z)) ||
+              (!exclude_invalid_ordering_rules && rewrite(((x - y) + z) + u < w, x + z + u < w + y)) ||
+              (!exclude_invalid_ordering_rules && rewrite((z + (x - y)) + u < w, x + z + u < w + y)) ||
+              (!exclude_invalid_ordering_rules && rewrite(u + ((x - y) + z) < w, x + z + u < w + y)) ||
+              (!exclude_invalid_ordering_rules && rewrite(u + (z + (x - y)) < w, x + z + u < w + y)) ||
+              (!exclude_invalid_ordering_rules && rewrite(w < ((x - y) + z) + u, w + y < x + z + u)) ||
+              (!exclude_invalid_ordering_rules && rewrite(w < (z + (x - y)) + u, w + y < x + z + u)) ||
+              (!exclude_invalid_ordering_rules && rewrite(w < u + ((x - y) + z), w + y < x + z + u)) ||
+              (!exclude_invalid_ordering_rules && rewrite(w < u + (z + (x - y)), w + y < x + z + u)) ||
 
               // Cancellations in linear expressions
               // 1 < 2
@@ -136,13 +136,13 @@ Expr Simplify::visit(const LT *op, ExprInfo *bounds) {
               rewrite(x * c0 < y * c0, x < y, c0 > 0) ||
               rewrite(x * c0 < y * c0, y < x, c0 < 0) ||
 
-              (ty.is_int()   && rewrite(x * c0 < c1, x < fold((c1 + c0 - 1) / c0), c0 > 0)) ||
+              (ty.is_int()   && (!exclude_invalid_ordering_rules && rewrite(x * c0 < c1, x < fold((c1 + c0 - 1) / c0), c0 > 0))) ||
               (ty.is_float() && rewrite(x * c0 < c1, x < fold(c1 / c0), c0 > 0)) ||
-              rewrite(c1 < x * c0, fold(c1 / c0) < x, c0 > 0) ||
+              (!exclude_invalid_ordering_rules && rewrite(c1 < x * c0, fold(c1 / c0) < x, c0 > 0)) ||
 
               // Multiply-out a division
               rewrite(x / c0 < c1, x < c1 * c0, c0 > 0) ||
-              (ty.is_int() && rewrite(c0 < x / c1, fold((c0 + 1) * c1 - 1) < x, c1 > 0)) ||
+              (ty.is_int() && (!exclude_invalid_ordering_rules && rewrite(c0 < x / c1, fold((c0 + 1) * c1 - 1) < x, c1 > 0))) ||
               (ty.is_float() && rewrite(c0 < x / c1, fold(c0 * c1) < x, c1 > 0)) ||
 
               // We want to break max(x, y) < z into x < z && y <
@@ -187,10 +187,10 @@ Expr Simplify::visit(const LT *op, ExprInfo *bounds) {
               rewrite(x < max(y, x), x < y) ||
 
               // Special case where x is constant
-              rewrite(min(y, c0) < c1, fold(c0 < c1) || y < c1) ||
-              rewrite(max(y, c0) < c1, fold(c0 < c1) && y < c1) ||
-              rewrite(c1 < min(y, c0), fold(c1 < c0) && c1 < y) ||
-              rewrite(c1 < max(y, c0), fold(c1 < c0) || c1 < y) ||
+              (!exclude_invalid_ordering_rules && rewrite(min(y, c0) < c1, fold(c0 < c1) || y < c1)) ||
+              (!exclude_invalid_ordering_rules && rewrite(max(y, c0) < c1, fold(c0 < c1) && y < c1)) ||
+              (!exclude_invalid_ordering_rules && rewrite(c1 < min(y, c0), fold(c1 < c0) && c1 < y)) ||
+              (!exclude_invalid_ordering_rules && rewrite(c1 < max(y, c0), fold(c1 < c0) || c1 < y)) ||
 
               // Comparisons with selects:
               // x < select(c, t, f) == c && (x < t) || !c && (x < f)
@@ -219,8 +219,8 @@ Expr Simplify::visit(const LT *op, ExprInfo *bounds) {
               rewrite(ramp(x, y) < ramp(z, w), ramp(x - z, y - w, lanes) < 0))) ||
 
             (no_overflow_int(ty) && EVAL_IN_LAMBDA
-             (rewrite(x * c0 < y * c1, x < y * fold(c1 / c0), c1 % c0 == 0 && c0 > 0) ||
-              rewrite(x * c0 < y * c1, x * fold(c0 / c1) < y, c0 % c1 == 0 && c1 > 0) ||
+             ((!exclude_invalid_ordering_rules && rewrite(x * c0 < y * c1, x < y * fold(c1 / c0), c1 % c0 == 0 && c0 > 0)) ||
+              (!exclude_invalid_ordering_rules && rewrite(x * c0 < y * c1, x * fold(c0 / c1) < y, c0 % c1 == 0 && c1 > 0)) ||
 
               rewrite(x * c0 < y * c0 + c1, x < y + fold((c1 + c0 - 1)/c0), c0 > 0) ||
               rewrite(x * c0 + c1 < y * c0, x + fold(c1/c0) < y, c0 > 0) ||

@@ -102,7 +102,7 @@ Expr Simplify::visit(const Mul *op, ExprInfo *bounds) {
         }
 
         auto rewrite = IRMatcher::rewriter(IRMatcher::mul(a, b), op->type);
-        if (rewrite(c0 * c1, fold(c0 * c1)) ||
+        if ((!exclude_invalid_ordering_rules && rewrite(c0 * c1, fold(c0 * c1))) ||
             rewrite(IRMatcher::Indeterminate() * x, a) ||
             rewrite(x * IRMatcher::Indeterminate(), b) ||
             rewrite(IRMatcher::Overflow() * x, a) ||
@@ -114,11 +114,11 @@ Expr Simplify::visit(const Mul *op, ExprInfo *bounds) {
             return rewrite.result;
         }
 
-        if (rewrite((x + c0) * c1, x * c1 + fold(c0 * c1), !overflows(c0 * c1)) ||
-            rewrite((x - y) * c0, (y - x) * fold(-c0), c0 < 0 && -c0 > 0) ||
-            rewrite((x * c0) * c1, x * fold(c0 * c1), !overflows(c0 * c1)) ||
+        if ((!exclude_invalid_ordering_rules && rewrite((x + c0) * c1, x * c1 + fold(c0 * c1), !overflows(c0 * c1))) ||
+            (!exclude_invalid_ordering_rules && rewrite((x - y) * c0, (y - x) * fold(-c0), c0 < 0 && -c0 > 0)) ||
+            (!exclude_invalid_ordering_rules && rewrite((x * c0) * c1, x * fold(c0 * c1), !overflows(c0 * c1))) ||
             rewrite((x * c0) * y, (x * y) * c0, !is_const(y)) ||
-            rewrite(x * (y * c0), (x * y) * c0) ||
+            (!exclude_invalid_ordering_rules && rewrite(x * (y * c0), (x * y) * c0)) ||
             rewrite(x * -1, 0 - x) ||
             rewrite(max(x, y) * min(x, y), x * y) ||
             rewrite(max(x, y) * min(y, x), y * x) ||
