@@ -115,10 +115,10 @@ Expr Simplify::visit(const Mul *op, ExprInfo *bounds) {
         }
 
         if (rewrite((x + c0) * c1, x * c1 + fold(c0 * c1), !overflows(c0 * c1)) ||
-            (!exclude_invalid_ordering_rules && rewrite((x - y) * c0, (y - x) * fold(-c0), c0 < 0 && -c0 > 0)) ||
+            rewrite((x - y) * c0, (y - x) * fold(-c0), c0 < 0 && -c0 > 0) ||
             rewrite((x * c0) * c1, x * fold(c0 * c1), !overflows(c0 * c1)) ||
             rewrite((x * c0) * y, (x * y) * c0, !is_const(y)) ||
-            (!exclude_invalid_ordering_rules && rewrite(x * (y * c0), (x * y) * c0)) ||
+            rewrite(x * (y * c0), (x * y) * c0) ||
             rewrite(x * -1, 0 - x) ||
             rewrite(max(x, y) * min(x, y), x * y) ||
             rewrite(max(x, y) * min(y, x), y * x) ||

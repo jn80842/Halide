@@ -36,7 +36,7 @@ Expr Simplify::visit(const Sub *op, ExprInfo *bounds) {
 
         if (EVAL_IN_LAMBDA
             ((!op->type.is_uint() && 
-             (!exclude_invalid_ordering_rules && rewrite(x - c0, x + fold(-c0), !overflows(-c0)))) ||
+             rewrite(x - c0, x + fold(-c0), !overflows(-c0))) ||
              rewrite(x - x, 0) || // We want to remutate this just to get better bounds
              rewrite(ramp(x, y) - ramp(z, w), ramp(x - z, y - w, lanes)) ||
              rewrite(ramp(x, y) - broadcast(z), ramp(x - z, y, lanes)) ||
@@ -64,9 +64,9 @@ Expr Simplify::visit(const Sub *op, ExprInfo *bounds) {
              rewrite((x + c0) - y, (x - y) + c0) ||
              rewrite((c0 - x) - (c1 - y), (y - x) + fold(c0 - c1)) ||
              rewrite((c0 - x) - (y + c1), fold(c0 - c1) - (x + y)) ||
-             (!exclude_invalid_ordering_rules && rewrite(x - (y - z), x + (z - y))) ||
-             (!exclude_invalid_ordering_rules && rewrite(x - y*c0, x + y*fold(-c0), c0 < 0 && -c0 > 0)) ||
-             (!exclude_invalid_ordering_rules && rewrite(x - (y + c0), (x - y) - c0)) ||
+             rewrite(x - (y - z), x + (z - y)) ||
+             rewrite(x - y*c0, x + y*fold(-c0), c0 < 0 && -c0 > 0) ||
+             rewrite(x - (y + c0), (x - y) - c0) ||
              rewrite((c0 - x) - c1, fold(c0 - c1) - x) ||
              rewrite(x*y - z*y, (x - z)*y) ||
              rewrite(x*y - y*z, (x - z)*y) ||
@@ -235,13 +235,13 @@ Expr Simplify::visit(const Sub *op, ExprInfo *bounds) {
                rewrite(x - (x/c0)*c0, x % c0, c0 > 0) ||
                rewrite(((x + c0)/c1)*c1 - x, (-x) % c1, c1 > 0 && c0 + 1 == c1) ||
                rewrite(x - ((x + c0)/c1)*c1, ((x + c0) % c1) + fold(-c0), c1 > 0 && c0 + 1 == c1) ||
-               (!exclude_invalid_ordering_rules && rewrite(x * c0 - y * c1, (x * fold(c0 / c1) - y) * c1, c0 % c1 == 0)) ||
-               (!exclude_invalid_ordering_rules && rewrite(x * c0 - y * c1, (x - y * fold(c1 / c0)) * c0, c1 % c0 == 0)) ||
+               rewrite(x * c0 - y * c1, (x * fold(c0 / c1) - y) * c1, c0 % c1 == 0) ||
+               rewrite(x * c0 - y * c1, (x - y * fold(c1 / c0)) * c0, c1 % c0 == 0) ||
                // Various forms of (x +/- a)/c - (x +/- b)/c. We can
                // *almost* cancel the x.  The right thing to do depends
                // on which of a or b is a constant, and we also need to
                // catch the cases where that constant is zero.
-               (!exclude_invalid_ordering_rules &&  rewrite(((x + y) + z)/c0 - ((y + x) + w)/c0, ((x + y) + z)/c0 - ((x + y) + w)/c0, c0 > 0)) ||
+               rewrite(((x + y) + z)/c0 - ((y + x) + w)/c0, ((x + y) + z)/c0 - ((x + y) + w)/c0, c0 > 0) ||
                rewrite((x + y)/c0 - (y + x)/c0, 0, c0 != 0) ||
                rewrite((x + y)/c0 - (x + c1)/c0, (((x + fold(c1 % c0)) % c0) + (y - c1))/c0, c0 > 0) ||
                rewrite((x + c1)/c0 - (x + y)/c0, ((fold(c0 + c1 - 1) - y) - ((x + fold(c1 % c0)) % c0))/c0, c0 > 0) ||

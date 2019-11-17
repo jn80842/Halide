@@ -46,8 +46,7 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
              rewrite(select(x, y, z) + select(x, w, u), select(x, y + w, z + u)) ||
              rewrite(select(x, c0, c1) + c2, select(x, fold(c0 + c2), fold(c1 + c2))) ||
              //             rewrite(select(x, y, c1) + c2, select(x, y + c2, fold(c1 + c2))) ||
-             // above rule would also be invalid
-             (!exclude_invalid_ordering_rules && rewrite(select(x, c0, y) + c2, select(x, fold(c0 + c2), y + c2))) ||
+             rewrite(select(x, c0, y) + c2, select(x, fold(c0 + c2), y + c2)) ||
 
              rewrite((select(x, y, z) + w) + select(x, u, v), select(x, y + u, z + v) + w) ||
              rewrite((w + select(x, y, z)) + select(x, u, v), select(x, y + u, z + v) + w) ||
@@ -60,7 +59,7 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
 
              rewrite((x + c0) + c1, x + fold(c0 + c1)) ||
              rewrite((x + c0) + y, (x + y) + c0) ||
-             (!exclude_invalid_ordering_rules && rewrite(x + (y + c0), (x + y) + c0)) ||
+             rewrite(x + (y + c0), (x + y) + c0) ||
              rewrite((c0 - x) + c1, fold(c0 + c1) - x) ||
              rewrite((c0 - x) + y, (y - x) + c0) ||
              rewrite((x - y) + y, x) ||
@@ -68,14 +67,14 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
              rewrite(x + (c0 - y), (x - y) + c0) ||
              rewrite((x - y) + (y - z), x - z) ||
              rewrite((x - y) + (z - x), z - y) ||
-             (!exclude_invalid_ordering_rules && rewrite(x + y*c0, x - y*(-c0), c0 < 0 && -c0 > 0)) ||
-             (!exclude_invalid_ordering_rules && rewrite(x*c0 + y, y - x*(-c0), c0 < 0 && -c0 > 0 && !is_const(y))) ||
+             rewrite(x + y*c0, x - y*(-c0), c0 < 0 && -c0 > 0) ||
+             rewrite(x*c0 + y, y - x*(-c0), c0 < 0 && -c0 > 0 && !is_const(y)) ||
              rewrite(x*y + z*y, (x + z)*y) ||
              rewrite(x*y + y*z, (x + z)*y) ||
              rewrite(y*x + z*y, y*(x + z)) ||
              rewrite(y*x + y*z, y*(x + z)) ||
-             (!exclude_invalid_ordering_rules && rewrite(x*c0 + y*c1, (x + y*fold(c1/c0)) * c0, c1 % c0 == 0)) ||
-             (!exclude_invalid_ordering_rules && rewrite(x*c0 + y*c1, (x*fold(c0/c1) + y) * c1, c0 % c1 == 0)) ||
+             rewrite(x*c0 + y*c1, (x + y*fold(c1/c0)) * c0, c1 % c0 == 0) ||
+             rewrite(x*c0 + y*c1, (x*fold(c0/c1) + y) * c1, c0 % c1 == 0) ||
              (no_overflow(op->type) &&
               (rewrite(x + x*y, x * (y + 1)) ||
                rewrite(x + y*x, (y + 1) * x) ||
