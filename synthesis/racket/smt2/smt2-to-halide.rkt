@@ -42,6 +42,7 @@
                    [(OP OR exp exp CP) (format "(~a || ~a)" $3 $4)]
                    [(OP + exp exp CP) (format "(~a + ~a)" $3 $4)]
                    [(OP - exp exp CP) (format "(~a - ~a)" $3 $4)]
+                   [(OP - exp CP) (format "(- ~a)" $3)]
                    [(OP * exp exp CP) (format "(~a * ~a)" $3 $4)]
                    [(OP DIV exp exp CP)  (format "(~a / ~a)" $3 $4)]
                    [(OP < exp exp CP) (format "(~a < ~a)" $3 $4)]
