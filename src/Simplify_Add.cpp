@@ -44,10 +44,8 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
              rewrite(ramp(x, y) + broadcast(z), ramp(x + z, y, lanes)) ||
              rewrite(broadcast(x) + broadcast(y), broadcast(x + y, lanes)) ||
              rewrite(select(x, y, z) + select(x, w, u), select(x, y + w, z + u)) ||
-             #ifdef EXCLUDE_INVALID_ORDERING_RULES
-             rewrite(select(x, c0, c1) + c2, select(x, fold(c0 + c2), fold(c1 + c2))) ||
+             (!exclude_misordered_rules && rewrite(select(x, c0, c1) + c2, select(x, fold(c0 + c2), fold(c1 + c2)))) ||
              //             rewrite(select(x, y, c1) + c2, select(x, y + c2, fold(c1 + c2))) ||
-             #endif
              rewrite(select(x, c0, y) + c2, select(x, fold(c0 + c2), y + c2)) ||
 
              rewrite((select(x, y, z) + w) + select(x, u, v), select(x, y + u, z + v) + w) ||
