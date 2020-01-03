@@ -346,7 +346,7 @@ void all_possible_exprs_that_compute_associative_op_helper(const Expr &e,
     }
 
     vector<Expr> terms = unpack_binary_op<Op>(e);
-    for (size_t i = 1; i < (1 << terms.size()) - 1; i++) {
+    for (size_t i = 1; i < (size_t)((1 << terms.size()) - 1); i++) {
         vector<Expr> left, right;
         for (size_t j = 0; j < terms.size(); j++) {
             if (i & (1 << j)) {
@@ -461,6 +461,12 @@ vector<Expr> generate_reassociated_variants(const Expr &e) {
                     result.emplace_back(select(e1, e2, e3));
                 }
             }
+        }
+        return result;
+    } else if (const Not *op = e.as<Not>()) {
+        vector<Expr> result = generate_reassociated_variants(op->a);
+        for (Expr &e : result) {
+            e = !e;
         }
         return result;
     } else {

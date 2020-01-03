@@ -203,28 +203,36 @@ int main(int argc, char **argv) {
     }
 
     // Re-synthesize the predicates if you don't currently trust them
-    /*
     for (Rule &r : rules) {
         vector<map<string, Expr>> examples;
         map<string, Expr> binding;
-        std::cout << "Re-synthesizing predicate for " << r.orig << "\n";
-        r.predicate = synthesize_predicate(r.lhs, r.rhs, examples, &binding);
-        r.lhs = substitute(binding, r.lhs);
+        if (is_zero(r.predicate)) {
+            std::cout << "Re-synthesizing predicate for " << r.orig << " with a larger beam size\n";
+            int bs = 16;
+            while (bs <= 256 && is_zero(r.predicate)) {
+                binding.clear();
+                r.predicate = synthesize_predicate(r.lhs, r.rhs, examples, &binding, bs);
+                bs *= 2;
+            }
+            r.lhs = substitute(binding, r.lhs);
 
-        for (auto &it: binding) {
-            it.second = Call::make(it.second.type(), "fold", {it.second}, Call::PureExtern);
+            for (auto &it: binding) {
+                it.second = Call::make(it.second.type(), "fold", {it.second}, Call::PureExtern);
+            }
+            r.rhs = substitute(binding, r.rhs);
         }
-        r.rhs = substitute(binding, r.rhs);
     }
-    */
 
     /*
     {
         Var x("x"), y("y"), z("z"), c0("c0"), c1("c1");
+        Expr cond = Variable::make(Bool(), "cond");
+        Expr a = select(cond, min(x, y), x) < min(x, y);
+        Expr b = select(cond, min(y, x), y) < min(y, x);
         map<string, Expr> binding;
-        Expr la = ((min((min(x, c0) + y), z) + c1) <= y);
-        Expr lb = (((x + y) + c0) <= y);
-        std::cerr << more_general_than(lb, la, binding) << "\n";
+        std::cerr << more_general_than(a, b, binding) << "\n";
+        binding.clear();
+        std::cerr << more_general_than(b, a, binding) << "\n";
         return 1;
     }
     */
@@ -234,7 +242,7 @@ int main(int argc, char **argv) {
         r.rhs = remove_folds(r.rhs);
     }
 
-    // Normalize LE rules to LT rules where it's possible to invert the RHS for free
+    // Normalize LE rules to LT and NE rules to EQ rules where it's possible to invert the RHS for free
     for (Rule &r : rules) {
         if (const LE *lhs = r.lhs.as<LE>()) {
             if (is_const(r.rhs)) {
@@ -254,6 +262,27 @@ int main(int argc, char **argv) {
                 r.rhs = (rhs->a == rhs->b);
             } else if (const Not *rhs = r.rhs.as<Not>()) {
                 r.lhs = (lhs->b < lhs->a);
+                r.rhs = rhs->a;
+            }
+        }
+        if (const NE *lhs = r.lhs.as<NE>()) {
+            if (is_const(r.rhs)) {
+                r.lhs = (lhs->b == lhs->a);
+                r.rhs = simplify(!r.rhs);
+            } else if (const LE *rhs = r.rhs.as<LE>()) {
+                r.lhs = (lhs->b == lhs->a);
+                r.rhs = (rhs->b < rhs->a);
+            } else if (const LT *rhs = r.rhs.as<LT>()) {
+                r.lhs = (lhs->b == lhs->a);
+                r.rhs = (rhs->b <= rhs->a);
+            } else if (const EQ *rhs = r.rhs.as<EQ>()) {
+                r.lhs = (lhs->b == lhs->a);
+                r.rhs = (rhs->a != rhs->b);
+            } else if (const NE *rhs = r.rhs.as<NE>()) {
+                r.lhs = (lhs->b == lhs->a);
+                r.rhs = (rhs->a == rhs->b);
+            } else if (const Not *rhs = r.rhs.as<Not>()) {
+                r.lhs = (lhs->b == lhs->a);
                 r.rhs = rhs->a;
             }
         }
@@ -322,10 +351,10 @@ int main(int argc, char **argv) {
                   return IRDeepCompare{}(r1.predicate, r2.predicate);
               });
 
+    // Filter out duplicates
     Expr last_lhs, last_predicate;
+    vector<Rule> deduped_rules;
     for (const Rule &r : rules) {
-        bool bad = false;
-
         if (last_lhs.defined() &&
             equal(r.lhs, last_lhs) &&
             equal(r.predicate, last_predicate)) {
@@ -333,6 +362,12 @@ int main(int argc, char **argv) {
         }
         last_lhs = r.lhs;
         last_predicate = r.predicate;
+        deduped_rules.push_back(r);
+    }
+    deduped_rules.swap(rules);
+
+    for (const Rule &r : rules) {
+        bool bad = false;
 
         // Check for failed predicate synthesis
         if (is_zero(r.predicate)) {
@@ -375,8 +410,8 @@ int main(int argc, char **argv) {
                     bad = &r < &r2; // Arbitrarily pick the one with the lower memory address.
                 } else {
                     bad = true;
+                    break;
                 }
-                break;
             }
         }
         if (bad) continue;
