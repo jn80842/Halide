@@ -67,18 +67,14 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
              rewrite(x + (c0 - y), (x - y) + c0) ||
              rewrite((x - y) + (y - z), x - z) ||
              rewrite((x - y) + (z - x), z - y) ||
-             #ifdef EXCLUDE_INVALID_ORDERING_RULES
-             rewrite(x + y*c0, x - y*(-c0), c0 < 0 && -c0 > 0) ||
-             rewrite(x*c0 + y, y - x*(-c0), c0 < 0 && -c0 > 0 && !is_const(y)) ||
-             #endif
+             (!exclude_misordered_rules && rewrite(x + y*c0, x - y*(-c0), c0 < 0 && -c0 > 0)) ||
+             (!exclude_misordered_rules && rewrite(x*c0 + y, y - x*(-c0), c0 < 0 && -c0 > 0 && !is_const(y))) ||
              rewrite(x*y + z*y, (x + z)*y) ||
              rewrite(x*y + y*z, (x + z)*y) ||
              rewrite(y*x + z*y, y*(x + z)) ||
              rewrite(y*x + y*z, y*(x + z)) ||
-             #ifdef EXCLUDE_INVALID_ORDERING_RULES
-             rewrite(x*c0 + y*c1, (x + y*fold(c1/c0)) * c0, c1 % c0 == 0) ||
-             rewrite(x*c0 + y*c1, (x*fold(c0/c1) + y) * c1, c0 % c1 == 0) ||
-             #endif
+             (!exclude_misordered_rules && rewrite(x*c0 + y*c1, (x + y*fold(c1/c0)) * c0, c1 % c0 == 0)) ||
+             (!exclude_misordered_rules && rewrite(x*c0 + y*c1, (x*fold(c0/c1) + y) * c1, c0 % c1 == 0)) ||
              (no_overflow(op->type) &&
               (rewrite(x + x*y, x * (y + 1)) ||
                rewrite(x + y*x, (y + 1) * x) ||

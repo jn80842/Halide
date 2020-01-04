@@ -60,26 +60,22 @@ Expr Simplify::visit(const LT *op, ExprInfo *bounds) {
               rewrite(c0 < x + c1, fold(c0 - c1) < x) ||
 
               // Move constants to the RHS
-              #ifdef EXCLUDE_INVALID_ORDERING_RULES
-              rewrite(x + c0 < y, x < y + fold(-c0)) ||
-              #endif
+              (!exclude_misordered_rules && rewrite(x + c0 < y, x < y + fold(-c0))) ||
               // Normalize subtractions to additions to cut down on cases to consider
-              #ifdef EXCLUDE_INVALID_ORDERING_RULES
-              rewrite(x - y < z, x < z + y) ||
-              rewrite(z < x - y, z + y < x) ||
-              rewrite((x - y) + z < w, x + z < y + w) ||
-              rewrite(z + (x - y) < w, x + z < y + w) ||
-              rewrite(w < (x - y) + z, w + y < x + z) ||
-              rewrite(w < z + (x - y), w + y < x + z) ||
-              rewrite(((x - y) + z) + u < w, x + z + u < w + y) ||
-              rewrite((z + (x - y)) + u < w, x + z + u < w + y) ||
-              rewrite(u + ((x - y) + z) < w, x + z + u < w + y) ||
-              rewrite(u + (z + (x - y)) < w, x + z + u < w + y) ||
-              rewrite(w < ((x - y) + z) + u, w + y < x + z + u) ||
-              rewrite(w < (z + (x - y)) + u, w + y < x + z + u) ||
-              rewrite(w < u + ((x - y) + z), w + y < x + z + u) ||
-              rewrite(w < u + (z + (x - y)), w + y < x + z + u) ||
-              #endif
+              (!exclude_misordered_rules && rewrite(x - y < z, x < z + y)) ||
+              (!exclude_misordered_rules && rewrite(z < x - y, z + y < x)) ||
+              (!exclude_misordered_rules && rewrite((x - y) + z < w, x + z < y + w)) ||
+              (!exclude_misordered_rules && rewrite(z + (x - y) < w, x + z < y + w)) ||
+              (!exclude_misordered_rules && rewrite(w < (x - y) + z, w + y < x + z)) ||
+              (!exclude_misordered_rules && rewrite(w < z + (x - y), w + y < x + z)) ||
+              (!exclude_misordered_rules && rewrite(((x - y) + z) + u < w, x + z + u < w + y)) ||
+              (!exclude_misordered_rules && rewrite((z + (x - y)) + u < w, x + z + u < w + y)) ||
+              (!exclude_misordered_rules && rewrite(u + ((x - y) + z) < w, x + z + u < w + y)) ||
+              (!exclude_misordered_rules && rewrite(u + (z + (x - y)) < w, x + z + u < w + y)) ||
+              (!exclude_misordered_rules && rewrite(w < ((x - y) + z) + u, w + y < x + z + u)) ||
+              (!exclude_misordered_rules && rewrite(w < (z + (x - y)) + u, w + y < x + z + u)) ||
+              (!exclude_misordered_rules && rewrite(w < u + ((x - y) + z), w + y < x + z + u)) ||
+              (!exclude_misordered_rules && rewrite(w < u + (z + (x - y)), w + y < x + z + u)) ||
               // Cancellations in linear expressions
               // 1 < 2
               rewrite(x < x + y, 0 < y) ||
