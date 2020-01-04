@@ -55,7 +55,8 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
     fi
     
     echo "Running generator with seed ${SEED}"    
-    HL_USE_SYNTHESIZED_RULES=1 \
+    HL_USE_SYNTHESIZED_RULES=0 \
+    HL_EXCLUDE_MISORDERED_RULES=1 \
     HL_PERMIT_FAILED_UNROLL=1 \
     HL_SEED=${SEED} \
     HL_RANDOM_DROPOUT=1 \
@@ -64,6 +65,7 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
     ./bin/host/${APP}.generator -g ${APP} -e stmt,static_library,h,assembly,registration -o results/${SEED} -p ../autoscheduler/bin/libauto_schedule.so target=host-no_runtime auto_schedule=true > results/${SEED}/stdout.txt 2> results/${SEED}/stderr.txt  &
 
     HL_USE_SYNTHESIZED_RULES=0 \
+    HL_EXCLUDE_MISORDERED_RULES=0 \
     HL_PERMIT_FAILED_UNROLL=1 \
     HL_SEED=${SEED} \
     HL_RANDOM_DROPOUT=1 \
