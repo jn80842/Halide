@@ -37,11 +37,11 @@ class Simplify : public VariadicVisitor<Simplify, Expr, Stmt> {
 
     bool use_synthesized_rules = false;
     bool exclude_misordered_rules = false;
+    bool rflag = false;
 
 public:
     Simplify(bool r, const Scope<Interval> *bi, const Scope<ModulusRemainder> *ai);
 
-#include "Simplify_Flags_default.inc"
     struct ExprInfo {
         // We track constant integer bounds when they exist
         int64_t min = 0, max = 0;
@@ -326,6 +326,22 @@ public:
     Stmt visit(const Free *op);
     Stmt visit(const Acquire *op);
     Stmt visit(const Fork *op);
+
+    std::map<std::string, bool> default_rule_flags;
+    std::map<std::string, bool> experimental_rule_flags;
+
+    bool get_rule_flag(std::string rulename, bool experimental) {
+        default_rule_flags["add42"] = true;
+        default_rule_flags["add47"] = true;
+
+        experimental_rule_flags["add42"] = true;
+        experimental_rule_flags["add47"] = false;
+        if (experimental) {
+            return experimental_rule_flags[rulename];
+        } else {
+            return default_rule_flags[rulename];
+        }
+    }
 };
 
 }

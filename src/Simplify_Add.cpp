@@ -39,12 +39,12 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
         }
 
         if (EVAL_IN_LAMBDA
-            (add42 && (rewrite(x + x, x * 2, "add42")) ||
+            (get_rule_flag("add42", rflag) && (rewrite(x + x, x * 2, "add42")) ||
              rewrite(ramp(x, y) + ramp(z, w), ramp(x + z, y + w, lanes), "add43") ||
              rewrite(ramp(x, y) + broadcast(z), ramp(x + z, y, lanes), "add44") ||
              rewrite(broadcast(x) + broadcast(y), broadcast(x + y, lanes), "add45") ||
              rewrite(select(x, y, z) + select(x, w, u), select(x, y + w, z + u), "add46") ||
-             (!exclude_misordered_rules && rewrite(select(x, c0, c1) + c2, select(x, fold(c0 + c2), fold(c1 + c2)), "add47")) ||
+             (get_rule_flag("add47", rflag) && rewrite(select(x, c0, c1) + c2, select(x, fold(c0 + c2), fold(c1 + c2)), "add47")) ||
              //             rewrite(select(x, y, c1) + c2, select(x, y + c2, fold(c1 + c2))) ||
              rewrite(select(x, c0, y) + c2, select(x, fold(c0 + c2), y + c2), "add48") ||
 

@@ -48,6 +48,7 @@ Simplify::Simplify(bool r, const Scope<Interval> *bi, const Scope<ModulusRemaind
 
     use_synthesized_rules = get_use_synthesized_rules_from_environment();
     exclude_misordered_rules = get_exclude_misordered_rules_from_environment();
+    rflag = exclude_misordered_rules;
 
     // Only respect the constant bounds from the containing scope.
     if (bi) {
