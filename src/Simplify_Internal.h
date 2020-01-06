@@ -27,6 +27,8 @@
 // can get these large frames out of the recursive path.
 #define EVAL_IN_LAMBDA(x) (([&]() HALIDE_NEVER_INLINE {return (x);})())
 
+
+
 namespace Halide {
 namespace Internal {
 
@@ -39,6 +41,7 @@ class Simplify : public VariadicVisitor<Simplify, Expr, Stmt> {
 public:
     Simplify(bool r, const Scope<Interval> *bi, const Scope<ModulusRemainder> *ai);
 
+#include "Simplify_Flags_default.inc"
     struct ExprInfo {
         // We track constant integer bounds when they exist
         int64_t min = 0, max = 0;

@@ -39,7 +39,7 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
         }
 
         if (EVAL_IN_LAMBDA
-            (rewrite(x + x, x * 2, "add42") ||
+            (add42 && (rewrite(x + x, x * 2, "add42")) ||
              rewrite(ramp(x, y) + ramp(z, w), ramp(x + z, y + w, lanes), "add43") ||
              rewrite(ramp(x, y) + broadcast(z), ramp(x + z, y, lanes), "add44") ||
              rewrite(broadcast(x) + broadcast(y), broadcast(x + y, lanes), "add45") ||
