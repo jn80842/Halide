@@ -285,6 +285,42 @@ bool expr_match(Expr pattern, Expr expr, map<string, Expr> &matches) {
 
 namespace IRMatcher {
 
+void increment_term(IRNodeType node_type, term_map &m) {
+    if (m.count(node_type) == 0) {
+        m[node_type] = 1;
+    } else {
+        m[node_type] = m[node_type] + 1;
+    }
+}
+
+bool variable_counts_geq(variable_count_map &m1, variable_count_map &m2) {
+    for (auto const& var : m2) {
+        if (var.first[0] != 'c' && !(m1[var.first] >= var.second)) {
+            debug(0) << "failed variable count geq: not " << m1[var.first] << " >= " << var.second << "\n";
+            return false;
+        }
+    }
+    return true;
+}
+
+bool variable_counts_gt(variable_count_map &m1, variable_count_map &m2) {
+    for (auto const& var : m2) {
+        if (var.first[0] != 'c' && !(m1[var.first] > var.second)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool variable_counts_atleastone_gt(variable_count_map &m1, variable_count_map &m2) {
+    for (auto const& var : m2) {
+        if (var.first[0] != 'c' && (m1[var.first] > var.second)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 HALIDE_ALWAYS_INLINE
 bool equal_helper(const Expr &a, const Expr &b) {
     return equal(*a.get(), *b.get());

@@ -68,6 +68,13 @@ namespace IRMatcher {
 
 constexpr int max_wild = 6;
 
+typedef std::map<IRNodeType, int> term_map;
+void increment_term(IRNodeType node_type, term_map &m);
+typedef std::map<std::string, int> variable_count_map;
+bool variable_counts_geq(variable_count_map &m1, variable_count_map &m2);
+bool variable_counts_gt(variable_count_map &m1, variable_count_map &m2);
+bool variable_counts_atleastone_gt(variable_count_map &m1, variable_count_map &m2);
+
 /** To save stack space, the matcher objects are largely stateless and
  * immutable. This state object is built up during matching and then
  * consumed when constructing a replacement Expr.
@@ -221,6 +228,14 @@ inline std::ostream &operator<<(std::ostream &s, SpecificExpr e) {
     return s;
 }
 
+inline void count_terms(SpecificExpr e, term_map &m) {
+    return;
+}
+
+inline void build_variable_count_map(SpecificExpr e, variable_count_map &varcountmap) {
+    return;
+}
+
 template<int i>
 struct WildConstInt {
     struct pattern_tag {};
@@ -269,6 +284,16 @@ template<int i>
 std::ostream &operator<<(std::ostream &s, const WildConstInt<i> &c) {
     s << "ci" << i;
     return s;
+}
+
+template<int i>
+void count_terms(const WildConstInt<i> &c, term_map &m) {
+    return;
+}
+
+template<int i>
+void build_variable_count_map(const WildConstInt<i> &c, variable_count_map &varcountmap) {
+    return;
 }
 
 template<int i>
@@ -322,6 +347,16 @@ std::ostream &operator<<(std::ostream &s, const WildConstUInt<i> &c) {
 }
 
 template<int i>
+void count_terms(const WildConstUInt<i> &c, term_map &m) {
+    return;
+}
+
+template<int i>
+void build_variable_count_map(const WildConstUInt<i> &c, variable_count_map &varcountmap) {
+    return;
+}
+
+template<int i>
 struct WildConstFloat {
     struct pattern_tag {};
 
@@ -372,6 +407,16 @@ std::ostream &operator<<(std::ostream &s, const WildConstFloat<i> &c) {
     return s;
 }
 
+template<int i>
+void count_terms(const WildConstFloat<i> &c, term_map &m) {
+    return;
+}
+
+template<int i>
+void build_variable_count_map(const WildConstFloat<i> &c, variable_count_map &varcountmap) {
+    return;
+}
+
 // Matches and binds to any constant Expr. Does not support constant-folding.
 template<int i>
 struct WildConst {
@@ -419,6 +464,16 @@ template<int i>
 std::ostream &operator<<(std::ostream &s, const WildConst<i> &c) {
     s << "c" << i;
     return s;
+}
+
+template<int i>
+void count_terms(const WildConst<i> &c, term_map &m) {
+    return;
+}
+
+template<int i>
+void build_variable_count_map(const WildConst<i> &c, variable_count_map &varcountmap) {
+    return;
 }
 
 // Matches and binds to any Expr
@@ -473,6 +528,25 @@ template<int i>
 std::ostream &operator<<(std::ostream &s, const Wild<i> &op) {
     s << "_" << i;
     return s;
+}
+
+template<int i>
+void count_terms(const Wild<i> &op, term_map &m) {
+    return;
+}
+
+template<int i>
+void build_variable_count_map(const Wild<i> &c, variable_count_map &varcountmap) {
+    std::ostringstream s;
+    s << c;
+    std::string varname = s.str();
+
+    auto search = varcountmap.find(varname);
+    if (search != varcountmap.end()) {
+        varcountmap[varname] += 1;
+    } else {
+        varcountmap[varname] = 1;
+    }
 }
 
 // Matches a specific constant or broadcast of that constant. The
@@ -562,6 +636,14 @@ const SpecificExpr pattern_arg(const Expr &e) {
 inline std::ostream &operator<<(std::ostream &s, const Const &op) {
     s << op.v;
     return s;
+}
+
+inline void count_terms(const Const &op, term_map &m) {
+    return;
+}
+
+inline void build_variable_count_map(const Const &op, variable_count_map &varcountmap) {
+    return;
 }
 
 template<typename Op>
@@ -762,10 +844,29 @@ struct CmpOp {
     }
 };
 
+template<typename Op, typename A, typename B>
+void build_variable_count_map(const CmpOp<Op, A, B> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
+    build_variable_count_map(op.b, varcountmap);
+}
+
+template<typename Op, typename A, typename B>
+void build_variable_count_map(const BinOp<Op, A, B> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
+    build_variable_count_map(op.b, varcountmap);
+}
+
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
     s << "(" << op.a << " + " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+void count_terms(const BinOp<Add, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Sub, m); // adds and subs count for the same now
 }
 
 template<typename A, typename B>
@@ -775,9 +876,23 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Sub, A, B> &op) {
 }
 
 template<typename A, typename B>
+void count_terms(const BinOp<Sub, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Sub, m); // adds and subs count for the same now
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
     s << "(" << op.a << " * " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+void count_terms(const BinOp<Mul, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Mul, m);
 }
 
 template<typename A, typename B>
@@ -787,9 +902,23 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
 }
 
 template<typename A, typename B>
+void count_terms(const BinOp<Div, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Div, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<And, A, B> &op) {
     s << "(" << op.a << " && " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+void count_terms(const BinOp<And, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::And, m);
 }
 
 template<typename A, typename B>
@@ -799,9 +928,23 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Or, A, B> &op) {
 }
 
 template<typename A, typename B>
+void count_terms(const BinOp<Or, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Or, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Min, A, B> &op) {
     s << "min(" << op.a << ", " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+void count_terms(const BinOp<Min, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Min, m);
 }
 
 template<typename A, typename B>
@@ -811,9 +954,24 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
 }
 
 template<typename A, typename B>
+void count_terms(const BinOp<Max, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    // min and max have equal cost, so put both in Min bucket
+    increment_term(IRNodeType::Min, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<LE, A, B> &op) {
     s << "(" << op.a << " <= " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+void count_terms(const CmpOp<LE, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::LE, m);
 }
 
 template<typename A, typename B>
@@ -823,9 +981,23 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<LT, A, B> &op) {
 }
 
 template<typename A, typename B>
+void count_terms(const CmpOp<LT, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::LT, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GE, A, B> &op) {
     s << "(" << op.a << " >= " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+void count_terms(const CmpOp<GE, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::GE, m);
 }
 
 template<typename A, typename B>
@@ -835,9 +1007,23 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
 }
 
 template<typename A, typename B>
+void count_terms(const CmpOp<GT, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::GT, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<EQ, A, B> &op) {
     s << "(" << op.a << " == " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+void count_terms(const CmpOp<EQ, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::EQ, m);
 }
 
 template<typename A, typename B>
@@ -847,9 +1033,23 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
 }
 
 template<typename A, typename B>
+void count_terms(const CmpOp<NE, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::NE, m);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
     s << "(" << op.a << " % " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+void count_terms(const BinOp<Mod, A, B> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Mod, m);
 }
 
 template<typename A, typename B>
@@ -1407,6 +1607,16 @@ std::ostream &operator<<(std::ostream &s, const Intrin<Args...> &op) {
 }
 
 template<typename... Args>
+void count_terms(const Intrin<Args...> &op, term_map &m) {
+    return;
+}
+
+template<typename... Args>
+void build_variable_count_map(const Intrin<Args...> &op, variable_count_map &varcountmap) {
+    return;
+}
+
+template<typename... Args>
 HALIDE_ALWAYS_INLINE
 auto intrin(Call::ConstString name, Args... args) noexcept -> Intrin<decltype(pattern_arg(args))...> {
     return {name, pattern_arg(args)...};
@@ -1468,6 +1678,17 @@ inline std::ostream &operator<<(std::ostream &s, const NotOp<A> &op) {
     return s;
 }
 
+template<typename A>
+void count_terms(const NotOp<A> &op, term_map &m) {
+    count_terms(op.a, m);
+    increment_term(IRNodeType::Not, m);
+}
+
+template<typename A>
+void build_variable_count_map(const NotOp<A> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
+}
+
 template<typename C, typename T, typename F>
 struct SelectOp {
     struct pattern_tag {};
@@ -1524,6 +1745,21 @@ template<typename C, typename T, typename F>
 std::ostream &operator<<(std::ostream &s, const SelectOp<C, T, F> &op) {
     s << "select(" << op.c << ", " << op.t << ", " << op.f << ")";
     return s;
+}
+
+template<typename C, typename T, typename F>
+void count_terms(const SelectOp<C, T, F> &op, term_map &m) {
+    count_terms(op.c, m);
+    count_terms(op.t, m);
+    count_terms(op.f, m);
+    increment_term(IRNodeType::Select, m);
+}
+
+template<typename C, typename T, typename F>
+void build_variable_count_map(const SelectOp<C, T, F> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.c, varcountmap);
+    build_variable_count_map(op.t, varcountmap);
+    build_variable_count_map(op.f, varcountmap);
 }
 
 template<typename C, typename T, typename F>
@@ -1588,6 +1824,17 @@ template<typename A>
 inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, false> &op) {
     s << "broadcast(" << op.a << ")";
     return s;
+}
+
+template<typename A, bool known_lanes>
+void count_terms(const BroadcastOp<A, known_lanes> &op, term_map &m) {
+    count_terms(op.a, m);
+    increment_term(IRNodeType::Broadcast, m);
+}
+
+template<typename A, bool known_lanes>
+void build_variable_count_map(const BroadcastOp<A, known_lanes> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
 }
 
 template<typename A>
@@ -1663,6 +1910,19 @@ template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const RampOp<A, B, false> &op) {
     s << "ramp(" << op.a << ", " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B, bool known_lanes>
+void count_terms(const RampOp<A, B, known_lanes> &op, term_map &m) {
+    count_terms(op.a, m);
+    count_terms(op.b, m);
+    increment_term(IRNodeType::Ramp, m);
+}
+
+template<typename A, typename B, bool known_lanes>
+void build_variable_count_map(const RampOp<A, B, known_lanes> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
+    build_variable_count_map(op.b, varcountmap);
 }
 
 template<typename A, typename B>
@@ -1745,6 +2005,17 @@ std::ostream &operator<<(std::ostream &s, const NegateOp<A> &op) {
 }
 
 template<typename A>
+void count_terms(const NegateOp<A> &op, term_map &m) {
+    count_terms(op.a,m);
+    increment_term(IRNodeType::Sub, m);
+}
+
+template<typename A>
+void build_variable_count_map(const NegateOp<A> &op, variable_count_map &varcountmap) {
+    build_variable_count_map(op.a, varcountmap);
+}
+
+template<typename A>
 HALIDE_ALWAYS_INLINE
 auto operator-(A a) noexcept -> NegateOp<decltype(pattern_arg(a))> {
     return {pattern_arg(a)};
@@ -1793,6 +2064,16 @@ std::ostream &operator<<(std::ostream &s, const CastOp<A> &op) {
 }
 
 template<typename A>
+void count_terms(const CastOp<A> &op, term_map &m) {
+    count_terms(op.a, m);
+}
+
+template<typename A>
+void build_variable_count_map(const CastOp<A> &op, variable_count_map &varcountmap) {
+    return;
+}
+
+template<typename A>
 HALIDE_ALWAYS_INLINE
 auto cast(halide_type_t t, A a) noexcept -> CastOp<decltype(pattern_arg(a))> {
     return {t, pattern_arg(a)};
@@ -1832,6 +2113,16 @@ template<typename A>
 std::ostream &operator<<(std::ostream &s, const Fold<A> &op) {
     s << "fold(" << op.a << ")";
     return s;
+}
+
+template<typename A>
+void count_terms(const Fold<A> &op, term_map &m) {
+    count_terms(op.a,m);
+}
+
+template<typename A>
+void build_variable_count_map(const Fold<A> &op, variable_count_map &varcountmap) {
+    return;
 }
 
 template<typename A>
@@ -1901,6 +2192,14 @@ inline std::ostream &operator<<(std::ostream &s, const Indeterminate &op) {
     return s;
 }
 
+inline void count_terms(const Indeterminate &op, term_map &m) {
+    return;
+}
+
+inline void build_variable_count_map(const Indeterminate &op, variable_count_map &varcountmap) {
+    return;
+}
+
 struct Overflow {
     struct pattern_tag {};
 
@@ -1936,6 +2235,10 @@ inline std::ostream &operator<<(std::ostream &s, const Overflow &op) {
     return s;
 }
 
+inline void count_terms(const Overflow &op, term_map &m) {
+    return;
+}
+
 template<typename A>
 struct IsConst {
     struct pattern_tag {};
@@ -1967,6 +2270,16 @@ template<typename A>
 std::ostream &operator<<(std::ostream &s, const IsConst<A> &op) {
     s << "is_const(" << op.a << ")";
     return s;
+}
+
+template<typename A>
+void count_terms(const IsConst<A> &op, term_map &m) {
+    return;
+}
+
+template<typename A>
+void build_variable_count_map(const IsConst<A> &op, variable_count_map &varcountmap) {
+    return;
 }
 
 template<typename A, typename Prover>
@@ -2002,6 +2315,11 @@ std::ostream &operator<<(std::ostream &s, const CanProve<A, Prover> &op) {
     return s;
 }
 
+template<typename A, typename Prover>
+void build_variable_count_map(const CanProve<A, Prover> &op, variable_count_map &varcountmap) {
+    return;
+}
+
 template<typename A>
 struct IsFloat {
     struct pattern_tag {};
@@ -2032,6 +2350,16 @@ template<typename A>
 std::ostream &operator<<(std::ostream &s, const IsFloat<A> &op) {
     s << "is_float(" << op.a << ")";
     return s;
+}
+
+template<typename A, typename Prover>
+void count_terms(const CanProve<A, Prover> &op, term_map &m) {
+    return;
+}
+
+template<typename A>
+void build_variable_count_map(const IsFloat<A> &op, variable_count_map &varcountmap) {
+    return;
 }
 
 template<typename A>
@@ -2209,7 +2537,40 @@ template<typename Before,
 HALIDE_ALWAYS_INLINE
 void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
                             halide_type_t wildcard_type, halide_type_t output_type, std::string rulename) noexcept {
-    debug(0) << "checking rule properties for rule " << rulename << "\n";
+
+    debug(0) << "default_rule_flags[\"" << rulename << "\"] = true;\n";
+    term_map LHS_term_map;
+    term_map RHS_term_map;
+
+    count_terms(before, LHS_term_map);
+    count_terms(after, RHS_term_map);
+    int LHS_vector_count = LHS_term_map[IRNodeType::Ramp] + LHS_term_map[IRNodeType::Broadcast];
+    int RHS_vector_count = RHS_term_map[IRNodeType::Ramp] + RHS_term_map[IRNodeType::Broadcast];
+
+    variable_count_map LHS_var_count_map;
+    variable_count_map RHS_var_count_map;
+    build_variable_count_map(before, LHS_var_count_map);
+    build_variable_count_map(after, RHS_var_count_map);
+
+    // strictly more vector ops in LHS - rule is good
+    if (LHS_vector_count > RHS_vector_count) {
+        debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
+    // strictly fewer vector ops in RHS - rule is misordered
+    } else if (LHS_vector_count < RHS_vector_count) {
+        debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n";
+        // after ramp check, make sure all variable occurrences are equal or less in RHS
+    } else if (variable_counts_geq(LHS_var_count_map, RHS_var_count_map)) {
+        // if at least one variable count goes down, the rule is good
+        if (variable_counts_atleastone_gt(LHS_var_count_map, RHS_var_count_map)) {
+            debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
+        } else {
+            // terms are equal under ordering
+            debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n";
+        }
+    } else {
+        // if any variable count increases, rule is invalid
+        debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n";
+    }
 }
 
 HALIDE_ALWAYS_INLINE
@@ -2240,7 +2601,7 @@ bool evaluate_predicate(Pattern p, MatcherState &state) {
 // correctness_simplify with this on.
 #define HALIDE_FUZZ_TEST_RULES 0
 // check various properties of rules when they match
-#define HALIDE_CHECK_RULES_PROPERTIES 0
+#define HALIDE_CHECK_RULES_PROPERTIES 1
 
 
 template<typename Instance>
