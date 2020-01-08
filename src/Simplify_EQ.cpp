@@ -71,34 +71,34 @@ Expr Simplify::visit(const EQ *op, ExprInfo *bounds) {
     auto rewrite = IRMatcher::rewriter(IRMatcher::eq(delta, 0), op->type, delta.type());
 
     if (
-        (!exclude_misordered_rules && rewrite(broadcast(x) == 0, broadcast(x == 0, lanes))) ||
-        (no_overflow(delta.type()) && rewrite(x * y == 0, (x == 0) || (y == 0))) ||
-        rewrite(select(x, 0, y) == 0, x || (y == 0)) ||
-        (!exclude_misordered_rules && rewrite(select(x, c0, y) == 0, !x && (y == 0), c0 != 0)) ||
-        (!exclude_misordered_rules && rewrite(select(x, y, 0) == 0, !x || (y == 0))) ||
-        rewrite(select(x, y, c0) == 0, x && (y == 0), c0 != 0) ||
-        rewrite(max(x, y) - y == 0, x <= y) ||
-        rewrite(min(x, y) - y == 0, y <= x) ||
-        rewrite(max(y, x) - y == 0, x <= y) ||
-        rewrite(min(y, x) - y == 0, y <= x) ||
-        rewrite(y - max(x, y) == 0, x <= y) ||
-        rewrite(y - min(x, y) == 0, y <= x) ||
-        rewrite(y - max(y, x) == 0, x <= y) ||
-        rewrite(y - min(y, x) == 0, y <= x) ||
-        rewrite(max(x, c0) + c1 == 0, x == fold(-c1), c0 + c1 < 0) ||
-        rewrite(min(x, c0) + c1 == 0, x == fold(-c1), c0 + c1 > 0) ||
-        rewrite(max(x, c0) + c1 == 0, x <= c0, c0 + c1 == 0) ||
-        rewrite(min(x, c0) + c1 == 0, c0 <= x, c0 + c1 == 0) ||
-        rewrite(max(x, 0) == 0, x <= 0) ||
-        rewrite(min(x, 0) == 0, 0 <= x)) {
+        (get_rule_flag("eq74", rflag) && rewrite(broadcast(x) == 0, broadcast(x == 0, lanes), "eq74")) ||
+        (no_overflow(delta.type()) && (get_rule_flag("eq75", rflag) && rewrite(x * y == 0, (x == 0) || (y == 0), "eq75"))) ||
+        (get_rule_flag("eq76", rflag) && rewrite(select(x, 0, y) == 0, x || (y == 0), "eq76")) ||
+        (get_rule_flag("eq77", rflag) && rewrite(select(x, c0, y) == 0, !x && (y == 0), c0 != 0, "eq77")) ||
+        (get_rule_flag("eq78", rflag) && rewrite(select(x, y, 0) == 0, !x || (y == 0), "eq78")) ||
+        (get_rule_flag("eq79", rflag) && rewrite(select(x, y, c0) == 0, x && (y == 0), c0 != 0, "eq79")) ||
+        (get_rule_flag("eq80", rflag) && rewrite(max(x, y) - y == 0, x <= y, "eq80")) ||
+        (get_rule_flag("eq81", rflag) && rewrite(min(x, y) - y == 0, y <= x, "eq81")) ||
+        (get_rule_flag("eq82", rflag) && rewrite(max(y, x) - y == 0, x <= y, "eq82")) ||
+        (get_rule_flag("eq83", rflag) && rewrite(min(y, x) - y == 0, y <= x, "eq83")) ||
+        (get_rule_flag("eq84", rflag) && rewrite(y - max(x, y) == 0, x <= y, "eq84")) ||
+        (get_rule_flag("eq85", rflag) && rewrite(y - min(x, y) == 0, y <= x, "eq85")) ||
+        (get_rule_flag("eq86", rflag) && rewrite(y - max(y, x) == 0, x <= y, "eq86")) ||
+        (get_rule_flag("eq87", rflag) && rewrite(y - min(y, x) == 0, y <= x, "eq87")) ||
+        (get_rule_flag("eq88", rflag) && rewrite(max(x, c0) + c1 == 0, x == fold(-c1), c0 + c1 < 0, "eq88")) ||
+        (get_rule_flag("eq89", rflag) && rewrite(min(x, c0) + c1 == 0, x == fold(-c1), c0 + c1 > 0, "eq89")) ||
+        (get_rule_flag("eq90", rflag) && rewrite(max(x, c0) + c1 == 0, x <= c0, c0 + c1 == 0, "eq90")) ||
+        (get_rule_flag("eq91", rflag) && rewrite(min(x, c0) + c1 == 0, c0 <= x, c0 + c1 == 0, "eq91")) ||
+        (get_rule_flag("eq92", rflag) && rewrite(max(x, 0) == 0, x <= 0, "eq92")) ||
+        (get_rule_flag("eq93", rflag) && rewrite(min(x, 0) == 0, 0 <= x, "eq93"))) {
 
         return mutate(std::move(rewrite.result), bounds);
     }
 
-    if (rewrite(c0 == 0, fold(c0 == 0)) ||
-        rewrite((x - y) + c0 == 0, x == y + fold(-c0)) ||
-        rewrite(x + c0 == 0, x == fold(-c0)) ||
-        rewrite(c0 - x == 0, x == c0)) {
+    if ((get_rule_flag("eq98", rflag) && rewrite(c0 == 0, fold(c0 == 0), "eq98")) ||
+        (get_rule_flag("eq99", rflag) && rewrite((x - y) + c0 == 0, x == y + fold(-c0), "eq99")) ||
+        (get_rule_flag("eq100", rflag) && rewrite(x + c0 == 0, x == fold(-c0), "eq100")) ||
+        (get_rule_flag("eq101", rflag) && rewrite(c0 - x == 0, x == c0, "eq101"))) {
         return rewrite.result;
     }
 
