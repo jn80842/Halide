@@ -975,6 +975,14 @@ default_rule_flags["mul125"] = true;
 default_rule_flags["mul126"] = true;
 default_rule_flags["mul131"] = true;
 default_rule_flags["mul132"] = true;
+default_rule_flags["not11"] = true;
+default_rule_flags["not12"] = true;
+default_rule_flags["not13"] = true;
+default_rule_flags["not14"] = true;
+default_rule_flags["not15"] = true;
+default_rule_flags["not16"] = true;
+default_rule_flags["not17"] = true;
+default_rule_flags["not18"] = true;
 
         experimental_rule_flags["add42"] = true;
         experimental_rule_flags["add47"] = false;
