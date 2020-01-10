@@ -102,34 +102,34 @@ Expr Simplify::visit(const Mul *op, ExprInfo *bounds) {
         }
 
         auto rewrite = IRMatcher::rewriter(IRMatcher::mul(a, b), op->type);
-        if (rewrite(c0 * c1, fold(c0 * c1)) ||
+        if ((get_rule_flag("mul105", rflag) && rewrite(c0 * c1, fold(c0 * c1), "mul105")) ||
             rewrite(IRMatcher::Indeterminate() * x, a) ||
             rewrite(x * IRMatcher::Indeterminate(), b) ||
             rewrite(IRMatcher::Overflow() * x, a) ||
             rewrite(x * IRMatcher::Overflow(), b) ||
-            rewrite(0 * x, 0) ||
-            rewrite(1 * x, x) ||
-            rewrite(x * 0, 0) ||
-            rewrite(x * 1, x)) {
+            (get_rule_flag("mul110", rflag) && rewrite(0 * x, 0, "mul110")) ||
+            (get_rule_flag("mul111", rflag) && rewrite(1 * x, x, "mul111")) ||
+            (get_rule_flag("mul112", rflag) && rewrite(x * 0, 0, "mul112")) ||
+            (get_rule_flag("mul113", rflag) && rewrite(x * 1, x, "mul113"))) {
             return rewrite.result;
         }
 
-        if (rewrite((x + c0) * c1, x * c1 + fold(c0 * c1), !overflows(c0 * c1)) ||
-            (!exclude_misordered_rules && rewrite((x - y) * c0, (y - x) * fold(-c0), c0 < 0 && -c0 > 0)) ||
-            rewrite((x * c0) * c1, x * fold(c0 * c1), !overflows(c0 * c1)) ||
-            rewrite((x * c0) * y, (x * y) * c0, !is_const(y)) ||
-            rewrite(x * (y * c0), (x * y) * c0) ||
-            rewrite(x * -1, 0 - x) ||
-            rewrite(max(x, y) * min(x, y), x * y) ||
-            rewrite(max(x, y) * min(y, x), y * x) ||
-            rewrite(broadcast(x) * broadcast(y), broadcast(x * y, op->type.lanes())) ||
-            rewrite(ramp(x, y) * broadcast(z), ramp(x * z, y * z, op->type.lanes())) ||
+        if ((get_rule_flag("mul117", rflag) && rewrite((x + c0) * c1, x * c1 + fold(c0 * c1), !overflows(c0 * c1), "mul117")) ||
+            (get_rule_flag("mul118", rflag) && rewrite((x - y) * c0, (y - x) * fold(-c0), c0 < 0 && -c0 > 0, "mul118")) ||
+            (get_rule_flag("mul119", rflag) && rewrite((x * c0) * c1, x * fold(c0 * c1), !overflows(c0 * c1), "mul119")) ||
+            (get_rule_flag("mul120", rflag) && rewrite((x * c0) * y, (x * y) * c0, !is_const(y), "mul120")) ||
+            (get_rule_flag("mul121", rflag) && rewrite(x * (y * c0), (x * y) * c0, "mul121")) ||
+            (get_rule_flag("mul122", rflag) && rewrite(x * -1, 0 - x, "mul122")) ||
+            (get_rule_flag("mul123", rflag) && rewrite(max(x, y) * min(x, y), x * y, "mul123")) ||
+            (get_rule_flag("mul124", rflag) && rewrite(max(x, y) * min(y, x), y * x, "mul124")) ||
+            (get_rule_flag("mul125", rflag) && rewrite(broadcast(x) * broadcast(y), broadcast(x * y, op->type.lanes()), "mul125")) ||
+            (get_rule_flag("mul126", rflag) && rewrite(ramp(x, y) * broadcast(z), ramp(x * z, y * z, op->type.lanes()), "mul126")) ||
 
             // Added during the synthesis work to clean up some of the
             // interpreter expressions we generate for masking
             // operations.
-            rewrite(select(x, 1, 0) * y, select(x, y, 0)) ||
-            rewrite(select(x, 0, 1) * y, select(x, 0, y)) ||
+            (get_rule_flag("mul131", rflag) && rewrite(select(x, 1, 0) * y, select(x, y, 0), "mul131")) ||
+            (get_rule_flag("mul132", rflag) && rewrite(select(x, 0, 1) * y, select(x, 0, y), "mul132")) ||
 
             false) {
             return mutate(std::move(rewrite.result), bounds);
