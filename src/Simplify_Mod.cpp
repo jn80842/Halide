@@ -41,38 +41,38 @@ Expr Simplify::visit(const Mod *op, ExprInfo *bounds) {
 
         auto rewrite = IRMatcher::rewriter(IRMatcher::mod(a, b), op->type);
 
-        if (rewrite(c0 % c1, fold(c0 % c1)) ||
+        if ((get_rule_flag("mod44", rflag) && rewrite(c0 % c1, fold(c0 % c1), "mod44")) ||
             rewrite(IRMatcher::Indeterminate() % x, a) ||
             rewrite(x % IRMatcher::Indeterminate(), b) ||
             rewrite(IRMatcher::Overflow() % x, a) ||
             rewrite(x % IRMatcher::Overflow(), b) ||
-            rewrite(0 % x, 0) ||
-            rewrite(x % x, 0) ||
+            (get_rule_flag("mod49", rflag) && rewrite(0 % x, 0, "mod49")) ||
+            (get_rule_flag("mod50", rflag) && rewrite(x % x, 0, "mod50")) ||
             (!op->type.is_float() &&
-             (rewrite(x % 0, IRMatcher::Indeterminate()) ||
-              rewrite(x % 1, 0)))) {
+             ((get_rule_flag("mod52", rflag) && rewrite(x % 0, IRMatcher::Indeterminate(), "mod52")) ||
+              (get_rule_flag("mod53", rflag) && rewrite(x % 1, 0, "mod53"))))) {
             return rewrite.result;
         }
 
         if (EVAL_IN_LAMBDA
-            (rewrite(broadcast(x) % broadcast(y), broadcast(x % y, lanes)) ||
+            ((get_rule_flag("mod58", rflag) && rewrite(broadcast(x) % broadcast(y), broadcast(x % y, lanes), "mod58")) ||
              (no_overflow_int(op->type) &&
-              ((!exclude_misordered_rules && rewrite((x * c0) % c1, (x * fold(c0 % c1)) % c1, c1 > 0 && (c0 >= c1 || c0 < 0))) ||
-               (!exclude_misordered_rules && rewrite((x + c0) % c1, (x + fold(c0 % c1)) % c1, c1 > 0 && (c0 >= c1 || c0 < 0))) ||
-               rewrite((x * c0) % c1, (x % fold(c1/c0)) * c0, c0 > 0 && c1 % c0 == 0) ||
-               rewrite((x * c0 + y) % c1, y % c1, c0 % c1 == 0) ||
-               rewrite((y + x * c0) % c1, y % c1, c0 % c1 == 0) ||
-               rewrite((x * c0 - y) % c1, (-y) % c1, c0 % c1 == 0) ||
-               rewrite((y - x * c0) % c1, y % c1, c0 % c1 == 0) ||
-               (!exclude_misordered_rules && rewrite((x - y) % 2, (x + y) % 2)) || // Addition and subtraction are the same modulo 2, because -1 == 1
-               rewrite(ramp(x, c0) % broadcast(c1), broadcast(x, lanes) % c1, c0 % c1 == 0) ||
-               rewrite(ramp(x, c0) % broadcast(c1), ramp(x % c1, c0, lanes),
-                       // First and last lanes are the same when...
-                       can_prove((x % c1 + c0 * (lanes - 1)) / c1 == 0, this)) ||
-               rewrite(ramp(x * c0, c2) % broadcast(c1), (ramp(x * fold(c0 % c1), fold(c2 % c1), lanes) % c1), c1 > 0 && (c0 >= c1 || c0 < 0)) ||
-               rewrite(ramp(x + c0, c2) % broadcast(c1), (ramp(x + fold(c0 % c1), fold(c2 % c1), lanes) % c1), c1 > 0 && (c0 >= c1 || c0 < 0)) ||
-               rewrite(ramp(x * c0 + y, c2) % broadcast(c1), ramp(y, fold(c2 % c1), lanes) % c1, c0 % c1 == 0) ||
-               rewrite(ramp(y + x * c0, c2) % broadcast(c1), ramp(y, fold(c2 % c1), lanes) % c1, c0 % c1 == 0))))) {
+              ((get_rule_flag("mod60", rflag) && rewrite((x * c0) % c1, (x * fold(c0 % c1)) % c1, c1 > 0 && (c0 >= c1 || c0 < 0), "mod60")) ||
+               (get_rule_flag("mod61", rflag) && rewrite((x + c0) % c1, (x + fold(c0 % c1)) % c1, c1 > 0 && (c0 >= c1 || c0 < 0), "mod61")) ||
+               (get_rule_flag("mod62", rflag) && rewrite((x * c0) % c1, (x % fold(c1/c0)) * c0, c0 > 0 && c1 % c0 == 0, "mod62")) ||
+               (get_rule_flag("mod63", rflag) && rewrite((x * c0 + y) % c1, y % c1, c0 % c1 == 0, "mod63")) ||
+               (get_rule_flag("mod64", rflag) && rewrite((y + x * c0) % c1, y % c1, c0 % c1 == 0, "mod64")) ||
+               (get_rule_flag("mod65", rflag) && rewrite((x * c0 - y) % c1, (-y) % c1, c0 % c1 == 0, "mod65")) ||
+               (get_rule_flag("mod66", rflag) && rewrite((y - x * c0) % c1, y % c1, c0 % c1 == 0, "mod66")) ||
+               (get_rule_flag("mod67", rflag) && rewrite((x - y) % 2, (x + y) % 2, "mod67")) || // Addition and subtraction are the same modulo 2, because -1 == 1
+               (get_rule_flag("mod68", rflag) && rewrite(ramp(x, c0) % broadcast(c1), broadcast(x, lanes) % c1, c0 % c1 == 0, "mod68")) ||
+               (get_rule_flag("mod71", rflag) && rewrite(ramp(x, c0) % broadcast(c1), ramp(x % c1, c0, lanes),
+                                       // First and last lanes are the same when...
+                                       can_prove((x % c1 + c0 * (lanes - 1)) / c1 == 0, this), "mod71")) ||
+               (get_rule_flag("mod72", rflag) && rewrite(ramp(x * c0, c2) % broadcast(c1), (ramp(x * fold(c0 % c1), fold(c2 % c1), lanes) % c1), c1 > 0 && (c0 >= c1 || c0 < 0), "mod72")) ||
+               (get_rule_flag("mod73", rflag) && rewrite(ramp(x + c0, c2) % broadcast(c1), (ramp(x + fold(c0 % c1), fold(c2 % c1), lanes) % c1), c1 > 0 && (c0 >= c1 || c0 < 0), "mod73")) ||
+               (get_rule_flag("mod74", rflag) && rewrite(ramp(x * c0 + y, c2) % broadcast(c1), ramp(y, fold(c2 % c1), lanes) % c1, c0 % c1 == 0, "mod74")) ||
+               (get_rule_flag("mod75", rflag) && rewrite(ramp(y + x * c0, c2) % broadcast(c1), ramp(y, fold(c2 % c1), lanes) % c1, c0 % c1 == 0, "mod75")))))) {
             return mutate(std::move(rewrite.result), bounds);
         }
 
