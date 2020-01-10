@@ -2316,6 +2316,11 @@ std::ostream &operator<<(std::ostream &s, const CanProve<A, Prover> &op) {
 }
 
 template<typename A, typename Prover>
+void count_terms(const CanProve<A, Prover> &op, term_map &m) {
+    return;
+}
+
+template<typename A, typename Prover>
 void build_variable_count_map(const CanProve<A, Prover> &op, variable_count_map &varcountmap) {
     return;
 }
@@ -2352,8 +2357,8 @@ std::ostream &operator<<(std::ostream &s, const IsFloat<A> &op) {
     return s;
 }
 
-template<typename A, typename Prover>
-void count_terms(const CanProve<A, Prover> &op, term_map &m) {
+template<typename A>
+void count_terms(const IsFloat<A> &op, term_map &m) {
     return;
 }
 

@@ -43,15 +43,15 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
         auto rewrite = IRMatcher::rewriter(IRMatcher::min(a, b), op->type);
 
         if (EVAL_IN_LAMBDA
-            (rewrite(min(x, x), x) ||
-             rewrite(min(c0, c1), fold(min(c0, c1))) ||
+            ((get_rule_flag("min46", rflag) && rewrite(min(x, x), x, "min46")) ||
+             (get_rule_flag("min47", rflag) && rewrite(min(c0, c1), fold(min(c0, c1)), "min47")) ||
              rewrite(min(IRMatcher::Indeterminate(), x), a) ||
              rewrite(min(x, IRMatcher::Indeterminate()), b) ||
              rewrite(min(IRMatcher::Overflow(), x), a) ||
              rewrite(min(x,IRMatcher::Overflow()), b) ||
              // Cases where one side dominates:
              rewrite(min(x, op->type.min()), b) ||
-             rewrite(min(x, op->type.max()), x) ||
+             (get_rule_flag("min54", rflag) && rewrite(min(x, op->type.max()), x, "min54")) ||
              rewrite(min((x/c0)*c0, x), a, c0 > 0) ||
              rewrite(min(x, (x/c0)*c0), b, c0 > 0) ||
              rewrite(min(min(x, y), x), a) ||
@@ -96,115 +96,115 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
         }
 
         if (EVAL_IN_LAMBDA
-            (rewrite(min(min(x, c0), c1), min(x, fold(min(c0, c1)))) ||
-             rewrite(min(min(x, c0), y), min(min(x, y), c0)) ||
-             rewrite(min(min(x, y), min(x, z)), min(min(y, z), x)) ||
-             rewrite(min(min(y, x), min(x, z)), min(min(y, z), x)) ||
-             rewrite(min(min(x, y), min(z, x)), min(min(y, z), x)) ||
-             rewrite(min(min(y, x), min(z, x)), min(min(y, z), x)) ||
-             (!exclude_misordered_rules && rewrite(min(min(x, y), min(z, w)), min(min(min(x, y), z), w))) ||
-             rewrite(min(broadcast(x), broadcast(y)), broadcast(min(x, y), lanes)) ||
+            ((get_rule_flag("min99", rflag) && rewrite(min(min(x, c0), c1), min(x, fold(min(c0, c1))), "min99")) ||
+             (get_rule_flag("min100", rflag) && rewrite(min(min(x, c0), y), min(min(x, y), c0), "min100")) ||
+             (get_rule_flag("min101", rflag) && rewrite(min(min(x, y), min(x, z)), min(min(y, z), x), "min101")) ||
+             (get_rule_flag("min102", rflag) && rewrite(min(min(y, x), min(x, z)), min(min(y, z), x), "min102")) ||
+             (get_rule_flag("min103", rflag) && rewrite(min(min(x, y), min(z, x)), min(min(y, z), x), "min103")) ||
+             (get_rule_flag("min104", rflag) && rewrite(min(min(y, x), min(z, x)), min(min(y, z), x), "min104")) ||
+             (get_rule_flag("min105", rflag) && rewrite(min(min(x, y), min(z, w)), min(min(min(x, y), z), w), "min105")) ||
+             (get_rule_flag("min106", rflag) && rewrite(min(broadcast(x), broadcast(y)), broadcast(min(x, y), lanes), "min106")) ||
              rewrite(min(broadcast(x), ramp(y, z)), min(b, a)) ||
-             rewrite(min(min(x, broadcast(y)), broadcast(z)), min(x, broadcast(min(y, z), lanes))) ||
-             rewrite(min(max(x, y), max(x, z)), max(x, min(y, z))) ||
-             rewrite(min(max(x, y), max(z, x)), max(x, min(y, z))) ||
-             rewrite(min(max(y, x), max(x, z)), max(min(y, z), x)) ||
-             rewrite(min(max(y, x), max(z, x)), max(min(y, z), x)) ||
-             rewrite(min(max(min(x, y), z), y), min(max(x, z), y)) ||
-             rewrite(min(max(min(y, x), z), y), min(y, max(x, z))) ||
-             rewrite(min(min(x, c0), c1), min(x, fold(min(c0, c1)))) ||
+             (get_rule_flag("min108", rflag) && rewrite(min(min(x, broadcast(y)), broadcast(z)), min(x, broadcast(min(y, z), lanes)), "min108")) ||
+             (get_rule_flag("min109", rflag) && rewrite(min(max(x, y), max(x, z)), max(x, min(y, z)), "min109")) ||
+             (get_rule_flag("min110", rflag) && rewrite(min(max(x, y), max(z, x)), max(x, min(y, z)), "min110")) ||
+             (get_rule_flag("min111", rflag) && rewrite(min(max(y, x), max(x, z)), max(min(y, z), x), "min111")) ||
+             (get_rule_flag("min112", rflag) && rewrite(min(max(y, x), max(z, x)), max(min(y, z), x), "min112")) ||
+             (get_rule_flag("min113", rflag) && rewrite(min(max(min(x, y), z), y), min(max(x, z), y), "min113")) ||
+             (get_rule_flag("min114", rflag) && rewrite(min(max(min(y, x), z), y), min(y, max(x, z)), "min114")) ||
+             (get_rule_flag("min115", rflag) && rewrite(min(min(x, c0), c1), min(x, fold(min(c0, c1))), "min115")) ||
 
              // Canonicalize a clamp
-             (!exclude_misordered_rules && rewrite(min(max(x, c0), c1), max(min(x, c1), c0), c0 <= c1)) ||
+             (get_rule_flag("min118", rflag) && rewrite(min(max(x, c0), c1), max(min(x, c1), c0), c0 <= c1, "min118")) ||
              (no_overflow(op->type) &&
-              (rewrite(min(min(x, y) + c0, x), min(x, y + c0), c0 > 0) ||
-               rewrite(min(min(x, y) + c0, x), min(x, y) + c0, c0 < 0) ||
-               rewrite(min(min(y, x) + c0, x), min(y + c0, x), c0 > 0) ||
-               rewrite(min(min(y, x) + c0, x), min(y, x) + c0, c0 < 0) ||
+              ((get_rule_flag("min120", rflag) && rewrite(min(min(x, y) + c0, x), min(x, y + c0), c0 > 0, "min120")) ||
+               (get_rule_flag("min121", rflag) && rewrite(min(min(x, y) + c0, x), min(x, y) + c0, c0 < 0, "min121")) ||
+               (get_rule_flag("min122", rflag) && rewrite(min(min(y, x) + c0, x), min(y + c0, x), c0 > 0, "min122")) ||
+               (get_rule_flag("min123", rflag) && rewrite(min(min(y, x) + c0, x), min(y, x) + c0, c0 < 0, "min123")) ||
 
-               rewrite(min(x, min(x, y) + c0), min(x, y + c0), c0 > 0) ||
-               rewrite(min(x, min(x, y) + c0), min(x, y) + c0, c0 < 0) ||
-               rewrite(min(x, min(y, x) + c0), min(x, y + c0), c0 > 0) ||
-               rewrite(min(x, min(y, x) + c0), min(x, y) + c0, c0 < 0) ||
+               (get_rule_flag("min125", rflag) && rewrite(min(x, min(x, y) + c0), min(x, y + c0), c0 > 0, "min125")) ||
+               (get_rule_flag("min126", rflag) && rewrite(min(x, min(x, y) + c0), min(x, y) + c0, c0 < 0, "min126")) ||
+               (get_rule_flag("min127", rflag) && rewrite(min(x, min(y, x) + c0), min(x, y + c0), c0 > 0, "min127")) ||
+               (get_rule_flag("min128", rflag) && rewrite(min(x, min(y, x) + c0), min(x, y) + c0, c0 < 0, "min128")) ||
 
-               rewrite(min(x + c0, c1), min(x, fold(c1 - c0)) + c0) ||
+               (get_rule_flag("min130", rflag) && rewrite(min(x + c0, c1), min(x, fold(c1 - c0)) + c0, "min130")) ||
 
-               rewrite(min(x + c0, y + c1), min(x, y + fold(c1 - c0)) + c0, c1 > c0) ||
-               rewrite(min(x + c0, y + c1), min(x + fold(c0 - c1), y) + c1, c0 > c1) ||
+               (get_rule_flag("min132", rflag) && rewrite(min(x + c0, y + c1), min(x, y + fold(c1 - c0)) + c0, c1 > c0, "min132")) ||
+               (get_rule_flag("min133", rflag) && rewrite(min(x + c0, y + c1), min(x + fold(c0 - c1), y) + c1, c0 > c1, "min133")) ||
 
-               rewrite(min(x + y, x + z), x + min(y, z)) ||
-               rewrite(min(x + y, z + x), x + min(y, z)) ||
-               rewrite(min(y + x, x + z), min(y, z) + x) ||
-               rewrite(min(y + x, z + x), min(y, z) + x) ||
-               rewrite(min(x, x + z), x + min(z, 0)) ||
-               rewrite(min(x, z + x), x + min(z, 0)) ||
-               rewrite(min(y + x, x), min(y, 0) + x) ||
-               rewrite(min(x + y, x), x + min(y, 0)) ||
+               (get_rule_flag("min135", rflag) && rewrite(min(x + y, x + z), x + min(y, z), "min135")) ||
+               (get_rule_flag("min136", rflag) && rewrite(min(x + y, z + x), x + min(y, z), "min136")) ||
+               (get_rule_flag("min137", rflag) && rewrite(min(y + x, x + z), min(y, z) + x, "min137")) ||
+               (get_rule_flag("min138", rflag) && rewrite(min(y + x, z + x), min(y, z) + x, "min138")) ||
+               (get_rule_flag("min139", rflag) && rewrite(min(x, x + z), x + min(z, 0), "min139")) ||
+               (get_rule_flag("min140", rflag) && rewrite(min(x, z + x), x + min(z, 0), "min140")) ||
+               (get_rule_flag("min141", rflag) && rewrite(min(y + x, x), min(y, 0) + x, "min141")) ||
+               (get_rule_flag("min142", rflag) && rewrite(min(x + y, x), x + min(y, 0), "min142")) ||
 
-               rewrite(min((x*c0 + y)*c1, x*c2 + z), min(y*c1, z) + x*c2, c0 * c1 == c2) ||
-               rewrite(min((y + x*c0)*c1, x*c2 + z), min(y*c1, z) + x*c2, c0 * c1 == c2) ||
-               rewrite(min((x*c0 + y)*c1, z + x*c2), min(y*c1, z) + x*c2, c0 * c1 == c2) ||
-               rewrite(min((y + x*c0)*c1, z + x*c2), min(y*c1, z) + x*c2, c0 * c1 == c2) ||
+               (get_rule_flag("min144", rflag) && rewrite(min((x*c0 + y)*c1, x*c2 + z), min(y*c1, z) + x*c2, c0 * c1 == c2, "min144")) ||
+               (get_rule_flag("min145", rflag) && rewrite(min((y + x*c0)*c1, x*c2 + z), min(y*c1, z) + x*c2, c0 * c1 == c2, "min145")) ||
+               (get_rule_flag("min146", rflag) && rewrite(min((x*c0 + y)*c1, z + x*c2), min(y*c1, z) + x*c2, c0 * c1 == c2, "min146")) ||
+               (get_rule_flag("min147", rflag) && rewrite(min((y + x*c0)*c1, z + x*c2), min(y*c1, z) + x*c2, c0 * c1 == c2, "min147")) ||
 
-               rewrite(min(min(x + y, z), x + w), min(x + min(y, w), z)) ||
-               rewrite(min(min(z, x + y), x + w), min(x + min(y, w), z)) ||
-               rewrite(min(min(x + y, z), w + x), min(x + min(y, w), z)) ||
-               rewrite(min(min(z, x + y), w + x), min(x + min(y, w), z)) ||
+               (get_rule_flag("min149", rflag) && rewrite(min(min(x + y, z), x + w), min(x + min(y, w), z), "min149")) ||
+               (get_rule_flag("min150", rflag) && rewrite(min(min(z, x + y), x + w), min(x + min(y, w), z), "min150")) ||
+               (get_rule_flag("min151", rflag) && rewrite(min(min(x + y, z), w + x), min(x + min(y, w), z), "min151")) ||
+               (get_rule_flag("min152", rflag) && rewrite(min(min(z, x + y), w + x), min(x + min(y, w), z), "min152")) ||
 
-               rewrite(min(min(y + x, z), x + w), min(min(y, w) + x, z)) ||
-               rewrite(min(min(z, y + x), x + w), min(min(y, w) + x, z)) ||
-               rewrite(min(min(y + x, z), w + x), min(min(y, w) + x, z)) ||
-               rewrite(min(min(z, y + x), w + x), min(min(y, w) + x, z)) ||
+               (get_rule_flag("min154", rflag) && rewrite(min(min(y + x, z), x + w), min(min(y, w) + x, z), "min154")) ||
+               (get_rule_flag("min155", rflag) && rewrite(min(min(z, y + x), x + w), min(min(y, w) + x, z), "min155")) ||
+               (get_rule_flag("min156", rflag) && rewrite(min(min(y + x, z), w + x), min(min(y, w) + x, z), "min156")) ||
+               (get_rule_flag("min157", rflag) && rewrite(min(min(z, y + x), w + x), min(min(y, w) + x, z), "min157")) ||
 
-               rewrite(min((x + w) + y, x + z), x + min(w + y, z)) ||
-               rewrite(min((w + x) + y, x + z), min(w + y, z) + x) ||
-               rewrite(min((x + w) + y, z + x), x + min(w + y, z)) ||
-               rewrite(min((w + x) + y, z + x), min(w + y, z) + x) ||
-               rewrite(min((x + w) + y, x), x + min(w + y, 0)) ||
-               rewrite(min((w + x) + y, x), x + min(w + y, 0)) ||
-               rewrite(min(x + y, (w + x) + z), x + min(w + z, y)) ||
-               rewrite(min(x + y, (x + w) + z), x + min(w + z, y)) ||
-               rewrite(min(y + x, (w + x) + z), min(w + z, y) + x) ||
-               rewrite(min(y + x, (x + w) + z), min(w + z, y) + x) ||
-               rewrite(min(x, (w + x) + z), x + min(w + z, 0)) ||
-               rewrite(min(x, (x + w) + z), x + min(w + z, 0)) ||
+               (get_rule_flag("min159", rflag) && rewrite(min((x + w) + y, x + z), x + min(w + y, z), "min159")) ||
+               (get_rule_flag("min160", rflag) && rewrite(min((w + x) + y, x + z), min(w + y, z) + x, "min160")) ||
+               (get_rule_flag("min161", rflag) && rewrite(min((x + w) + y, z + x), x + min(w + y, z), "min161")) ||
+               (get_rule_flag("min162", rflag) && rewrite(min((w + x) + y, z + x), min(w + y, z) + x, "min162")) ||
+               (get_rule_flag("min163", rflag) && rewrite(min((x + w) + y, x), x + min(w + y, 0), "min163")) ||
+               (get_rule_flag("min164", rflag) && rewrite(min((w + x) + y, x), x + min(w + y, 0), "min164")) ||
+               (get_rule_flag("min165", rflag) && rewrite(min(x + y, (w + x) + z), x + min(w + z, y), "min165")) ||
+               (get_rule_flag("min166", rflag) && rewrite(min(x + y, (x + w) + z), x + min(w + z, y), "min166")) ||
+               (get_rule_flag("min167", rflag) && rewrite(min(y + x, (w + x) + z), min(w + z, y) + x, "min167")) ||
+               (get_rule_flag("min168", rflag) && rewrite(min(y + x, (x + w) + z), min(w + z, y) + x, "min168")) ||
+               (get_rule_flag("min169", rflag) && rewrite(min(x, (w + x) + z), x + min(w + z, 0), "min169")) ||
+               (get_rule_flag("min170", rflag) && rewrite(min(x, (x + w) + z), x + min(w + z, 0), "min170")) ||
 
-               rewrite(min(y - x, z - x), min(y, z) - x) ||
-               rewrite(min(x - y, x - z), x - max(y, z)) ||
+               (get_rule_flag("min172", rflag) && rewrite(min(y - x, z - x), min(y, z) - x, "min172")) ||
+               (get_rule_flag("min173", rflag) && rewrite(min(x - y, x - z), x - max(y, z), "min173")) ||
 
-               rewrite(min(x, x - y), x - max(0, y)) ||
-               rewrite(min(x - y, x), x - max(0, y)) ||
-               rewrite(min(x, (x - y) + z), x + min(0, z - y)) ||
-               rewrite(min(x, z + (x - y)), x + min(0, z - y)) ||
-               rewrite(min(x, (x - y) - z), x - max(0, y + z)) ||
-               rewrite(min((x - y) + z, x), min(0, z - y) + x) ||
-               rewrite(min(z + (x - y), x), min(0, z - y) + x) ||
-               rewrite(min((x - y) - z, x), x - max(0, y + z)) ||
+               (get_rule_flag("min175", rflag) && rewrite(min(x, x - y), x - max(0, y), "min175")) ||
+               (get_rule_flag("min176", rflag) && rewrite(min(x - y, x), x - max(0, y), "min176")) ||
+               (get_rule_flag("min177", rflag) && rewrite(min(x, (x - y) + z), x + min(0, z - y), "min177")) ||
+               (get_rule_flag("min178", rflag) && rewrite(min(x, z + (x - y)), x + min(0, z - y), "min178")) ||
+               (get_rule_flag("min179", rflag) && rewrite(min(x, (x - y) - z), x - max(0, y + z), "min179")) ||
+               (get_rule_flag("min180", rflag) && rewrite(min((x - y) + z, x), min(0, z - y) + x, "min180")) ||
+               (get_rule_flag("min181", rflag) && rewrite(min(z + (x - y), x), min(0, z - y) + x, "min181")) ||
+               (get_rule_flag("min182", rflag) && rewrite(min((x - y) - z, x), x - max(0, y + z), "min182")) ||
 
-               rewrite(min(x * c0, c1), min(x, fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0) ||
-               rewrite(min(x * c0, c1), max(x, fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0) ||
+               (get_rule_flag("min184", rflag) && rewrite(min(x * c0, c1), min(x, fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0, "min184")) ||
+               (get_rule_flag("min185", rflag) && rewrite(min(x * c0, c1), max(x, fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0, "min185")) ||
 
-               rewrite(min(x * c0, y * c1), min(x, y * fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0) ||
-               rewrite(min(x * c0, y * c1), max(x, y * fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0) ||
-               rewrite(min(x * c0, y * c1), min(x * fold(c0 / c1), y) * c1, c1 > 0 && c0 % c1 == 0) ||
-               rewrite(min(x * c0, y * c1), max(x * fold(c0 / c1), y) * c1, c1 < 0 && c0 % c1 == 0) ||
-               rewrite(min(x * c0, y * c0 + c1), min(x, y + fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0) ||
-               rewrite(min(x * c0, y * c0 + c1), max(x, y + fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0) ||
+               (get_rule_flag("min187", rflag) && rewrite(min(x * c0, y * c1), min(x, y * fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0, "min187")) ||
+               (get_rule_flag("min188", rflag) && rewrite(min(x * c0, y * c1), max(x, y * fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0, "min188")) ||
+               (get_rule_flag("min189", rflag) && rewrite(min(x * c0, y * c1), min(x * fold(c0 / c1), y) * c1, c1 > 0 && c0 % c1 == 0, "min189")) ||
+               (get_rule_flag("min190", rflag) && rewrite(min(x * c0, y * c1), max(x * fold(c0 / c1), y) * c1, c1 < 0 && c0 % c1 == 0, "min190")) ||
+               (get_rule_flag("min191", rflag) && rewrite(min(x * c0, y * c0 + c1), min(x, y + fold(c1 / c0)) * c0, c0 > 0 && c1 % c0 == 0, "min191")) ||
+               (get_rule_flag("min192", rflag) && rewrite(min(x * c0, y * c0 + c1), max(x, y + fold(c1 / c0)) * c0, c0 < 0 && c1 % c0 == 0, "min192")) ||
 
-               rewrite(min(x / c0, y / c0), min(x, y) / c0, c0 > 0) ||
-               rewrite(min(x / c0, y / c0), max(x, y) / c0, c0 < 0) ||
+               (get_rule_flag("min194", rflag) && rewrite(min(x / c0, y / c0), min(x, y) / c0, c0 > 0, "min194")) ||
+               (get_rule_flag("min195", rflag) && rewrite(min(x / c0, y / c0), max(x, y) / c0, c0 < 0, "min195")) ||
 
                /* Causes some things to cancel, but also creates large constants and breaks peephole patterns
                rewrite(min(x / c0, c1), min(x, fold(c1 * c0)) / c0, c0 > 0 && !overflows(c1 * c0)) ||
                rewrite(min(x / c0, c1), max(x, fold(c1 * c0)) / c0, c0 < 0 && !overflows(c1 * c0)) ||
                */
 
-               rewrite(min(x / c0, y / c0 + c1), min(x, y + fold(c1 * c0)) / c0, c0 > 0 && !overflows(c1 * c0)) ||
-               rewrite(min(x / c0, y / c0 + c1), max(x, y + fold(c1 * c0)) / c0, c0 < 0 && !overflows(c1 * c0)) ||
+               (get_rule_flag("min202", rflag) && rewrite(min(x / c0, y / c0 + c1), min(x, y + fold(c1 * c0)) / c0, c0 > 0 && !overflows(c1 * c0), "min202")) ||
+               (get_rule_flag("min203", rflag) && rewrite(min(x / c0, y / c0 + c1), max(x, y + fold(c1 * c0)) / c0, c0 < 0 && !overflows(c1 * c0), "min203")) ||
 
-               rewrite(min(select(x, y, z), select(x, w, u)), select(x, min(y, w), min(z, u))) ||
+               (get_rule_flag("min205", rflag) && rewrite(min(select(x, y, z), select(x, w, u)), select(x, min(y, w), min(z, u)), "min205")) ||
 
-               rewrite(min(c0 - x, c1), c0 - max(x, fold(c0 - c1))))))) {
+               (get_rule_flag("min207", rflag) && rewrite(min(c0 - x, c1), c0 - max(x, fold(c0 - c1)), "min207")))))) {
             return mutate(std::move(rewrite.result), bounds);
         }
 
