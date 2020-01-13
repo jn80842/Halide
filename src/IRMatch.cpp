@@ -321,6 +321,194 @@ bool variable_counts_atleastone_gt(variable_count_map &m1, variable_count_map &m
     return false;
 }
 
+int get_expensive_arith_count(term_map &t) {
+    return t[IRNodeType::Div] + t[IRNodeType::Mod] + t[IRNodeType::Mul];
+}
+
+int get_total_op_count(term_map &t) {
+    int total = 0;
+    for (auto const& term_entry : t) {
+        total += term_entry.second;
+    }
+    return total;
+}
+
+CompIRNodeTypeStatus ternary_comp(int i1, int i2) {
+    if (i1 == i2) {
+        return CompIRNodeTypeStatus::EQ;
+    } else if (i1 > i2) {
+        return CompIRNodeTypeStatus::GT;
+    } else {
+        return CompIRNodeTypeStatus::LT;
+    }
+}
+
+CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2) {
+    if (m1[IRNodeType::Ramp] != m2[IRNodeType::Ramp]) {
+//        debug(0) << "Terms count tie breaker " << " Ramp " << m1[IRNodeType::Ramp] << " " << m2[IRNodeType::Ramp] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Ramp],m2[IRNodeType::Ramp])) << "\n";
+        return ternary_comp(m1[IRNodeType::Ramp],m2[IRNodeType::Ramp]);
+    } else if (m1[IRNodeType::Broadcast] != m2[IRNodeType::Broadcast]) {
+//        debug(0) << "Terms count tie breaker " << " Broadcast " << m1[IRNodeType::Broadcast] << " " << m2[IRNodeType::Broadcast] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Broadcast],m2[IRNodeType::Broadcast])) << "\n";
+        return ternary_comp(m1[IRNodeType::Broadcast], m2[IRNodeType::Broadcast]);
+    } else if (m1[IRNodeType::Select] != m2[IRNodeType::Select]) {
+//        debug(0) << "Terms count tie breaker " << " Select " << m1[IRNodeType::Select] << " " << m2[IRNodeType::Select] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Select],m2[IRNodeType::Select])) << "\n";
+        return ternary_comp(m1[IRNodeType::Select], m2[IRNodeType::Select]);
+    } else if (m1[IRNodeType::Div] != m2[IRNodeType::Div]) {
+//        debug(0) << "Terms count tie breaker " << " Div " << m1[IRNodeType::Div] << " " << m2[IRNodeType::Div] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Div],m2[IRNodeType::Div])) << "\n";
+        return ternary_comp(m1[IRNodeType::Div], m2[IRNodeType::Div]);
+    } else if (m1[IRNodeType::Mul] != m2[IRNodeType::Mul]) {
+//        debug(0) << "Terms count tie breaker " << " Mul " << m1[IRNodeType::Mul] << " " << m2[IRNodeType::Mul] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Mul],m2[IRNodeType::Mul])) << "\n";
+        return ternary_comp(m1[IRNodeType::Mul], m2[IRNodeType::Mul]);
+    } else if (m1[IRNodeType::Mod] != m2[IRNodeType::Mod]) {
+//        debug(0) << "Terms count tie breaker " << " Mod " << m1[IRNodeType::Mod] << " " << m2[IRNodeType::Mod] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Mod],m2[IRNodeType::Mod])) << "\n";
+        return ternary_comp(m1[IRNodeType::Mod], m2[IRNodeType::Mod]);
+    } else if (m1[IRNodeType::Sub] != m2[IRNodeType::Sub]) { // Adds also go in this bucket
+//        debug(0) << "Terms count tie breaker " << " AddSub " << m1[IRNodeType::Sub] << " " << m2[IRNodeType::Sub] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Sub],m2[IRNodeType::Sub])) << "\n";
+        return ternary_comp(m1[IRNodeType::Sub], m2[IRNodeType::Sub]);
+ //   } else if (m1[IRNodeType::Add] != m2[IRNodeType::Add]) {
+ //       debug(0) << "Terms count tie breaker " << " Add " << m1[IRNodeType::Add] << " " << m2[IRNodeType::Add] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Add],m2[IRNodeType::Add])) << "\n";
+ //       return ternary_comp(m1[IRNodeType::Add], m2[IRNodeType::Add]);
+    } else if (m1[IRNodeType::Min] != m2[IRNodeType::Min]) { // max ops go in this bucket too
+//        debug(0) << "Terms count tie breaker " << " MaxMin " << m1[IRNodeType::Min] << " " << m2[IRNodeType::Min] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Min],m2[IRNodeType::Min])) << "\n";
+        return ternary_comp(m1[IRNodeType::Min], m2[IRNodeType::Min]);
+    } else if (m1[IRNodeType::Or] != m2[IRNodeType::Or]) {
+//        debug(0) << "Terms count tie breaker " << " Or " << m1[IRNodeType::Or] << " " << m2[IRNodeType::Or] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Or],m2[IRNodeType::Or])) << "\n";
+        return ternary_comp(m1[IRNodeType::Or], m2[IRNodeType::Or]);
+    } else if (m1[IRNodeType::And] != m2[IRNodeType::And]) {
+//        debug(0) << "Terms count tie breaker " << " And " << m1[IRNodeType::And] << " " << m2[IRNodeType::And] << " " << comp_to_s(ternary_comp(m1[IRNodeType::And],m2[IRNodeType::And])) << "\n";
+        return ternary_comp(m1[IRNodeType::And], m2[IRNodeType::And]);
+    } else if (m1[IRNodeType::GE] != m2[IRNodeType::GE]) {
+//        debug(0) << "Terms count tie breaker " << " GE " << m1[IRNodeType::GE] << " " << m2[IRNodeType::GE] << " " << comp_to_s(ternary_comp(m1[IRNodeType::GE],m2[IRNodeType::GE])) << "\n";
+        return ternary_comp(m1[IRNodeType::GE], m2[IRNodeType::GE]);
+    } else if (m1[IRNodeType::GT] != m2[IRNodeType::GT]) {
+//        debug(0) << "Terms count tie breaker " << " GT " << m1[IRNodeType::GT] << " " << m2[IRNodeType::GT] << " " << comp_to_s(ternary_comp(m1[IRNodeType::GT],m2[IRNodeType::GT])) << "\n";
+        return ternary_comp(m1[IRNodeType::GT], m2[IRNodeType::GT]);
+    } else if (m1[IRNodeType::LE] != m2[IRNodeType::LE]) {
+//        debug(0) << "Terms count tie breaker " << " LE " << m1[IRNodeType::LE] << " " << m2[IRNodeType::LE] << " " << comp_to_s(ternary_comp(m1[IRNodeType::LE],m2[IRNodeType::LE])) << "\n";
+        return ternary_comp(m1[IRNodeType::LE], m2[IRNodeType::LE]);
+    } else if (m1[IRNodeType::LT] != m2[IRNodeType::LT]) {
+//        debug(0) << "Terms count tie breaker " << " LT " << m1[IRNodeType::LT] << " " << m2[IRNodeType::LT] << " " << comp_to_s(ternary_comp(m1[IRNodeType::LT],m2[IRNodeType::LT])) << "\n";
+        return ternary_comp(m1[IRNodeType::LT], m2[IRNodeType::LT]);
+    } else if (m1[IRNodeType::NE] != m2[IRNodeType::NE]) {
+//        debug(0) << "Terms count tie breaker " << " NE " << m1[IRNodeType::NE] << " " << m2[IRNodeType::NE] << " " << comp_to_s(ternary_comp(m1[IRNodeType::NE],m2[IRNodeType::NE])) << "\n";
+        return ternary_comp(m1[IRNodeType::NE], m2[IRNodeType::NE]);
+    } else if (m1[IRNodeType::EQ] != m2[IRNodeType::EQ]) {
+//        debug(0) << "Terms count tie breaker " << " EQ " << m1[IRNodeType::EQ] << " " << m2[IRNodeType::EQ] << " " << comp_to_s(ternary_comp(m1[IRNodeType::EQ],m2[IRNodeType::EQ])) << "\n";
+        return ternary_comp(m1[IRNodeType::EQ], m2[IRNodeType::EQ]);
+    } else if (m1[IRNodeType::Not] != m2[IRNodeType::Not]) {
+//        debug(0) << "Terms count tie breaker " << " Not " << m1[IRNodeType::Not] << " " << m2[IRNodeType::Not] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Not],m2[IRNodeType::Not])) << "\n";
+        return ternary_comp(m1[IRNodeType::Not], m2[IRNodeType::Not]);
+    } else {
+        return CompIRNodeTypeStatus::EQ; // two histograms are equiv
+    }
+}
+
+void update_bfs_node_type_map(bfs_node_type_map &type_map, IRNodeType t, int current_depth) {
+    if (type_map.count(current_depth) == 0) {
+        std::list<IRNodeType> l = {t};
+        type_map.insert({current_depth, l});
+    } else {
+        type_map[current_depth].push_back(t);
+    }
+}
+
+node_type_ordering nto = {
+    {IRNodeType::Ramp,23},
+    {IRNodeType::Broadcast,22},
+    {IRNodeType::Select,21},
+    {IRNodeType::Div,20},
+    {IRNodeType::Mul,19},
+    {IRNodeType::Mod,18},
+    {IRNodeType::Sub,17},
+    {IRNodeType::Add,17},
+    {IRNodeType::Max,14},
+    {IRNodeType::Min,14},
+
+    {IRNodeType::Or,12},
+    {IRNodeType::And,11},
+    {IRNodeType::GE,10},
+    {IRNodeType::GT,9},
+    {IRNodeType::LE,8},
+    {IRNodeType::LT,7},
+    {IRNodeType::NE,6},
+    {IRNodeType::EQ,5},
+    {IRNodeType::Not,4},
+};
+
+// add and sub are least, all others are greatest
+node_type_ordering nto_adds = {
+    {IRNodeType::Ramp,100},
+    {IRNodeType::Broadcast,100},
+    {IRNodeType::Select,100},
+    {IRNodeType::Div,100},
+    {IRNodeType::Mul,100},
+    {IRNodeType::Mod,100},
+    {IRNodeType::Sub,1},
+    {IRNodeType::Add,1},
+    {IRNodeType::Max,100},
+    {IRNodeType::Min,100},
+
+    {IRNodeType::Or,100},
+    {IRNodeType::And,100},
+    {IRNodeType::GE,100},
+    {IRNodeType::GT,100},
+    {IRNodeType::LE,100},
+    {IRNodeType::LT,100},
+    {IRNodeType::NE,100},
+    {IRNodeType::EQ,100},
+    {IRNodeType::Not,100},
+};
+
+CompIRNodeTypeStatus multiset_node_order(std::list<IRNodeType> &m1, std::list<IRNodeType> &m2, node_type_ordering &comparator) {
+    int max_m1 = 0;
+    int max_m2 = 0;
+    for (IRNodeType node_type : m1) {
+        if (comparator[node_type] > max_m1)
+            max_m1 = comparator[node_type];
+    }
+    for (IRNodeType node_type : m2) {
+        if (comparator[node_type] > max_m2) 
+            max_m2 = comparator[node_type];
+    }
+    if (max_m1 > max_m2) {
+        return CompIRNodeTypeStatus::GT;
+    } else if (max_m1 < max_m2) {
+        return CompIRNodeTypeStatus::LT;
+    } else {
+        return CompIRNodeTypeStatus::EQ;
+    }
+}
+
+// not implementing the full recursive checks; root and first layer should be sufficient
+CompIRNodeTypeStatus mpo(bfs_node_type_map &map1, bfs_node_type_map &map2, node_type_ordering &comparator) {
+    // if t2 is variable and t1 is not, t1 > t2
+    if (!(map1.empty()) && map2.empty()) {
+        return CompIRNodeTypeStatus::GT;
+    }
+    // if roots are different, compare roots
+    if ((map1.count(0) != 0) && (map2.count(0) != 0)) {
+        CompIRNodeTypeStatus root_status = multiset_node_order(map1[0],map2[0],comparator);
+        if (!(root_status == CompIRNodeTypeStatus::EQ)) {
+            return root_status;
+        }  
+    }
+    // compare first depth
+    if ((map1.count(1) != 0) && (map2.count(1) != 0)) {
+        return multiset_node_order(map1[1],map2[1],comparator);
+    } else {
+        return CompIRNodeTypeStatus::EQ;
+    }
+
+}
+
+CompIRNodeTypeStatus mpo_adds(bfs_node_type_map &map1, bfs_node_type_map &map2) {
+    return mpo(map1,map2,nto_adds);
+}
+
+CompIRNodeTypeStatus mpo_full(bfs_node_type_map &map1, bfs_node_type_map &map2) {
+    return mpo(map1,map1,nto);
+}
+
 HALIDE_ALWAYS_INLINE
 bool equal_helper(const Expr &a, const Expr &b) {
     return equal(*a.get(), *b.get());
