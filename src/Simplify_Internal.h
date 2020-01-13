@@ -330,7 +330,8 @@ public:
     std::map<std::string, bool> default_rule_flags;
     std::map<std::string, bool> experimental_rule_flags;
 
-    bool get_rule_flag(std::string rulename, bool experimental) {
+    void populate_rule_flags() {
+
         default_rule_flags["add100"] = true;
 default_rule_flags["add101"] = true;
 default_rule_flags["add102"] = true;
@@ -1253,6 +1254,8 @@ default_rule_flags["sub99"] = true;
 
         experimental_rule_flags["add42"] = true;
         experimental_rule_flags["add47"] = false;
+    }
+bool get_rule_flag(std::string rulename, bool experimental) {
         if (experimental) {
             return experimental_rule_flags[rulename];
         } else {

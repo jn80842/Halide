@@ -45,7 +45,7 @@ bool get_exclude_misordered_rules_from_environment() {
 
 Simplify::Simplify(bool r, const Scope<Interval> *bi, const Scope<ModulusRemainder> *ai) :
     remove_dead_lets(r), no_float_simplify(false) {
-
+    populate_rule_flags();
     use_synthesized_rules = get_use_synthesized_rules_from_environment();
     exclude_misordered_rules = get_exclude_misordered_rules_from_environment();
     rflag = exclude_misordered_rules;
