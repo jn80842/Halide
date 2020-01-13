@@ -39,7 +39,7 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
         }
 
         if (EVAL_IN_LAMBDA
-            (get_rule_flag("add42", rflag) && (rewrite(x + x, x * 2, "add42")) ||
+            ((get_rule_flag("add42", rflag) && (rewrite(x + x, x * 2, "add42"))) ||
              (get_rule_flag("add43", rflag) && rewrite(ramp(x, y) + ramp(z, w), ramp(x + z, y + w, lanes), "add43")) ||
              (get_rule_flag("add44", rflag) && rewrite(ramp(x, y) + broadcast(z), ramp(x + z, y, lanes), "add44")) ||
              (get_rule_flag("add45", rflag) && rewrite(broadcast(x) + broadcast(y), broadcast(x + y, lanes), "add45")) ||
