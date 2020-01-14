@@ -125,10 +125,10 @@ Expr Simplify::visit(const Max *op, ExprInfo *bounds) {
                (get_rule_flag("max125", rflag) && rewrite(max(x, max(y, x) + c0), max(x, y + c0), c0 < 0, "max125")) ||
                (get_rule_flag("max126", rflag) && rewrite(max(x, max(y, x) + c0), max(x, y) + c0, c0 > 0, "max126")) ||
 
-               (get_rule_flag("max127", rflag) && rewrite(max(x + c0, c1), max(x, fold(c1 - c0)) + c0, "max128")) ||
+               (get_rule_flag("max128", rflag) && rewrite(max(x + c0, c1), max(x, fold(c1 - c0)) + c0, "max128")) ||
 
-               (get_rule_flag("max128", rflag) && rewrite(max(x + c0, y + c1), max(x, y + fold(c1 - c0)) + c0, c1 > c0, "max130")) ||
-               (get_rule_flag("max129", rflag) && rewrite(max(x + c0, y + c1), max(x + fold(c0 - c1), y) + c1, c0 > c1, "max131")) ||
+               (get_rule_flag("max130", rflag) && rewrite(max(x + c0, y + c1), max(x, y + fold(c1 - c0)) + c0, c1 > c0, "max130")) ||
+               (get_rule_flag("max131", rflag) && rewrite(max(x + c0, y + c1), max(x + fold(c0 - c1), y) + c1, c0 > c1, "max131")) ||
 
                (get_rule_flag("max133", rflag) && rewrite(max(x + y, x + z), x + max(y, z), "max133")) ||
                (get_rule_flag("max134", rflag) && rewrite(max(x + y, z + x), x + max(y, z), "max134")) ||
@@ -202,7 +202,7 @@ Expr Simplify::visit(const Max *op, ExprInfo *bounds) {
 
                (get_rule_flag("max203", rflag) && rewrite(max(select(x, y, z), select(x, w, u)), select(x, max(y, w), max(z, u)), "max203")) ||
 
-               (get_rule_flag("max204", rflag) && rewrite(max(c0 - x, c1), c0 - min(x, fold(c0 - c1)), "max205")))) ||
+               (get_rule_flag("max205", rflag) && rewrite(max(c0 - x, c1), c0 - min(x, fold(c0 - c1)), "max205")))) ||
              false)) {
 
             return mutate(std::move(rewrite.result), bounds);

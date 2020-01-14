@@ -470,6 +470,7 @@ CompIRNodeTypeStatus multiset_node_order(std::list<IRNodeType> &m1, std::list<IR
         if (comparator[node_type] > max_m2) 
             max_m2 = comparator[node_type];
     }
+
     if (max_m1 > max_m2) {
         return CompIRNodeTypeStatus::GT;
     } else if (max_m1 < max_m2) {
@@ -498,6 +499,8 @@ CompIRNodeTypeStatus mpo(bfs_node_type_map &map1, bfs_node_type_map &map2, node_
     } else {
         return CompIRNodeTypeStatus::EQ;
     }
+    // if all comps fail, terms are equal
+    return CompIRNodeTypeStatus::EQ;
 
 }
 
@@ -506,7 +509,7 @@ CompIRNodeTypeStatus mpo_adds(bfs_node_type_map &map1, bfs_node_type_map &map2) 
 }
 
 CompIRNodeTypeStatus mpo_full(bfs_node_type_map &map1, bfs_node_type_map &map2) {
-    return mpo(map1,map1,nto);
+    return mpo(map1,map2,nto);
 }
 
 HALIDE_ALWAYS_INLINE

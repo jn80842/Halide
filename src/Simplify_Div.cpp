@@ -101,7 +101,7 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
 
         if (EVAL_IN_LAMBDA
             ((get_rule_flag("div103", rflag) && rewrite(broadcast(x) / broadcast(y), broadcast(x / y, lanes), "div103")) ||
-             (get_rule_flag("div103", rflag) && rewrite(select(x, c0, c1) / c2, select(x, fold(c0/c2), fold(c1/c2)), "div104")) ||
+             (get_rule_flag("div104", rflag) && rewrite(select(x, c0, c1) / c2, select(x, fold(c0/c2), fold(c1/c2)), "div104")) ||
              (no_overflow(op->type) &&
               (// Fold repeated division
                (get_rule_flag("div107", rflag) && rewrite((x / c0) / c2, x / fold(c0 * c2),                          c0 > 0 && c2 > 0 && !overflows(c0 * c2), "div107")) ||

@@ -90,9 +90,9 @@ Expr Simplify::visit(const Select *op, ExprInfo *bounds) {
                (get_rule_flag("sel90", rflag) && rewrite(select(x < c0, x + c1, c2), min(x + c1, c2), c2 == c0 + c1 || c2 + 1 == c0 + c1, "sel90")) ||
 
                (get_rule_flag("sel92", rflag) && rewrite(select(c0 < x, x, c1), max(x, c1), c1 == c0 + 1, "sel92")) ||
-               (get_rule_flag("sel93", rflag) && rewrite(select(x < c0, c1, x), max(x, c1), c1 + 1 == c0, "sel92")) ||
-               (get_rule_flag("sel94", rflag) && rewrite(select(c0 < x, c1, x), min(x, c1), c1 == c0 + 1, "sel92")) ||
-               (get_rule_flag("sel95", rflag) && rewrite(select(x < c0, x, c1), min(x, c1), c1 + 1 == c0, "sel92")) ||
+               (get_rule_flag("sel93", rflag) && rewrite(select(x < c0, c1, x), max(x, c1), c1 + 1 == c0, "sel93")) ||
+               (get_rule_flag("sel94", rflag) && rewrite(select(c0 < x, c1, x), min(x, c1), c1 == c0 + 1, "sel94")) ||
+               (get_rule_flag("sel95", rflag) && rewrite(select(x < c0, x, c1), min(x, c1), c1 + 1 == c0, "sel95")) ||
 
                false)) ||
 

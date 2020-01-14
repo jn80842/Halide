@@ -82,8 +82,8 @@ Expr Simplify::visit(const LT *op, ExprInfo *bounds) {
               (get_rule_flag("lt82", rflag) && rewrite(x < y + x, 0 < y, "lt82")) ||
 
               // 2 < 1
-              (get_rule_flag("lt83", rflag) && rewrite(x + y < x, y < 0, "lt85")) ||
-              (get_rule_flag("lt84", rflag) && rewrite(y + x < x, y < 0, "lt86")) ||
+              (get_rule_flag("lt85", rflag) && rewrite(x + y < x, y < 0, "lt85")) ||
+              (get_rule_flag("lt86", rflag) && rewrite(y + x < x, y < 0, "lt86")) ||
 
               // 2 < 2
               (get_rule_flag("lt89", rflag) && rewrite(x + y < x + z, y < z, "lt89")) ||
@@ -213,7 +213,7 @@ Expr Simplify::visit(const LT *op, ExprInfo *bounds) {
               (get_rule_flag("lt213", rflag) && rewrite(select(y, z, x + c0) < x + c1, !y || (z < x + c1), c0 < c1, "lt213")) ||
 
               // Normalize comparison of ramps to a comparison of a ramp and a broadacst
-              (get_rule_flag("lt214", rflag) && rewrite(ramp(x, y) < ramp(z, w), ramp(x - z, y - w, lanes) < 0, "lt216")))) ||
+              (get_rule_flag("lt216", rflag) && rewrite(ramp(x, y) < ramp(z, w), ramp(x - z, y - w, lanes) < 0, "lt216")))) ||
 
             (no_overflow_int(ty) && EVAL_IN_LAMBDA
              ((get_rule_flag("lt219", rflag) && rewrite(x * c0 < y * c1, x < y * fold(c1 / c0), c1 % c0 == 0 && c0 > 0, "lt219")) ||
@@ -320,10 +320,10 @@ Expr Simplify::visit(const LT *op, ExprInfo *bounds) {
               (get_rule_flag("lt320", rflag) && rewrite(min(y, x/c0) < (x + c1)/c0, true, c0 > 0 && 0 <= c1 - c0, "lt320")) ||
 
               // Same as above with c1 outside the division, with redundant cases removed.
-              (get_rule_flag("lt321", rflag) && rewrite(max((x + c2)/c0, y) < x/c0 + c1, false, c0 > 0 && c2 >= c1 * c0, "lt321")) ||
-              (get_rule_flag("lt322", rflag) && rewrite(min((x + c2)/c0, y) < x/c0 + c1, true, c0 > 0 && c2 <= c1 * c0 - c0, "lt323")) ||
-              (get_rule_flag("lt323", rflag) && rewrite(max(y, (x + c2)/c0) < x/c0 + c1, false, c0 > 0 && c2 >= c1 * c0, "lt324")) ||
-              (get_rule_flag("lt324", rflag) && rewrite(min(y, (x + c2)/c0) < x/c0 + c1, true, c0 > 0 && c2 <= c1 * c0 - c0, "lt325")) ||
+              (get_rule_flag("lt323", rflag) && rewrite(max((x + c2)/c0, y) < x/c0 + c1, false, c0 > 0 && c2 >= c1 * c0, "lt323")) ||
+              (get_rule_flag("lt324", rflag) && rewrite(min((x + c2)/c0, y) < x/c0 + c1, true, c0 > 0 && c2 <= c1 * c0 - c0, "lt324")) ||
+              (get_rule_flag("lt325", rflag) && rewrite(max(y, (x + c2)/c0) < x/c0 + c1, false, c0 > 0 && c2 >= c1 * c0, "lt325")) ||
+              (get_rule_flag("lt326", rflag) && rewrite(min(y, (x + c2)/c0) < x/c0 + c1, true, c0 > 0 && c2 <= c1 * c0 - c0, "lt326")) ||
 
               // Same as above with c1 = 0 and the predicates and redundant cases simplified accordingly.
               (rewrite(x/c0 < min((x + c2)/c0, y), false, c0 > 0 && c2 < 0, "lt329")) ||
