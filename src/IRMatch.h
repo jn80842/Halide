@@ -2363,7 +2363,8 @@ std::ostream &operator<<(std::ostream &s, const Fold<A> &op) {
 
 template<typename A>
 void count_terms(const Fold<A> &op, term_map &m) {
-    count_terms(op.a,m);
+   // count_terms(op.a,m);
+    return;
 }
 
 template<typename A>
@@ -2875,42 +2876,62 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
 
     // strictly more vector ops in LHS - rule is good
     if (LHS_vector_count > RHS_vector_count) {
+        debug(0) << "SUCCESS decreases vector ops rulename " << rulename << "\n";
         debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
     // strictly fewer vector ops in RHS - rule is misordered
     } else if (LHS_vector_count < RHS_vector_count) {
+        debug(0) << "FAILURE increases vector ops rulename " << rulename << "\n";
         debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n";
         // after ramp check, make sure all variable occurrences are equal or less in RHS
     } else if (variable_counts_geq(LHS_var_count_map, RHS_var_count_map)) {
         // if at least one variable count goes down in RHS, the rule is good
         if (variable_counts_atleastone_gt(LHS_var_count_map, RHS_var_count_map)) {
+            debug(0) << "SUCCESS decreases variable counts rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
         // if LHS count of mul, div, mod > RHS count of mul, div, mod, the rule is good
         } else if (get_expensive_arith_count(LHS_term_map) > get_expensive_arith_count(RHS_term_map)) {
+            debug(0) << "SUCCESS decreases expensive arith ops counts rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
         } else if (get_expensive_arith_count(LHS_term_map) < get_expensive_arith_count(RHS_term_map)) {
+            debug(0) << "FAILURE increases expensive arith ops counts rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n";
+       // } else {
+            // leave ties as good for now
+       //     debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
+       // }
+
         } else if (get_total_op_count(LHS_term_map) > get_total_op_count(RHS_term_map)) {
+            debug(0) << "SUCCESS decreases total op count rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
         } else if (get_total_op_count(LHS_term_map) < get_total_op_count(RHS_term_map)) {
+            debug(0) << "FAILURE increases total op count rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n";
         } else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::GT) {
+            debug(0) << "SUCCESS histo order strictly less rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n"; 
         }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
+            debug(0) << "FAILURE histo order strictly greater rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n"; 
         } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
+            debug(0) << "SUCCESS mpo add order strictly less rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
         } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
+            debug(0) << "FAILURE mpo add order strictly greater rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n";
         } else if (mpo_full(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
+            debug(0) << "SUCCESS mpo full order strictly less rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
         } else if (mpo_full(LHS_bfs_node_type_map,RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
+            debug(0) << "FAILURE mpo full order strictly greater rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n";
         } else {
             // terms are equal under ordering
+            debug(0) << "FAILURE terms are equal rulename " << rulename << "\n";
             debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n";
         }
     } else {
         // if any variable count increases, rule is invalid
+        debug(0) << "FAILURE increases variable counts rulename " << rulename << "\n";
         debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = false;\n";
     }
 }
