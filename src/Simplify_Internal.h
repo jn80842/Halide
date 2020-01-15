@@ -1256,9 +1256,12 @@ experimental_rule_flags["sub99"] = true;
 
     bool get_rule_flag(std::string rulename, bool experimental) {
         if (experimental) {
+            if (experimental_rule_flags.count(rulename) == 0) {
+                debug(0) << "Invoked rule with no flag " << rulename << "\n";
+                return true;
+            }
             return experimental_rule_flags[rulename];
         } else {
-          //  return default_rule_flags[rulename];
             return true;
         }
     }
