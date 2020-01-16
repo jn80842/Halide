@@ -26,10 +26,10 @@ Expr Simplify::visit(const Sub *op, ExprInfo *bounds) {
         const int lanes = op->type.lanes();
 
         if ((get_rule_flag("sub28", rflag) && rewrite(c0 - c1, fold(c0 - c1), "sub28")) ||
-            rewrite(IRMatcher::Indeterminate() - x, a) ||
-            rewrite(x - IRMatcher::Indeterminate(), b) ||
-            rewrite(IRMatcher::Overflow() - x, a) ||
-            rewrite(x - IRMatcher::Overflow(), b) ||
+            (get_rule_flag("sub29", rflag) && rewrite(IRMatcher::Indeterminate() - x, a, "sub29")) ||
+            (get_rule_flag("sub30", rflag) && rewrite(x - IRMatcher::Indeterminate(), b, "sub30")) ||
+            (get_rule_flag("sub31", rflag) && rewrite(IRMatcher::Overflow() - x, a, "sub31")) ||
+            (get_rule_flag("sub32", rflag) && rewrite(x - IRMatcher::Overflow(), b, "sub32")) ||
             (get_rule_flag("sub33", rflag) && rewrite(x - 0, x, "sub33"))) {
             return rewrite.result;
         }

@@ -30,10 +30,10 @@ Expr Simplify::visit(const Select *op, ExprInfo *bounds) {
              (get_rule_flag("sel30", rflag) && rewrite(select(1, x, y), x, "sel30")) ||
              (get_rule_flag("sel31", rflag) && rewrite(select(0, x, y), y, "sel31")) ||
              (get_rule_flag("sel32", rflag) && rewrite(select(x, y, y), y, "sel32")) ||
-             rewrite(select(x, intrin(Call::likely, y), y), true_value) ||
-             rewrite(select(x, y, intrin(Call::likely, y)), false_value) ||
-             rewrite(select(x, intrin(Call::likely_if_innermost, y), y), true_value) ||
-             rewrite(select(x, y, intrin(Call::likely_if_innermost, y)), false_value) ||
+             (get_rule_flag("sel33", rflag) && rewrite(select(x, intrin(Call::likely, y), y), true_value, "sel33")) ||
+             (get_rule_flag("sel34", rflag) && rewrite(select(x, y, intrin(Call::likely, y)), false_value, "sel34")) ||
+             (get_rule_flag("sel35", rflag) && rewrite(select(x, intrin(Call::likely_if_innermost, y), y), true_value, "sel35")) ||
+             (get_rule_flag("sel36", rflag) && rewrite(select(x, y, intrin(Call::likely_if_innermost, y)), false_value, "sel36")) ||
 
              // Select evaluates both sides, so if we have an
              // unreachable expression on one side we can't use a

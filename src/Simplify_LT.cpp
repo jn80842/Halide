@@ -326,14 +326,14 @@ Expr Simplify::visit(const LT *op, ExprInfo *bounds) {
               (get_rule_flag("lt326", rflag) && rewrite(min(y, (x + c2)/c0) < x/c0 + c1, true, c0 > 0 && c2 <= c1 * c0 - c0, "lt326")) ||
 
               // Same as above with c1 = 0 and the predicates and redundant cases simplified accordingly.
-              (rewrite(x/c0 < min((x + c2)/c0, y), false, c0 > 0 && c2 < 0, "lt329")) ||
-              (rewrite(x/c0 < max((x + c2)/c0, y), true, c0 > 0 && c0 <= c2, "lt330")) ||
-              (rewrite(x/c0 < min(y, (x + c2)/c0), false, c0 > 0 && c2 < 0, "lt331")) ||
-              (rewrite(x/c0 < max(y, (x + c2)/c0), true, c0 > 0 && c0 <= c2, "lt332")) ||
-              (rewrite(max((x + c2)/c0, y) < x/c0, false, c0 > 0 && c2 >= 0, "lt333")) ||
-              (rewrite(min((x + c2)/c0, y) < x/c0, true, c0 > 0 && c2 + c0 <= 0, "lt334")) ||
-              (rewrite(max(y, (x + c2)/c0) < x/c0, false, c0 > 0 && c2 >= 0, "lt335")) ||
-              (rewrite(min(y, (x + c2)/c0) < x/c0, true, c0 > 0 && c2 + c0 <= 0, "lt336")) ||
+              (get_rule_flag("lt329", rflag) && rewrite(x/c0 < min((x + c2)/c0, y), false, c0 > 0 && c2 < 0, "lt329")) ||
+              (get_rule_flag("lt330", rflag) && rewrite(x/c0 < max((x + c2)/c0, y), true, c0 > 0 && c0 <= c2, "lt330")) ||
+              (get_rule_flag("lt331", rflag) && rewrite(x/c0 < min(y, (x + c2)/c0), false, c0 > 0 && c2 < 0, "lt331")) ||
+              (get_rule_flag("lt332", rflag) && rewrite(x/c0 < max(y, (x + c2)/c0), true, c0 > 0 && c0 <= c2, "lt332")) ||
+              (get_rule_flag("lt333", rflag) && rewrite(max((x + c2)/c0, y) < x/c0, false, c0 > 0 && c2 >= 0, "lt333")) ||
+              (get_rule_flag("lt334", rflag) && rewrite(min((x + c2)/c0, y) < x/c0, true, c0 > 0 && c2 + c0 <= 0, "lt334")) ||
+              (get_rule_flag("lt335", rflag) && rewrite(max(y, (x + c2)/c0) < x/c0, false, c0 > 0 && c2 >= 0, "lt335")) ||
+              (get_rule_flag("lt336", rflag) && rewrite(min(y, (x + c2)/c0) < x/c0, true, c0 > 0 && c2 + c0 <= 0, "lt336")) ||
 
               // Comparison of two mins/maxes that don't cancel when subtracted
               (get_rule_flag("lt337", rflag) && rewrite(min(x, c0) < min(x, c1), false, c0 >= c1, "lt337")) ||

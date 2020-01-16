@@ -42,10 +42,10 @@ Expr Simplify::visit(const Mod *op, ExprInfo *bounds) {
         auto rewrite = IRMatcher::rewriter(IRMatcher::mod(a, b), op->type);
 
         if ((get_rule_flag("mod44", rflag) && rewrite(c0 % c1, fold(c0 % c1), "mod44")) ||
-            rewrite(IRMatcher::Indeterminate() % x, a) ||
-            rewrite(x % IRMatcher::Indeterminate(), b) ||
-            rewrite(IRMatcher::Overflow() % x, a) ||
-            rewrite(x % IRMatcher::Overflow(), b) ||
+            (get_rule_flag("mod45", rflag) && rewrite(IRMatcher::Indeterminate() % x, a, "mod45")) ||
+            (get_rule_flag("mod46", rflag) && rewrite(x % IRMatcher::Indeterminate(), b, "mod46")) ||
+            (get_rule_flag("mod47", rflag) && rewrite(IRMatcher::Overflow() % x, a, "mod47")) ||
+            (get_rule_flag("mod48", rflag) && rewrite(x % IRMatcher::Overflow(), b, "mod48")) ||
             (get_rule_flag("mod49", rflag) && rewrite(0 % x, 0, "mod49")) ||
             (get_rule_flag("mod50", rflag) && rewrite(x % x, 0, "mod50")) ||
             (!op->type.is_float() &&

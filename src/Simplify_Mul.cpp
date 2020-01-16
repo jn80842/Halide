@@ -103,10 +103,10 @@ Expr Simplify::visit(const Mul *op, ExprInfo *bounds) {
 
         auto rewrite = IRMatcher::rewriter(IRMatcher::mul(a, b), op->type);
         if ((get_rule_flag("mul105", rflag) && rewrite(c0 * c1, fold(c0 * c1), "mul105")) ||
-            rewrite(IRMatcher::Indeterminate() * x, a) ||
-            rewrite(x * IRMatcher::Indeterminate(), b) ||
-            rewrite(IRMatcher::Overflow() * x, a) ||
-            rewrite(x * IRMatcher::Overflow(), b) ||
+            (get_rule_flag("mul106", rflag) && rewrite(IRMatcher::Indeterminate() * x, a, "mul106")) ||
+            (get_rule_flag("mul107", rflag) && rewrite(x * IRMatcher::Indeterminate(), b, "mul107")) ||
+            (get_rule_flag("mul108", rflag) && rewrite(IRMatcher::Overflow() * x, a, "mul108")) ||
+            (get_rule_flag("mul109", rflag) && rewrite(x * IRMatcher::Overflow(), b, "mul109")) ||
             (get_rule_flag("mul110", rflag) && rewrite(0 * x, 0, "mul110")) ||
             (get_rule_flag("mul111", rflag) && rewrite(1 * x, x, "mul111")) ||
             (get_rule_flag("mul112", rflag) && rewrite(x * 0, 0, "mul112")) ||

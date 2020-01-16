@@ -533,6 +533,7 @@ experimental_rule_flags["div96"] = true;
 experimental_rule_flags["div97"] = true;
 experimental_rule_flags["div98"] = true;
 experimental_rule_flags["eq100"] = true;
+experimental_rule_flags["eq101"] = true;
 experimental_rule_flags["eq74"] = true;
 experimental_rule_flags["eq75"] = true;
 experimental_rule_flags["eq76"] = true;
@@ -585,9 +586,11 @@ experimental_rule_flags["lt130"] = true;
 experimental_rule_flags["lt133"] = true;
 experimental_rule_flags["lt134"] = true;
 experimental_rule_flags["lt136"] = true;
+experimental_rule_flags["lt137"] = true;
 experimental_rule_flags["lt138"] = true;
 experimental_rule_flags["lt141"] = true;
 experimental_rule_flags["lt142"] = true;
+experimental_rule_flags["lt143"] = true;
 experimental_rule_flags["lt148"] = true;
 experimental_rule_flags["lt149"] = true;
 experimental_rule_flags["lt150"] = true;
@@ -981,6 +984,9 @@ experimental_rule_flags["not15"] = true;
 experimental_rule_flags["not16"] = true;
 experimental_rule_flags["not17"] = true;
 experimental_rule_flags["not18"] = true;
+experimental_rule_flags["not22"] = true;
+experimental_rule_flags["not23"] = true;
+experimental_rule_flags["not24"] = true;
 experimental_rule_flags["or100"] = true;
 experimental_rule_flags["or101"] = true;
 experimental_rule_flags["or102"] = true;
@@ -1016,6 +1022,7 @@ experimental_rule_flags["or73"] = true;
 experimental_rule_flags["or74"] = true;
 experimental_rule_flags["or75"] = true;
 experimental_rule_flags["or76"] = true;
+experimental_rule_flags["or81"] = true;
 experimental_rule_flags["or83"] = true;
 experimental_rule_flags["or85"] = true;
 experimental_rule_flags["or86"] = true;
@@ -1251,6 +1258,7 @@ experimental_rule_flags["sub96"] = true;
 experimental_rule_flags["sub97"] = true;
 experimental_rule_flags["sub98"] = true;
 experimental_rule_flags["sub99"] = true;
+
 
     }
 

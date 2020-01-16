@@ -86,10 +86,10 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
 
         auto rewrite = IRMatcher::rewriter(IRMatcher::div(a, b), op->type);
 
-        if (rewrite(IRMatcher::Indeterminate() / x, a) ||
-            rewrite(x / IRMatcher::Indeterminate(), b) ||
-            rewrite(IRMatcher::Overflow() / x, a) ||
-            rewrite(x / IRMatcher::Overflow(), b) ||
+        if ((get_rule_flag("div89", rflag) && rewrite(IRMatcher::Indeterminate() / x, a, "div89")) ||
+            (get_rule_flag("div90", rflag) && rewrite(x / IRMatcher::Indeterminate(), b, "div90")) ||
+            (get_rule_flag("div91", rflag) && rewrite(IRMatcher::Overflow() / x, a, "div91")) ||
+            (get_rule_flag("div92", rflag) && rewrite(x / IRMatcher::Overflow(), b, "div92")) ||
             (get_rule_flag("div93", rflag) && rewrite(x / 1, x, "div93")) ||
             (!op->type.is_float() &&
              (get_rule_flag("div95", rflag) && rewrite(x / 0, IRMatcher::Indeterminate(), "div95"))) ||
@@ -163,7 +163,7 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
                (get_rule_flag("div163", rflag) && rewrite((y*x - z)/x, y + (-z)/x, "div163")) ||
                (get_rule_flag("div164", rflag) && rewrite((z - x*y)/x, z/x - y, "div164")) ||
                (get_rule_flag("div165", rflag) && rewrite((z - y*x)/x, z/x - y, "div165")) ||
-               (op->type.is_float() && rewrite(x/c0, x * fold(1/c0))))) ||
+               (op->type.is_float() && (get_rule_flag("div166", rflag) && rewrite(x/c0, x * fold(1/c0), "div166"))))) ||
              (no_overflow_int(op->type) &&
               ((get_rule_flag("div168", rflag) && rewrite(ramp(x, c0) / broadcast(c1), ramp(x / c1, fold(c0 / c1), lanes), c0 % c1 == 0, "div168")) ||
                (get_rule_flag("div171", rflag) && rewrite(ramp(x, c0) / broadcast(c1), broadcast(x / c1, lanes),

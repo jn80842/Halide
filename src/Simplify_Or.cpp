@@ -18,37 +18,37 @@ Expr Simplify::visit(const Or *op, ExprInfo *bounds) {
     auto rewrite = IRMatcher::rewriter(IRMatcher::or_op(a, b), op->type);
 
     if (EVAL_IN_LAMBDA
-        (rewrite(x || true, b) ||
-         rewrite(x || false, a) ||
-         rewrite(x || x, a) ||
+        ((get_rule_flag("or21", rflag) && rewrite(x || true, b, "or21")) ||
+         (get_rule_flag("or22", rflag) && rewrite(x || false, a, "or22")) ||
+         (get_rule_flag("or23", rflag) && rewrite(x || x, a, "or23")) ||
 
-         rewrite((x || y) || x, a) ||
-         rewrite(x || (x || y), b) ||
-         rewrite((x || y) || y, a) ||
-         rewrite(y || (x || y), b) ||
+         (get_rule_flag("or25", rflag) && rewrite((x || y) || x, a, "or25")) ||
+         (get_rule_flag("or26", rflag) && rewrite(x || (x || y), b, "or26")) ||
+         (get_rule_flag("or27", rflag) && rewrite((x || y) || y, a, "or27")) ||
+         (get_rule_flag("or28", rflag) && rewrite(y || (x || y), b, "or28")) ||
 
-         rewrite(((x || y) || z) || x, a) ||
-         rewrite(x || ((x || y) || z), b) ||
-         rewrite((z || (x || y)) || x, a) ||
-         rewrite(x || (z || (x || y)), b) ||
-         rewrite(((x || y) || z) || y, a) ||
-         rewrite(y || ((x || y) || z), b) ||
-         rewrite((z || (x || y)) || y, a) ||
-         rewrite(y || (z || (x || y)), b) ||
+         (get_rule_flag("or30", rflag) && rewrite(((x || y) || z) || x, a, "or30")) ||
+         (get_rule_flag("or31", rflag) && rewrite(x || ((x || y) || z), b, "or31")) ||
+         (get_rule_flag("or32", rflag) && rewrite((z || (x || y)) || x, a, "or32")) ||
+         (get_rule_flag("or33", rflag) && rewrite(x || (z || (x || y)), b, "or33")) ||
+         (get_rule_flag("or34", rflag) && rewrite(((x || y) || z) || y, a, "or34")) ||
+         (get_rule_flag("or35", rflag) && rewrite(y || ((x || y) || z), b, "or35")) ||
+         (get_rule_flag("or36", rflag) && rewrite((z || (x || y)) || y, a, "or36")) ||
+         (get_rule_flag("or37", rflag) && rewrite(y || (z || (x || y)), b, "or37")) ||
 
-         rewrite((x && y) || x, b) ||
-         rewrite(x || (x && y), a) ||
-         rewrite((x && y) || y, b) ||
-         rewrite(y || (x && y), a) ||
+         (get_rule_flag("or39", rflag) && rewrite((x && y) || x, b, "or39")) ||
+         (get_rule_flag("or40", rflag) && rewrite(x || (x && y), a, "or40")) ||
+         (get_rule_flag("or41", rflag) && rewrite((x && y) || y, b, "or41")) ||
+         (get_rule_flag("or42", rflag) && rewrite(y || (x && y), a, "or42")) ||
 
-         rewrite(((x || y) || z) || x, a) ||
-         rewrite(x || ((x || y) || z), b) ||
-         rewrite((z || (x || y)) || x, a) ||
-         rewrite(x || (z || (x || y)), b) ||
-         rewrite(((x || y) || z) || y, a) ||
-         rewrite(y || ((x || y) || z), b) ||
-         rewrite((z || (x || y)) || y, a) ||
-         rewrite(y || (z || (x || y)), b) ||
+         (get_rule_flag("or44", rflag) && rewrite(((x || y) || z) || x, a, "or44")) ||
+         (get_rule_flag("or45", rflag) && rewrite(x || ((x || y) || z), b, "or45")) ||
+         (get_rule_flag("or46", rflag) && rewrite((z || (x || y)) || x, a, "or46")) ||
+         (get_rule_flag("or47", rflag) && rewrite(x || (z || (x || y)), b, "or47")) ||
+         (get_rule_flag("or48", rflag) && rewrite(((x || y) || z) || y, a, "or48")) ||
+         (get_rule_flag("or49", rflag) && rewrite(y || ((x || y) || z), b, "or49")) ||
+         (get_rule_flag("or50", rflag) && rewrite((z || (x || y)) || y, a, "or50")) ||
+         (get_rule_flag("or51", rflag) && rewrite(y || (z || (x || y)), b, "or51")) ||
 
          (get_rule_flag("or53", rflag) && rewrite(x != y || x == y, true, "or53")) ||
          (get_rule_flag("or54", rflag) && rewrite(x != y || y == x, true, "or54")) ||
@@ -63,7 +63,7 @@ Expr Simplify::visit(const Or *op, ExprInfo *bounds) {
          (get_rule_flag("or63", rflag) && rewrite(x || !x, true, "or63")) ||
          (get_rule_flag("or64", rflag) && rewrite(!x || x, true, "or64")) ||
          (get_rule_flag("or65", rflag) && rewrite(y <= x || x < y, true, "or65")) ||
-         rewrite(x != c0 || x == c1, a, c0 != c1) ||
+         (get_rule_flag("or66", rflag) && rewrite(x != c0 || x == c1, a, c0 != c1, "or66")) ||
          (get_rule_flag("or67", rflag) && rewrite(x <= c0 || c1 <= x, true, !is_float(x) && c1 <= c0 + 1, "or67")) ||
          (get_rule_flag("or68", rflag) && rewrite(c1 <= x || x <= c0, true, !is_float(x) && c1 <= c0 + 1, "or68")) ||
          (get_rule_flag("or69", rflag) && rewrite(x <= c0 || c1 < x, true, c1 <= c0, "or69")) ||
@@ -78,7 +78,7 @@ Expr Simplify::visit(const Or *op, ExprInfo *bounds) {
     }
 
     if (EVAL_IN_LAMBDA
-        (rewrite(broadcast(x) || broadcast(y), broadcast(x || y, op->type.lanes())) ||
+        (get_rule_flag("or81", rflag) && rewrite(broadcast(x) || broadcast(y), broadcast(x || y, op->type.lanes()), "or81") ||
 
          (get_rule_flag("or83", rflag) && rewrite(x < y || y < x, x != y, "or83")) ||
 

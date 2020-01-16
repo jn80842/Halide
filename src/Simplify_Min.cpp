@@ -45,53 +45,53 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
         if (EVAL_IN_LAMBDA
             ((get_rule_flag("min46", rflag) && rewrite(min(x, x), x, "min46")) ||
              (get_rule_flag("min47", rflag) && rewrite(min(c0, c1), fold(min(c0, c1)), "min47")) ||
-             rewrite(min(IRMatcher::Indeterminate(), x), a) ||
-             rewrite(min(x, IRMatcher::Indeterminate()), b) ||
-             rewrite(min(IRMatcher::Overflow(), x), a) ||
-             rewrite(min(x,IRMatcher::Overflow()), b) ||
+             (get_rule_flag("min48", rflag) && rewrite(min(IRMatcher::Indeterminate(), x), a, "min48")) ||
+             (get_rule_flag("min49", rflag) && rewrite(min(x, IRMatcher::Indeterminate()), b, "min49")) ||
+             (get_rule_flag("min50", rflag) && rewrite(min(IRMatcher::Overflow(), x), a, "min50")) ||
+             (get_rule_flag("min51", rflag) && rewrite(min(x,IRMatcher::Overflow()), b, "min51")) ||
              // Cases where one side dominates:
-             rewrite(min(x, op->type.min()), b) ||
+             (get_rule_flag("min53", rflag) && rewrite(min(x, op->type.min()), b, "min53")) ||
              (get_rule_flag("min54", rflag) && rewrite(min(x, op->type.max()), x, "min54")) ||
-             rewrite(min((x/c0)*c0, x), a, c0 > 0) ||
-             rewrite(min(x, (x/c0)*c0), b, c0 > 0) ||
-             rewrite(min(min(x, y), x), a) ||
-             rewrite(min(min(x, y), y), a) ||
-             rewrite(min(min(min(x, y), z), x), a) ||
-             rewrite(min(min(min(x, y), z), y), a) ||
-             rewrite(min(min(min(min(x, y), z), w), x), a) ||
-             rewrite(min(min(min(min(x, y), z), w), y), a) ||
-             rewrite(min(min(min(min(min(x, y), z), w), u), x), a) ||
-             rewrite(min(min(min(min(min(x, y), z), w), u), y), a) ||
-             rewrite(min(x, max(x, y)), a) ||
-             rewrite(min(x, max(y, x)), a) ||
-             rewrite(min(max(x, y), min(x, y)), b) ||
-             rewrite(min(max(x, y), min(y, x)), b) ||
-             rewrite(min(max(x, y), x), b) ||
-             rewrite(min(max(y, x), x), b) ||
-             rewrite(min(max(x, c0), c1), b, c1 <= c0) ||
+             (get_rule_flag("min55", rflag) && rewrite(min((x/c0)*c0, x), a, c0 > 0, "min55")) ||
+             (get_rule_flag("min56", rflag) && rewrite(min(x, (x/c0)*c0), b, c0 > 0, "min56")) ||
+             (get_rule_flag("min57", rflag) && rewrite(min(min(x, y), x), a, "min57")) ||
+             (get_rule_flag("min58", rflag) && rewrite(min(min(x, y), y), a, "min58")) ||
+             (get_rule_flag("min59", rflag) && rewrite(min(min(min(x, y), z), x), a, "min59")) ||
+             (get_rule_flag("min60", rflag) && rewrite(min(min(min(x, y), z), y), a, "min60")) ||
+             (get_rule_flag("min61", rflag) && rewrite(min(min(min(min(x, y), z), w), x), a, "min61")) ||
+             (get_rule_flag("min62", rflag) && rewrite(min(min(min(min(x, y), z), w), y), a, "min62")) ||
+             (get_rule_flag("min63", rflag) && rewrite(min(min(min(min(min(x, y), z), w), u), x), a, "min63")) ||
+             (get_rule_flag("min64", rflag) && rewrite(min(min(min(min(min(x, y), z), w), u), y), a, "min64")) ||
+             (get_rule_flag("min65", rflag) && rewrite(min(x, max(x, y)), a, "min65")) ||
+             (get_rule_flag("min66", rflag) && rewrite(min(x, max(y, x)), a, "min66")) ||
+             (get_rule_flag("min67", rflag) && rewrite(min(max(x, y), min(x, y)), b, "min67")) ||
+             (get_rule_flag("min68", rflag) && rewrite(min(max(x, y), min(y, x)), b, "min68")) ||
+             (get_rule_flag("min69", rflag) && rewrite(min(max(x, y), x), b, "min69")) ||
+             (get_rule_flag("min70", rflag) && rewrite(min(max(y, x), x), b, "min70")) ||
+             (get_rule_flag("min71", rflag) && rewrite(min(max(x, c0), c1), b, c1 <= c0, "min71")) ||
 
-             rewrite(min(intrin(Call::likely, x), x), a) ||
-             rewrite(min(x, intrin(Call::likely, x)), b) ||
-             rewrite(min(intrin(Call::likely_if_innermost, x), x), a) ||
-             rewrite(min(x, intrin(Call::likely_if_innermost, x)), b) ||
+             (get_rule_flag("min73", rflag) && rewrite(min(intrin(Call::likely, x), x), a, "min73")) ||
+             (get_rule_flag("min74", rflag) && rewrite(min(x, intrin(Call::likely, x)), b, "min74")) ||
+             (get_rule_flag("min75", rflag) && rewrite(min(intrin(Call::likely_if_innermost, x), x), a, "min75")) ||
+             (get_rule_flag("min76", rflag) && rewrite(min(x, intrin(Call::likely_if_innermost, x)), b, "min76")) ||
 
              (no_overflow(op->type) &&
-              (rewrite(min(ramp(x, y), broadcast(z)), a, can_prove(x + y * (lanes - 1) <= z && x <= z, this)) ||
-               rewrite(min(ramp(x, y), broadcast(z)), b, can_prove(x + y * (lanes - 1) >= z && x >= z, this)) ||
+              ((get_rule_flag("min79", rflag) && rewrite(min(ramp(x, y), broadcast(z)), a, can_prove(x + y * (lanes - 1) <= z && x <= z, this), "min79")) ||
+               (get_rule_flag("min80", rflag) && rewrite(min(ramp(x, y), broadcast(z)), b, can_prove(x + y * (lanes - 1) >= z && x >= z, this), "min80")) ||
                // Compare x to a stair-step function in x
-               rewrite(min(((x + c0)/c1)*c1 + c2, x), b, c1 > 0 && c0 + c2 >= c1 - 1) ||
-               rewrite(min(x, ((x + c0)/c1)*c1 + c2), a, c1 > 0 && c0 + c2 >= c1 - 1) ||
-               rewrite(min(((x + c0)/c1)*c1 + c2, x), a, c1 > 0 && c0 + c2 <= 0) ||
-               rewrite(min(x, ((x + c0)/c1)*c1 + c2), b, c1 > 0 && c0 + c2 <= 0) ||
+               (get_rule_flag("min82", rflag) && rewrite(min(((x + c0)/c1)*c1 + c2, x), b, c1 > 0 && c0 + c2 >= c1 - 1, "min82")) ||
+               (get_rule_flag("min83", rflag) && rewrite(min(x, ((x + c0)/c1)*c1 + c2), a, c1 > 0 && c0 + c2 >= c1 - 1, "min83")) ||
+               (get_rule_flag("min84", rflag) && rewrite(min(((x + c0)/c1)*c1 + c2, x), a, c1 > 0 && c0 + c2 <= 0, "min83")) ||
+               (get_rule_flag("min85", rflag) && rewrite(min(x, ((x + c0)/c1)*c1 + c2), b, c1 > 0 && c0 + c2 <= 0, "min84")) ||
                // Special cases where c0 or c2 is zero
-               rewrite(min((x/c1)*c1 + c2, x), b, c1 > 0 && c2 >= c1 - 1) ||
-               rewrite(min(x, (x/c1)*c1 + c2), a, c1 > 0 && c2 >= c1 - 1) ||
-               rewrite(min(((x + c0)/c1)*c1, x), b, c1 > 0 && c0 >= c1 - 1) ||
-               rewrite(min(x, ((x + c0)/c1)*c1), a, c1 > 0 && c0 >= c1 - 1) ||
-               rewrite(min((x/c1)*c1 + c2, x), a, c1 > 0 && c2 <= 0) ||
-               rewrite(min(x, (x/c1)*c1 + c2), b, c1 > 0 && c2 <= 0) ||
-               rewrite(min(((x + c0)/c1)*c1, x), a, c1 > 0 && c0 <= 0) ||
-               rewrite(min(x, ((x + c0)/c1)*c1), b, c1 > 0 && c0 <= 0))))) {
+               (get_rule_flag("min87", rflag) && rewrite(min((x/c1)*c1 + c2, x), b, c1 > 0 && c2 >= c1 - 1, "min87")) ||
+               (get_rule_flag("min88", rflag) && rewrite(min(x, (x/c1)*c1 + c2), a, c1 > 0 && c2 >= c1 - 1, "min88")) ||
+               (get_rule_flag("min89", rflag) && rewrite(min(((x + c0)/c1)*c1, x), b, c1 > 0 && c0 >= c1 - 1, "min89")) ||
+               (get_rule_flag("min90", rflag) && rewrite(min(x, ((x + c0)/c1)*c1), a, c1 > 0 && c0 >= c1 - 1, "min90")) ||
+               (get_rule_flag("min91", rflag) && rewrite(min((x/c1)*c1 + c2, x), a, c1 > 0 && c2 <= 0, "min91")) ||
+               (get_rule_flag("min92", rflag) && rewrite(min(x, (x/c1)*c1 + c2), b, c1 > 0 && c2 <= 0, "min92")) ||
+               (get_rule_flag("min93", rflag) && rewrite(min(((x + c0)/c1)*c1, x), a, c1 > 0 && c0 <= 0, "min93")) ||
+               (get_rule_flag("min94", rflag) && rewrite(min(x, ((x + c0)/c1)*c1), b, c1 > 0 && c0 <= 0, "min94")))))) {
             return rewrite.result;
         }
 
@@ -104,7 +104,7 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
              (get_rule_flag("min104", rflag) && rewrite(min(min(y, x), min(z, x)), min(min(y, z), x), "min104")) ||
              (get_rule_flag("min105", rflag) && rewrite(min(min(x, y), min(z, w)), min(min(min(x, y), z), w), "min105")) ||
              (get_rule_flag("min106", rflag) && rewrite(min(broadcast(x), broadcast(y)), broadcast(min(x, y), lanes), "min106")) ||
-             rewrite(min(broadcast(x), ramp(y, z)), min(b, a)) ||
+             (get_rule_flag("min107", rflag) && rewrite(min(broadcast(x), ramp(y, z)), min(b, a), "min107")) ||
              (get_rule_flag("min108", rflag) && rewrite(min(min(x, broadcast(y)), broadcast(z)), min(x, broadcast(min(y, z), lanes)), "min108")) ||
              (get_rule_flag("min109", rflag) && rewrite(min(max(x, y), max(x, z)), max(x, min(y, z)), "min109")) ||
              (get_rule_flag("min110", rflag) && rewrite(min(max(x, y), max(z, x)), max(x, min(y, z)), "min110")) ||

@@ -45,53 +45,53 @@ Expr Simplify::visit(const Max *op, ExprInfo *bounds) {
         if (EVAL_IN_LAMBDA
             ((get_rule_flag("max46", rflag) && rewrite(max(x, x), x, "max46")) ||
              (get_rule_flag("max47", rflag) && rewrite(max(c0, c1), fold(max(c0, c1)), "max47")) ||
-             rewrite(max(IRMatcher::Indeterminate(), x), a) ||
-             rewrite(max(x, IRMatcher::Indeterminate()), b) ||
-             rewrite(max(IRMatcher::Overflow(), x), a) ||
-             rewrite(max(x,IRMatcher::Overflow()), b) ||
+             (get_rule_flag("max48", rflag) && rewrite(max(IRMatcher::Indeterminate(), x), a, "max48")) ||
+             (get_rule_flag("max49", rflag) && rewrite(max(x, IRMatcher::Indeterminate()), b, "max49")) ||
+             (get_rule_flag("max50", rflag) && rewrite(max(IRMatcher::Overflow(), x), a, "max50")) ||
+             (get_rule_flag("max51", rflag) && rewrite(max(x,IRMatcher::Overflow()), b, "max51")) ||
              // Cases where one side dominates:
-             rewrite(max(x, op->type.max()), b) ||
+             (get_rule_flag("max53", rflag) && rewrite(max(x, op->type.max()), b, "max53")) ||
              (get_rule_flag("max54", rflag) && rewrite(max(x, op->type.min()), x, "max54")) ||
-             rewrite(max((x/c0)*c0, x), b, c0 > 0) ||
-             rewrite(max(x, (x/c0)*c0), a, c0 > 0) ||
-             rewrite(max(max(x, y), x), a) ||
-             rewrite(max(max(x, y), y), a) ||
-             rewrite(max(max(max(x, y), z), x), a) ||
-             rewrite(max(max(max(x, y), z), y), a) ||
-             rewrite(max(max(max(max(x, y), z), w), x), a) ||
-             rewrite(max(max(max(max(x, y), z), w), y), a) ||
-             rewrite(max(max(max(max(max(x, y), z), w), u), x), a) ||
-             rewrite(max(max(max(max(max(x, y), z), w), u), y), a) ||
-             rewrite(max(x, min(x, y)), a) ||
-             rewrite(max(x, min(y, x)), a) ||
-             rewrite(max(max(x, y), min(x, y)), a) ||
-             rewrite(max(max(x, y), min(y, x)), a) ||
-             rewrite(max(min(x, y), x), b) ||
-             rewrite(max(min(y, x), x), b) ||
-             rewrite(max(min(x, c0), c1), b, c1 >= c0) ||
+             (get_rule_flag("max55", rflag) && rewrite(max((x/c0)*c0, x), b, c0 > 0, "max55")) ||
+             (get_rule_flag("max56", rflag) && rewrite(max(x, (x/c0)*c0), a, c0 > 0, "max56")) ||
+             (get_rule_flag("max57", rflag) && rewrite(max(max(x, y), x), a, "max57")) ||
+             (get_rule_flag("max58", rflag) && rewrite(max(max(x, y), y), a, "max58")) ||
+             (get_rule_flag("max59", rflag) && rewrite(max(max(max(x, y), z), x), a, "max59")) ||
+             (get_rule_flag("max60", rflag) && rewrite(max(max(max(x, y), z), y), a, "max60")) ||
+             (get_rule_flag("max61", rflag) && rewrite(max(max(max(max(x, y), z), w), x), a, "max61")) ||
+             (get_rule_flag("max62", rflag) && rewrite(max(max(max(max(x, y), z), w), y), a, "max62")) ||
+             (get_rule_flag("max63", rflag) && rewrite(max(max(max(max(max(x, y), z), w), u), x), a, "max63")) ||
+             (get_rule_flag("max64", rflag) && rewrite(max(max(max(max(max(x, y), z), w), u), y), a, "max64")) ||
+             (get_rule_flag("max65", rflag) && rewrite(max(x, min(x, y)), a, "max65")) ||
+             (get_rule_flag("max66", rflag) && rewrite(max(x, min(y, x)), a, "max66")) ||
+             (get_rule_flag("max67", rflag) && rewrite(max(max(x, y), min(x, y)), a, "max67")) ||
+             (get_rule_flag("max68", rflag) && rewrite(max(max(x, y), min(y, x)), a, "max68")) ||
+             (get_rule_flag("max69", rflag) && rewrite(max(min(x, y), x), b, "max69")) ||
+             (get_rule_flag("max70", rflag) && rewrite(max(min(y, x), x), b, "max70")) ||
+             (get_rule_flag("max71", rflag) && rewrite(max(min(x, c0), c1), b, c1 >= c0, "max71")) ||
 
-             rewrite(max(intrin(Call::likely, x), x), a) ||
-             rewrite(max(x, intrin(Call::likely, x)), b) ||
-             rewrite(max(intrin(Call::likely_if_innermost, x), x), a) ||
-             rewrite(max(x, intrin(Call::likely_if_innermost, x)), b) ||
+             (get_rule_flag("max73", rflag) && rewrite(max(intrin(Call::likely, x), x), a, "max73")) ||
+             (get_rule_flag("max74", rflag) && rewrite(max(x, intrin(Call::likely, x)), b, "max74")) ||
+             (get_rule_flag("max75", rflag) && rewrite(max(intrin(Call::likely_if_innermost, x), x), a, "max75")) ||
+             (get_rule_flag("max76", rflag) && rewrite(max(x, intrin(Call::likely_if_innermost, x)), b, "max76")) ||
 
              (no_overflow(op->type) &&
-              (rewrite(max(ramp(x, y), broadcast(z)), a, can_prove(x + y * (lanes - 1) >= z && x >= z, this)) ||
-               rewrite(max(ramp(x, y), broadcast(z)), b, can_prove(x + y * (lanes - 1) <= z && x <= z, this)) ||
+              ((get_rule_flag("max79", rflag) && rewrite(max(ramp(x, y), broadcast(z)), a, can_prove(x + y * (lanes - 1) >= z && x >= z, this), "max79")) ||
+               (get_rule_flag("max80", rflag) && rewrite(max(ramp(x, y), broadcast(z)), b, can_prove(x + y * (lanes - 1) <= z && x <= z, this), "max80")) ||
                // Compare x to a stair-step function in x
-               rewrite(max(((x + c0)/c1)*c1 + c2, x), a, c1 > 0 && c0 + c2 >= c1 - 1) ||
-               rewrite(max(x, ((x + c0)/c1)*c1 + c2), b, c1 > 0 && c0 + c2 >= c1 - 1) ||
-               rewrite(max(((x + c0)/c1)*c1 + c2, x), b, c1 > 0 && c0 + c2 <= 0) ||
-               rewrite(max(x, ((x + c0)/c1)*c1 + c2), a, c1 > 0 && c0 + c2 <= 0) ||
+               (get_rule_flag("max82", rflag) && rewrite(max(((x + c0)/c1)*c1 + c2, x), a, c1 > 0 && c0 + c2 >= c1 - 1, "max82")) ||
+               (get_rule_flag("max83", rflag) && rewrite(max(x, ((x + c0)/c1)*c1 + c2), b, c1 > 0 && c0 + c2 >= c1 - 1, "max83")) ||
+               (get_rule_flag("max84", rflag) && rewrite(max(((x + c0)/c1)*c1 + c2, x), b, c1 > 0 && c0 + c2 <= 0, "max84")) ||
+               (get_rule_flag("max85", rflag) && rewrite(max(x, ((x + c0)/c1)*c1 + c2), a, c1 > 0 && c0 + c2 <= 0, "max85")) ||
                // Special cases where c0 or c2 is zero
-               rewrite(max((x/c1)*c1 + c2, x), a, c1 > 0 && c2 >= c1 - 1) ||
-               rewrite(max(x, (x/c1)*c1 + c2), b, c1 > 0 && c2 >= c1 - 1) ||
-               rewrite(max(((x + c0)/c1)*c1, x), a, c1 > 0 && c0 >= c1 - 1) ||
-               rewrite(max(x, ((x + c0)/c1)*c1), b, c1 > 0 && c0 >= c1 - 1) ||
-               rewrite(max((x/c1)*c1 + c2, x), b, c1 > 0 && c2 <= 0) ||
-               rewrite(max(x, (x/c1)*c1 + c2), a, c1 > 0 && c2 <= 0) ||
-               rewrite(max(((x + c0)/c1)*c1, x), b, c1 > 0 && c0 <= 0) ||
-               rewrite(max(x, ((x + c0)/c1)*c1), a, c1 > 0 && c0 <= 0))))) {
+               (get_rule_flag("max87", rflag) && rewrite(max((x/c1)*c1 + c2, x), a, c1 > 0 && c2 >= c1 - 1, "max87")) ||
+               (get_rule_flag("max88", rflag) && rewrite(max(x, (x/c1)*c1 + c2), b, c1 > 0 && c2 >= c1 - 1, "max88")) ||
+               (get_rule_flag("max89", rflag) && rewrite(max(((x + c0)/c1)*c1, x), a, c1 > 0 && c0 >= c1 - 1, "max89")) ||
+               (get_rule_flag("max90", rflag) && rewrite(max(x, ((x + c0)/c1)*c1), b, c1 > 0 && c0 >= c1 - 1, "max90")) ||
+               (get_rule_flag("max91", rflag) && rewrite(max((x/c1)*c1 + c2, x), b, c1 > 0 && c2 <= 0, "max91")) ||
+               (get_rule_flag("max92", rflag) && rewrite(max(x, (x/c1)*c1 + c2), a, c1 > 0 && c2 <= 0, "max92")) ||
+               (get_rule_flag("max93", rflag) && rewrite(max(((x + c0)/c1)*c1, x), b, c1 > 0 && c0 <= 0, "max93")) ||
+               (get_rule_flag("max94", rflag) && rewrite(max(x, ((x + c0)/c1)*c1), a, c1 > 0 && c0 <= 0, "max94")))))) {
             return rewrite.result;
         }
 
