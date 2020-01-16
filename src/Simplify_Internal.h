@@ -331,6 +331,9 @@ public:
     std::map<std::string, bool> experimental_rule_flags;
 
     void populate_rule_flags() {
+        /* rules not exercised by current tests */
+experimental_rule_flags["div166"] = true;
+        /* do not remove! */
 experimental_rule_flags["add100"] = true;
 experimental_rule_flags["add101"] = true;
 experimental_rule_flags["add102"] = true;
@@ -471,6 +474,7 @@ experimental_rule_flags["and66"] = true;
 experimental_rule_flags["and67"] = true;
 experimental_rule_flags["and68"] = true;
 experimental_rule_flags["and69"] = true;
+experimental_rule_flags["and70"] = true;
 experimental_rule_flags["and71"] = true;
 experimental_rule_flags["and72"] = true;
 experimental_rule_flags["and73"] = true;
@@ -1037,8 +1041,7 @@ experimental_rule_flags["min79"] = true;
 experimental_rule_flags["min80"] = true;
 experimental_rule_flags["min82"] = true;
 experimental_rule_flags["min83"] = true;
-experimental_rule_flags["min83"] = true;
-experimental_rule_flags["min84"] = true;
+experimental_rule_flags["min85"] = true;
 experimental_rule_flags["min87"] = true;
 experimental_rule_flags["min88"] = true;
 experimental_rule_flags["min89"] = true;
@@ -1157,6 +1160,7 @@ experimental_rule_flags["or63"] = true;
 experimental_rule_flags["or64"] = true;
 experimental_rule_flags["or65"] = true;
 experimental_rule_flags["or66"] = true;
+experimental_rule_flags["or67"] = true;
 experimental_rule_flags["or68"] = true;
 experimental_rule_flags["or69"] = true;
 experimental_rule_flags["or70"] = true;

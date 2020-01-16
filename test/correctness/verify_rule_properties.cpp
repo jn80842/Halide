@@ -33,7 +33,6 @@ int main(int argc, char **argv) {
     check(x + y);
     check(b1 && b2);
     check(x / y);
-    check(x / 1.f);
     check(x == y);
     check(b1 == b2);
     check(x < y);

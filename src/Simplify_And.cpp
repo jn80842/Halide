@@ -67,7 +67,7 @@ Expr Simplify::visit(const And *op, ExprInfo *bounds) {
          (get_rule_flag("and67", rflag) && rewrite(c0 <= x && x < c1, false, c1 <= c0, "and67")) ||
          (get_rule_flag("and68", rflag) && rewrite(c0 <= x && x <= c1, false, c1 < c0, "and68")) ||
          (get_rule_flag("and69", rflag) && rewrite(x <= c1 && c0 <= x, false, c1 < c0, "and69")) ||
-         (get_rule_flag("and70", rflag) && rewrite(c0 < x && x != c1, a, c1 <= c0)) ||
+         (get_rule_flag("and70", rflag) && rewrite(c0 < x && x != c1, a, c1 <= c0, "and70")) ||
          (get_rule_flag("and71", rflag) && rewrite(c0 < x && c1 < x, fold(max(c0, c1)) < x, "and71")) ||
          (get_rule_flag("and72", rflag) && rewrite(c0 <= x && c1 <= x, fold(max(c0, c1)) <= x, "and72")) ||
          (get_rule_flag("and73", rflag) && rewrite(x < c0 && x < c1, x < fold(min(c0, c1)), "and73")) ||
