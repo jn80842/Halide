@@ -148,7 +148,7 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
                (get_rule_flag("div148", rflag) && rewrite((x + y)/x, y/x + 1, "div148")) ||
                (get_rule_flag("div149", rflag) && rewrite((y + x)/x, y/x + 1, "div149")) ||
                // rewrite((x - y)/x, (-y)/x + 1) || reduction order failure detected
-               (get_rule_flag("div151", rflag) && rewrite((y - x)/x, y/x - 1, "div150")) ||
+               (get_rule_flag("div151", rflag) && rewrite((y - x)/x, y/x - 1, "div151")) ||
                (get_rule_flag("div152", rflag) && rewrite(((x + y) + z)/x, (y + z)/x + 1, "div152")) ||
                (get_rule_flag("div153", rflag) && rewrite(((y + x) + z)/x, (y + z)/x + 1, "div153")) ||
                (get_rule_flag("div154", rflag) && rewrite((z + (x + y))/x, (z + y)/x + 1, "div154")) ||

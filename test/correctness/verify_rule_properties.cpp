@@ -31,12 +31,12 @@ int main(int argc, char **argv) {
     Expr v15 = Var("v15"), v16 = Var("v16"), v17 = Var("v17"), v18 = Var("v18"), v19 = Var("v19");
 
     check(x + y);
-    
     check(b1 && b2);
     check(x / y);
-    check(x == 1);
+    check(x == y);
     check(b1 == b2);
     check(x < y);
+    check(x < 1.f);
     check(max(x,y));
     check(min(x,y));
     check(x % y);
