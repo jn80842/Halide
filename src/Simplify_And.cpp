@@ -19,28 +19,28 @@ Expr Simplify::visit(const And *op, ExprInfo *bounds) {
     auto rewrite = IRMatcher::rewriter(IRMatcher::and_op(a, b), op->type);
 
     if (EVAL_IN_LAMBDA
-        (rewrite(x && true, a) ||
-         rewrite(x && false, b) ||
-         rewrite(x && x, a) ||
+        ((get_rule_flag("and22", rflag) && rewrite(x && true, a, "and22")) ||
+         (get_rule_flag("and23", rflag) && rewrite(x && false, b, "and23")) ||
+         (get_rule_flag("and24", rflag) && rewrite(x && x, a, "and24")) ||
 
-         rewrite((x && y) && x, a) ||
-         rewrite(x && (x && y), b) ||
-         rewrite((x && y) && y, a) ||
-         rewrite(y && (x && y), b) ||
+         (get_rule_flag("and26", rflag) && rewrite((x && y) && x, a, "and26")) ||
+         (get_rule_flag("and27", rflag) && rewrite(x && (x && y), b, "and27")) ||
+         (get_rule_flag("and28", rflag) && rewrite((x && y) && y, a, "and28")) ||
+         (get_rule_flag("and29", rflag) && rewrite(y && (x && y), b, "and29")) ||
 
-         rewrite(((x && y) && z) && x, a) ||
-         rewrite(x && ((x && y) && z), b) ||
-         rewrite((z && (x && y)) && x, a) ||
-         rewrite(x && (z && (x && y)), b) ||
-         rewrite(((x && y) && z) && y, a) ||
-         rewrite(y && ((x && y) && z), b) ||
-         rewrite((z && (x && y)) && y, a) ||
-         rewrite(y && (z && (x && y)), b) ||
+         (get_rule_flag("and31", rflag) && rewrite(((x && y) && z) && x, a, "and31")) ||
+         (get_rule_flag("and32", rflag) && rewrite(x && ((x && y) && z), b, "and32")) ||
+         (get_rule_flag("and33", rflag) && rewrite((z && (x && y)) && x, a, "and33")) ||
+         (get_rule_flag("and34", rflag) && rewrite(x && (z && (x && y)), b, "and34")) ||
+         (get_rule_flag("and35", rflag) && rewrite(((x && y) && z) && y, a, "and35")) ||
+         (get_rule_flag("and36", rflag) && rewrite(y && ((x && y) && z), b, "and36")) ||
+         (get_rule_flag("and37", rflag) && rewrite((z && (x && y)) && y, a, "and37")) ||
+         (get_rule_flag("and38", rflag) && rewrite(y && (z && (x && y)), b, "and38")) ||
 
-         rewrite((x || y) && x, b) ||
-         rewrite(x && (x || y), a) ||
-         rewrite((x || y) && y, b) ||
-         rewrite(y && (x || y), a) ||
+         (get_rule_flag("and40", rflag) && rewrite((x || y) && x, b, "and40")) ||
+         (get_rule_flag("and41", rflag) && rewrite(x && (x || y), a, "and41")) ||
+         (get_rule_flag("and42", rflag) && rewrite((x || y) && y, b, "and42")) ||
+         (get_rule_flag("and43", rflag) && rewrite(y && (x || y), a, "and43")) ||
 
          (get_rule_flag("and45", rflag) && rewrite(x != y && x == y, false, "and45")) ||
          (get_rule_flag("and46", rflag) && rewrite(x != y && y == x, false, "and46")) ||
@@ -55,7 +55,7 @@ Expr Simplify::visit(const And *op, ExprInfo *bounds) {
          (get_rule_flag("and55", rflag) && rewrite(x && !x, false, "and55")) ||
          (get_rule_flag("and56", rflag) && rewrite(!x && x, false, "and56")) ||
          (get_rule_flag("and57", rflag) && rewrite(y <= x && x < y, false, "and57")) ||
-         rewrite(x != c0 && x == c1, b, c0 != c1) ||
+         (get_rule_flag("and58", rflag) && rewrite(x != c0 && x == c1, b, c0 != c1, "and58")) ||
          // Note: In the predicate below, if undefined overflow
          // occurs, the predicate counts as false. If well-defined
          // overflow occurs, the condition couldn't possibly
@@ -67,7 +67,7 @@ Expr Simplify::visit(const And *op, ExprInfo *bounds) {
          (get_rule_flag("and67", rflag) && rewrite(c0 <= x && x < c1, false, c1 <= c0, "and67")) ||
          (get_rule_flag("and68", rflag) && rewrite(c0 <= x && x <= c1, false, c1 < c0, "and68")) ||
          (get_rule_flag("and69", rflag) && rewrite(x <= c1 && c0 <= x, false, c1 < c0, "and69")) ||
-         rewrite(c0 < x && x != c1, a, c1 <= c0) ||
+         (get_rule_flag("and70", rflag) && rewrite(c0 < x && x != c1, a, c1 <= c0)) ||
          (get_rule_flag("and71", rflag) && rewrite(c0 < x && c1 < x, fold(max(c0, c1)) < x, "and71")) ||
          (get_rule_flag("and72", rflag) && rewrite(c0 <= x && c1 <= x, fold(max(c0, c1)) <= x, "and72")) ||
          (get_rule_flag("and73", rflag) && rewrite(x < c0 && x < c1, x < fold(min(c0, c1)), "and73")) ||

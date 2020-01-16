@@ -28,18 +28,18 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
         auto rewrite = IRMatcher::rewriter(IRMatcher::add(a, b), op->type);
         const int lanes = op->type.lanes();
 
-        if (rewrite(c0 + c1, fold(c0 + c1), "add31") ||
-            rewrite(IRMatcher::Indeterminate() + x, a) ||
-            rewrite(x + IRMatcher::Indeterminate(), b) ||
-            rewrite(IRMatcher::Overflow() + x, a) ||
-            rewrite(x + IRMatcher::Overflow(), b) ||
-            rewrite(x + 0, x, "add36") ||
-            rewrite(0 + x, x, "add37")) {
+        if ((get_rule_flag("and31", rflag) && rewrite(c0 + c1, fold(c0 + c1), "add31")) ||
+            (get_rule_flag("and32", rflag) && rewrite(IRMatcher::Indeterminate() + x, a, "add32")) ||
+            (get_rule_flag("and33", rflag) && rewrite(x + IRMatcher::Indeterminate(), b, "add33")) ||
+            (get_rule_flag("and34", rflag) && rewrite(IRMatcher::Overflow() + x, a, "add34")) ||
+            (get_rule_flag("and35", rflag) && rewrite(x + IRMatcher::Overflow(), b, "add35")) ||
+            (get_rule_flag("and36", rflag) && rewrite(x + 0, x, "add36")) ||
+            (get_rule_flag("and37", rflag) && rewrite(0 + x, x, "add37"))) {
             return rewrite.result;
         }
 
         if (EVAL_IN_LAMBDA
-            ((get_rule_flag("add42", rflag) && (rewrite(x + x, x * 2, "add42"))) ||
+            ((get_rule_flag("add42", rflag) && rewrite(x + x, x * 2, "add42")) ||
              (get_rule_flag("add43", rflag) && rewrite(ramp(x, y) + ramp(z, w), ramp(x + z, y + w, lanes), "add43")) ||
              (get_rule_flag("add44", rflag) && rewrite(ramp(x, y) + broadcast(z), ramp(x + z, y, lanes), "add44")) ||
              (get_rule_flag("add45", rflag) && rewrite(broadcast(x) + broadcast(y), broadcast(x + y, lanes), "add45")) ||
