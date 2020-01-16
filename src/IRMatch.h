@@ -3060,6 +3060,7 @@ struct Rewriter {
     bool operator()(Before before, const Expr &after, std::string rulename) noexcept {
         #if HALIDE_CHECK_RULES_PROPERTIES
             debug(0) << "Unchecked rewrite rule " << rulename << "\n";
+            debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
         #endif
         if (before.template match<0>(instance, state)) {
             result = after;
@@ -3212,6 +3213,7 @@ struct Rewriter {
         static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
         #if HALIDE_CHECK_RULES_PROPERTIES
             debug(0) << "Unchecked rewrite rule " << rulename << "\n";
+            debug(0) << "experimental_rule_flags[\"" << rulename << "\"] = true;\n";
         #endif
         if (before.template match<0>(instance, state) &&
             evaluate_predicate(pred, state)) {
