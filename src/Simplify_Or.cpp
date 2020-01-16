@@ -78,7 +78,7 @@ Expr Simplify::visit(const Or *op, ExprInfo *bounds) {
     }
 
     if (EVAL_IN_LAMBDA
-        (get_rule_flag("or81", rflag) && rewrite(broadcast(x) || broadcast(y), broadcast(x || y, op->type.lanes()), "or81") ||
+        ((get_rule_flag("or81", rflag) && rewrite(broadcast(x) || broadcast(y), broadcast(x || y, op->type.lanes()), "or81")) ||
 
          (get_rule_flag("or83", rflag) && rewrite(x < y || y < x, x != y, "or83")) ||
 
