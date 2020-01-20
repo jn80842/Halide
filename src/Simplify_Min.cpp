@@ -81,7 +81,7 @@ Expr Simplify::visit(const Min *op, ExprInfo *bounds) {
                // Compare x to a stair-step function in x
                (get_rule_flag("min82", rflag) && rewrite(min(((x + c0)/c1)*c1 + c2, x), b, c1 > 0 && c0 + c2 >= c1 - 1, "min82")) ||
                (get_rule_flag("min83", rflag) && rewrite(min(x, ((x + c0)/c1)*c1 + c2), a, c1 > 0 && c0 + c2 >= c1 - 1, "min83")) ||
-               (get_rule_flag("min84", rflag) && rewrite(min(((x + c0)/c1)*c1 + c2, x), a, c1 > 0 && c0 + c2 <= 0, "min83")) ||
+               (get_rule_flag("min84", rflag) && rewrite(min(((x + c0)/c1)*c1 + c2, x), a, c1 > 0 && c0 + c2 <= 0, "min84")) ||
                (get_rule_flag("min85", rflag) && rewrite(min(x, ((x + c0)/c1)*c1 + c2), b, c1 > 0 && c0 + c2 <= 0, "min85")) ||
                // Special cases where c0 or c2 is zero
                (get_rule_flag("min87", rflag) && rewrite(min((x/c1)*c1 + c2, x), b, c1 > 0 && c2 >= c1 - 1, "min87")) ||

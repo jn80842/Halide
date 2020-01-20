@@ -1041,6 +1041,7 @@ experimental_rule_flags["min79"] = true;
 experimental_rule_flags["min80"] = true;
 experimental_rule_flags["min82"] = true;
 experimental_rule_flags["min83"] = true;
+experimental_rule_flags["min84"] = true;
 experimental_rule_flags["min85"] = true;
 experimental_rule_flags["min87"] = true;
 experimental_rule_flags["min88"] = true;
