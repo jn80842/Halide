@@ -1746,7 +1746,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
-    return "(div " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(zerodiv " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -2253,7 +2253,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
-    return "(mod " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(zeromod " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
 }
 
 template<typename A, typename B>
@@ -4829,6 +4829,10 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
                   "  (if (< x y) x y))\n";
     assertfile << "(define-fun max ((x Int) (y Int)) Int\n"
                   "  (if (< x y) y x))\n";
+    assertfile << "(define-fun zerodiv ((x Int) (y Int)) Int\n"
+                  "  (if (= y 0) 0 (div x y)))\n";
+    assertfile << "(define-fun zeromod ((x Int) (y Int)) Int\n"
+                  "  (if (= y 0) 0 (mod x y)))\n";
 
     variable_map variables;
     build_variable_map(before, variables, hint_type);
@@ -4856,9 +4860,6 @@ void verify_simplification_rule(Before &&before, After &&after, Predicate &&pred
     if (pred_stream.str() != "1") {
         assertfile << "(assert " << print_smt2(pred, hint_type) << ")\n";
     }
-
-    assertfile << get_nonzero_assumptions(before);
-    assertfile << get_nonzero_assumptions(pred);
 
     // verify that the solver cannot find a model in which the two sides of the rewrite rule are different
     assertfile << "\n(assert (not (= " << print_smt2(before, hint_type) << " " << print_smt2(after, hint_type) << ")))\n";
