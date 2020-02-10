@@ -87,19 +87,34 @@ bool is_pure(const Expr &e);
 Expr make_const(Type t, int64_t val);
 Expr make_const(Type t, uint64_t val);
 Expr make_const(Type t, double val);
-inline Expr make_const(Type t, int32_t val)   {return make_const(t, (int64_t)val);}
-inline Expr make_const(Type t, uint32_t val)  {return make_const(t, (uint64_t)val);}
-inline Expr make_const(Type t, int16_t val)   {return make_const(t, (int64_t)val);}
-inline Expr make_const(Type t, uint16_t val)  {return make_const(t, (uint64_t)val);}
-inline Expr make_const(Type t, int8_t val)    {return make_const(t, (int64_t)val);}
-inline Expr make_const(Type t, uint8_t val)   {return make_const(t, (uint64_t)val);}
-inline Expr make_const(Type t, bool val)      {return make_const(t, (uint64_t)val);}
-inline Expr make_const(Type t, float val)     {return make_const(t, (double)val);}
-inline Expr make_const(Type t, float16_t val) {return make_const(t, (double)val);}
+inline Expr make_const(Type t, int32_t val) {
+    return make_const(t, (int64_t)val);
+}
+inline Expr make_const(Type t, uint32_t val) {
+    return make_const(t, (uint64_t)val);
+}
+inline Expr make_const(Type t, int16_t val) {
+    return make_const(t, (int64_t)val);
+}
+inline Expr make_const(Type t, uint16_t val) {
+    return make_const(t, (uint64_t)val);
+}
+inline Expr make_const(Type t, int8_t val) {
+    return make_const(t, (int64_t)val);
+}
+inline Expr make_const(Type t, uint8_t val) {
+    return make_const(t, (uint64_t)val);
+}
+inline Expr make_const(Type t, bool val) {
+    return make_const(t, (uint64_t)val);
+}
+inline Expr make_const(Type t, float val) {
+    return make_const(t, (double)val);
+}
+inline Expr make_const(Type t, float16_t val) {
+    return make_const(t, (double)val);
+}
 // @}
-
-/** Construct a unique indeterminate_expression Expr */
-Expr make_indeterminate_expression(Type type);
 
 /** Construct a unique signed_integer_overflow Expr */
 Expr make_signed_integer_overflow(Type type);
@@ -217,18 +232,29 @@ Expr strided_ramp_base(Expr e, int stride = 1);
  * the Euclidean definition of division for integers a and b:
  *
  /code
- (a/b)*b + a%b = a
+ when b != 0, (a/b)*b + a%b = a
  0 <= a%b < |b|
  /endcode
  *
+ * Additionally, mod by zero returns zero, and div by zero returns
+ * zero. This makes mod and div total functions.
  */
 // @{
 template<typename T>
 inline T mod_imp(T a, T b) {
     Type t = type_of<T>();
-    if (t.is_int()) {
-        T r = a % b;
-        r = r + (r < 0 ? (T)std::abs((int64_t)b) : 0);
+    if (!t.is_float() && b == 0) {
+        return 0;
+    } else if (t.is_int()) {
+        int64_t ia = a;
+        int64_t ib = b;
+        int64_t a_neg = ia >> 63;
+        int64_t b_neg = ib >> 63;
+        int64_t b_zero = (ib == 0) ? -1 : 0;
+        ia -= a_neg;
+        int64_t r = ia % (ib | b_zero);
+        r += (a_neg & ((ib ^ b_neg) + ~b_neg));
+        r &= ~b_zero;
         return r;
     } else {
         return a % b;
@@ -238,12 +264,21 @@ inline T mod_imp(T a, T b) {
 template<typename T>
 inline T div_imp(T a, T b) {
     Type t = type_of<T>();
-    if (t.is_int()) {
-        int64_t q = a / b;
-        int64_t r = a - q * b;
-        int64_t bs = b >> (t.bits() - 1);
-        int64_t rs = r >> (t.bits() - 1);
-        return (T) (q - (rs & bs) + (rs & ~bs));
+    if (!t.is_float() && b == 0) {
+        return (T)0;
+    } else if (t.is_int()) {
+        // Do it as 64-bit
+        int64_t ia = a;
+        int64_t ib = b;
+        int64_t a_neg = ia >> 63;
+        int64_t b_neg = ib >> 63;
+        int64_t b_zero = (ib == 0) ? -1 : 0;
+        ib -= b_zero;
+        ia -= a_neg;
+        int64_t q = ia / ib;
+        q += a_neg & (~b_neg - b_neg);
+        q &= ~b_zero;
+        return (T)q;
     } else {
         return a / b;
     }
@@ -251,21 +286,25 @@ inline T div_imp(T a, T b) {
 // @}
 
 // Special cases for float, double.
-template<> inline float mod_imp<float>(float a, float b) {
+template<>
+inline float mod_imp<float>(float a, float b) {
     float f = a - b * (floorf(a / b));
     // The remainder has the same sign as b.
     return f;
 }
-template<> inline double mod_imp<double>(double a, double b) {
+template<>
+inline double mod_imp<double>(double a, double b) {
     double f = a - b * (std::floor(a / b));
     return f;
 }
 
-template<> inline float div_imp<float>(float a, float b) {
-    return a/b;
+template<>
+inline float div_imp<float>(float a, float b) {
+    return a / b;
 }
-template<> inline double div_imp<double>(double a, double b) {
-    return a/b;
+template<>
+inline double div_imp<double>(double a, double b) {
+    return a / b;
 }
 
 /** Return an Expr that is identical to the input Expr, but with
@@ -280,14 +319,14 @@ Stmt remove_likelies(Stmt s);
 inline HALIDE_NO_USER_CODE_INLINE void collect_print_args(std::vector<Expr> &args) {
 }
 
-template<typename ...Args>
-inline HALIDE_NO_USER_CODE_INLINE void collect_print_args(std::vector<Expr> &args, const char *arg, Args&&... more_args) {
+template<typename... Args>
+inline HALIDE_NO_USER_CODE_INLINE void collect_print_args(std::vector<Expr> &args, const char *arg, Args &&... more_args) {
     args.push_back(Expr(std::string(arg)));
     collect_print_args(args, std::forward<Args>(more_args)...);
 }
 
-template<typename ...Args>
-inline HALIDE_NO_USER_CODE_INLINE void collect_print_args(std::vector<Expr> &args, Expr arg, Args&&... more_args) {
+template<typename... Args>
+inline HALIDE_NO_USER_CODE_INLINE void collect_print_args(std::vector<Expr> &args, Expr arg, Args &&... more_args) {
     args.push_back(std::move(arg));
     collect_print_args(args, std::forward<Args>(more_args)...);
 }
@@ -296,7 +335,7 @@ Expr requirement_failed_error(Expr condition, const std::vector<Expr> &args);
 
 Expr memoize_tag_helper(Expr result, const std::vector<Expr> &cache_key_values);
 
-} // namespace Internal
+}  // namespace Internal
 
 /** Cast an expression to the halide type corresponding to the C++ type T. */
 template<typename T>
@@ -373,9 +412,25 @@ Expr operator*(int a, Expr b);
 Expr &operator*=(Expr &a, Expr b);
 
 /** Return the ratio of two expressions, doing any necessary type
- * coercion using \ref Internal::match_types. Note that signed integer
- * division in Halide rounds towards minus infinity, unlike C, which
- * rounds towards zero. */
+ * coercion using \ref Internal::match_types. Note that integer
+ * division in Halide is not the same as integer division in C-like
+ * languages in two ways.
+ *
+ * First, signed integer division in Halide rounds according to the
+ * sign of the denominator. This means towards minus infinity for
+ * positive denominators, and towards positive infinity for negative
+ * denominators. This is unlike C, which rounds towards zero. This
+ * decision ensures that upsampling expressions like f(x/2, y/2) don't
+ * have funny discontinuities when x and y cross zero.
+ *
+ * Second, division by zero returns zero instead of faulting. For
+ * types where overflow is defined behavior, division of the largest
+ * negative signed integer by -1 returns the larged negative signed
+ * integer for the type (i.e. it wraps). This ensures that a division
+ * operation can never have a side-effect, which is helpful in Halide
+ * because scheduling directives can expand the domain of computation
+ * of a Func, potentially introducing new zero-division.
+ */
 Expr operator/(Expr a, Expr b);
 
 /** Modify the first expression to be the ratio of two expressions,
@@ -396,11 +451,15 @@ Expr operator/(Expr a, int b);
 Expr operator/(int a, Expr b);
 
 /** Return the first argument reduced modulo the second, doing any
- * necessary type coercion using \ref Internal::match_types. For
- * signed integers, the sign of the result matches the sign of the
- * second argument (unlike in C, where it matches the sign of the
- * first argument). For example, this means that x%2 is always either
- * zero or one, even if x is negative.*/
+ * necessary type coercion using \ref Internal::match_types. There are
+ * two key differences between C-like languages and Halide for the
+ * modulo operation, which complement the way division works.
+ *
+ * First, the result is never negative, so x % 2 is always zero or
+ * one, unlike in C-like languages. x % -2 is equivalent, and is also
+ * always zero or one. Second, mod by zero evaluates to zero (unlike
+ * in C, where it faults). This makes modulo, like division, a
+ * side-effect-free operation. */
 Expr operator%(Expr a, Expr b);
 
 /** Mods an expression by a constant integer. Coerces the type
@@ -535,7 +594,6 @@ Expr operator||(const Expr &a, bool b);
 Expr operator||(bool a, const Expr &b);
 // @}
 
-
 /** Returns the logical not the argument */
 Expr operator!(Expr a);
 
@@ -552,7 +610,6 @@ Expr max(Expr a, Expr b);
  * integer types on x86 without SSE4). */
 Expr max(Expr a, int b);
 
-
 /** Returns an expression representing the greater of a constant
  * integer and an expression. The integer is coerced to the type of
  * the expression. Errors if the integer is not representable as that
@@ -560,8 +617,12 @@ Expr max(Expr a, int b);
  * integer types on x86 without SSE4). */
 Expr max(int a, Expr b);
 
-inline Expr max(float a, Expr b) {return max(Expr(a), std::move(b));}
-inline Expr max(Expr a, float b) {return max(std::move(a), Expr(b));}
+inline Expr max(float a, Expr b) {
+    return max(Expr(a), std::move(b));
+}
+inline Expr max(Expr a, float b) {
+    return max(std::move(a), Expr(b));
+}
 
 /** Returns an expression representing the greater of an expressions
  * vector, after doing any necessary type coersion using
@@ -570,8 +631,8 @@ inline Expr max(Expr a, float b) {return max(std::move(a), Expr(b));}
  * The expressions are folded from right ie. max(.., max(.., ..)).
  * The arguments can be any mix of types but must all be convertible to Expr. */
 template<typename A, typename B, typename C, typename... Rest,
-         typename std::enable_if<Halide::Internal::all_are_convertible<Expr, Rest...>::value>::type* = nullptr>
-inline Expr max(A &&a, B &&b, C &&c, Rest&&... rest) {
+         typename std::enable_if<Halide::Internal::all_are_convertible<Expr, Rest...>::value>::type * = nullptr>
+inline Expr max(A &&a, B &&b, C &&c, Rest &&... rest) {
     return max(std::forward<A>(a), max(std::forward<B>(b), std::forward<C>(c), std::forward<Rest>(rest)...));
 }
 
@@ -591,8 +652,12 @@ Expr min(Expr a, int b);
  * integer types on x86 without SSE4). */
 Expr min(int a, Expr b);
 
-inline Expr min(float a, Expr b) {return min(Expr(a), std::move(b));}
-inline Expr min(Expr a, float b) {return min(std::move(a), Expr(b));}
+inline Expr min(float a, Expr b) {
+    return min(Expr(a), std::move(b));
+}
+inline Expr min(Expr a, float b) {
+    return min(std::move(a), Expr(b));
+}
 
 /** Returns an expression representing the lesser of an expressions
  * vector, after doing any necessary type coersion using
@@ -601,8 +666,8 @@ inline Expr min(Expr a, float b) {return min(std::move(a), Expr(b));}
  * The expressions are folded from right ie. min(.., min(.., ..)).
  * The arguments can be any mix of types but must all be convertible to Expr. */
 template<typename A, typename B, typename C, typename... Rest,
-         typename std::enable_if<Halide::Internal::all_are_convertible<Expr, Rest...>::value>::type* = nullptr>
-inline Expr min(A &&a, B &&b, C &&c, Rest&&... rest) {
+         typename std::enable_if<Halide::Internal::all_are_convertible<Expr, Rest...>::value>::type * = nullptr>
+inline Expr min(A &&a, B &&b, C &&c, Rest &&... rest) {
     return min(std::forward<A>(a), min(std::forward<B>(b), std::forward<C>(c), std::forward<Rest>(rest)...));
 }
 
@@ -610,28 +675,72 @@ inline Expr min(A &&a, B &&b, C &&c, Rest&&... rest) {
  * explicit prevents implicit float->int casts that might otherwise
  * occur. */
 // @{
-inline Expr operator+(Expr a, float b) {return std::move(a) + Expr(b);}
-inline Expr operator+(float a, Expr b) {return Expr(a) + std::move(b);}
-inline Expr operator-(Expr a, float b) {return std::move(a) - Expr(b);}
-inline Expr operator-(float a, Expr b) {return Expr(a) - std::move(b);}
-inline Expr operator*(Expr a, float b) {return std::move(a) * Expr(b);}
-inline Expr operator*(float a, Expr b) {return Expr(a) * std::move(b);}
-inline Expr operator/(Expr a, float b) {return std::move(a) / Expr(b);}
-inline Expr operator/(float a, Expr b) {return Expr(a) / std::move(b);}
-inline Expr operator%(Expr a, float b) {return std::move(a) % Expr(b);}
-inline Expr operator%(float a, Expr b) {return Expr(a) % std::move(b);}
-inline Expr operator>(Expr a, float b) {return std::move(a) > Expr(b);}
-inline Expr operator>(float a, Expr b) {return Expr(a) > std::move(b);}
-inline Expr operator<(Expr a, float b) {return std::move(a) < Expr(b);}
-inline Expr operator<(float a, Expr b) {return Expr(a) < std::move(b);}
-inline Expr operator>=(Expr a, float b) {return std::move(a) >= Expr(b);}
-inline Expr operator>=(float a, Expr b) {return Expr(a) >= std::move(b);}
-inline Expr operator<=(Expr a, float b) {return std::move(a) <= Expr(b);}
-inline Expr operator<=(float a, Expr b) {return Expr(a) <= std::move(b);}
-inline Expr operator==(Expr a, float b) {return std::move(a) == Expr(b);}
-inline Expr operator==(float a, Expr b) {return Expr(a) == std::move(b);}
-inline Expr operator!=(Expr a, float b) {return std::move(a) != Expr(b);}
-inline Expr operator!=(float a, Expr b) {return Expr(a) != std::move(b);}
+inline Expr operator+(Expr a, float b) {
+    return std::move(a) + Expr(b);
+}
+inline Expr operator+(float a, Expr b) {
+    return Expr(a) + std::move(b);
+}
+inline Expr operator-(Expr a, float b) {
+    return std::move(a) - Expr(b);
+}
+inline Expr operator-(float a, Expr b) {
+    return Expr(a) - std::move(b);
+}
+inline Expr operator*(Expr a, float b) {
+    return std::move(a) * Expr(b);
+}
+inline Expr operator*(float a, Expr b) {
+    return Expr(a) * std::move(b);
+}
+inline Expr operator/(Expr a, float b) {
+    return std::move(a) / Expr(b);
+}
+inline Expr operator/(float a, Expr b) {
+    return Expr(a) / std::move(b);
+}
+inline Expr operator%(Expr a, float b) {
+    return std::move(a) % Expr(b);
+}
+inline Expr operator%(float a, Expr b) {
+    return Expr(a) % std::move(b);
+}
+inline Expr operator>(Expr a, float b) {
+    return std::move(a) > Expr(b);
+}
+inline Expr operator>(float a, Expr b) {
+    return Expr(a) > std::move(b);
+}
+inline Expr operator<(Expr a, float b) {
+    return std::move(a) < Expr(b);
+}
+inline Expr operator<(float a, Expr b) {
+    return Expr(a) < std::move(b);
+}
+inline Expr operator>=(Expr a, float b) {
+    return std::move(a) >= Expr(b);
+}
+inline Expr operator>=(float a, Expr b) {
+    return Expr(a) >= std::move(b);
+}
+inline Expr operator<=(Expr a, float b) {
+    return std::move(a) <= Expr(b);
+}
+inline Expr operator<=(float a, Expr b) {
+    return Expr(a) <= std::move(b);
+}
+inline Expr operator==(Expr a, float b) {
+    return std::move(a) == Expr(b);
+}
+inline Expr operator==(float a, Expr b) {
+    return Expr(a) == std::move(b);
+}
+inline Expr operator!=(Expr a, float b) {
+    return std::move(a) != Expr(b);
+}
+inline Expr operator!=(float a, Expr b) {
+    return Expr(a) != std::move(b);
+}
 // @}
 
 /** Clamps an expression to lie within the given bounds. The bounds
@@ -662,8 +771,8 @@ Expr select(Expr condition, Expr true_value, Expr false_value);
  * to the first value for which the condition is true. Returns the
  * final value if all conditions are false. */
 template<typename... Args,
-         typename std::enable_if<Halide::Internal::all_are_convertible<Expr, Args...>::value>::type* = nullptr>
-inline Expr select(Expr c0, Expr v0, Expr c1, Expr v1, Args&&... args) {
+         typename std::enable_if<Halide::Internal::all_are_convertible<Expr, Args...>::value>::type * = nullptr>
+inline Expr select(Expr c0, Expr v0, Expr c1, Expr v1, Args &&... args) {
     return select(std::move(c0), std::move(v0), select(std::move(c1), std::move(v1), std::forward<Args>(args)...));
 }
 
@@ -678,16 +787,15 @@ Tuple tuple_select(const Expr &condition, const Tuple &true_value, const Tuple &
  * a Tuple, it must match the size of the true and false Tuples. */
 // @{
 template<typename... Args>
-inline Tuple tuple_select(const Tuple &c0, const Tuple &v0, const Tuple &c1, const Tuple &v1, Args&&... args) {
+inline Tuple tuple_select(const Tuple &c0, const Tuple &v0, const Tuple &c1, const Tuple &v1, Args &&... args) {
     return tuple_select(c0, v0, tuple_select(c1, v1, std::forward<Args>(args)...));
 }
 
 template<typename... Args>
-inline Tuple tuple_select(const Expr &c0, const Tuple &v0, const Expr &c1, const Tuple &v1, Args&&... args) {
+inline Tuple tuple_select(const Expr &c0, const Tuple &v0, const Expr &c1, const Tuple &v1, Args &&... args) {
     return tuple_select(c0, v0, tuple_select(c1, v1, std::forward<Args>(args)...));
 }
 // @}
-
 
 /** Return the sine of a floating-point expression. If the argument is
  * not floating-point, it is cast to Float(32). Does not vectorize
@@ -858,8 +966,22 @@ Expr round(Expr x);
 Expr trunc(Expr x);
 
 /** Returns true if the argument is a Not a Number (NaN). Requires a
-  * floating point argument.  Vectorizes cleanly. */
+  * floating point argument.  Vectorizes cleanly.
+  * Note that the Expr passed in will be evaluated in strict_float mode,
+  * regardless of whether strict_float mode is enabled in the current Target. */
 Expr is_nan(Expr x);
+
+/** Returns true if the argument is Inf or -Inf. Requires a
+  * floating point argument.  Vectorizes cleanly.
+  * Note that the Expr passed in will be evaluated in strict_float mode,
+  * regardless of whether strict_float mode is enabled in the current Target. */
+Expr is_inf(Expr x);
+
+/** Returns true if the argument is a finite value (ie, neither NaN nor Inf).
+  * Requires a floating point argument.  Vectorizes cleanly.
+  * Note that the Expr passed in will be evaluated in strict_float mode,
+  * regardless of whether strict_float mode is enabled in the current Target. */
+Expr is_finite(Expr x);
 
 /** Return the fractional part of a floating-point expression. If the argument
  *  is not floating-point, it is cast to Float(32). The return value has the
@@ -1023,14 +1145,15 @@ Expr count_trailing_zeros(Expr x);
 /** Divide two integers, rounding towards zero. This is the typical
  * behavior of most hardware architectures, which differs from
  * Halide's division operator, which is Euclidean (rounds towards
- * -infinity). */
+ * -infinity). Will throw a runtime error if y is zero, or if y is -1
+ * and x is the minimum signed integer. */
 Expr div_round_to_zero(Expr x, Expr y);
 
 /** Compute the remainder of dividing two integers, when division is
  * rounding toward zero. This is the typical behavior of most hardware
  * architectures, which differs from Halide's mod operator, which is
  * Euclidean (produces the remainder when division rounds towards
- * -infinity). */
+ * -infinity). Will throw a runtime error if y is zero. */
 Expr mod_round_to_zero(Expr x, Expr y);
 
 /** Return a random variable representing a uniformly distributed
@@ -1078,8 +1201,8 @@ Expr random_int(Expr seed = Expr());
 //@{
 Expr print(const std::vector<Expr> &values);
 
-template <typename... Args>
-inline HALIDE_NO_USER_CODE_INLINE Expr print(Expr a, Args&&... args) {
+template<typename... Args>
+inline HALIDE_NO_USER_CODE_INLINE Expr print(Expr a, Args &&... args) {
     std::vector<Expr> collected_args = {std::move(a)};
     Internal::collect_print_args(collected_args, std::forward<Args>(args)...);
     return print(collected_args);
@@ -1091,8 +1214,8 @@ inline HALIDE_NO_USER_CODE_INLINE Expr print(Expr a, Args&&... args) {
 // @{
 Expr print_when(Expr condition, const std::vector<Expr> &values);
 
-template<typename ...Args>
-inline HALIDE_NO_USER_CODE_INLINE Expr print_when(Expr condition, Expr a, Args&&... args) {
+template<typename... Args>
+inline HALIDE_NO_USER_CODE_INLINE Expr print_when(Expr condition, Expr a, Args &&... args) {
     std::vector<Expr> collected_args = {std::move(a)};
     Internal::collect_print_args(collected_args, std::forward<Args>(args)...);
     return print_when(std::move(condition), collected_args);
@@ -1124,8 +1247,8 @@ inline HALIDE_NO_USER_CODE_INLINE Expr print_when(Expr condition, Expr a, Args&&
 // @{
 Expr require(Expr condition, const std::vector<Expr> &values);
 
-template<typename ...Args>
-inline HALIDE_NO_USER_CODE_INLINE Expr require(Expr condition, Expr value, Args&&... args) {
+template<typename... Args>
+inline HALIDE_NO_USER_CODE_INLINE Expr require(Expr condition, Expr value, Args &&... args) {
     std::vector<Expr> collected_args = {std::move(value)};
     Internal::collect_print_args(collected_args, std::forward<Args>(args)...);
     return require(std::move(condition), collected_args);
@@ -1184,8 +1307,8 @@ inline Expr undef() {
  * digest, memoize_tag can be used to key computations using that image
  * on the digest. */
 // @{
-template<typename ...Args>
-inline HALIDE_NO_USER_CODE_INLINE Expr memoize_tag(Expr result, Args&&... args) {
+template<typename... Args>
+inline HALIDE_NO_USER_CODE_INLINE Expr memoize_tag(Expr result, Args &&... args) {
     std::vector<Expr> collected_args{std::forward<Args>(args)...};
     return Internal::memoize_tag_helper(std::move(result), collected_args);
 }
@@ -1213,7 +1336,7 @@ Expr likely_if_innermost(Expr e);
 /** Cast an expression to the halide type corresponding to the C++
  * type T. As part of the cast, clamp to the minimum and maximum
  * values of the result type. */
-template <typename T>
+template<typename T>
 Expr saturating_cast(Expr e) {
     return saturating_cast(type_of<T>(), std::move(e));
 }
@@ -1252,4 +1375,3 @@ Expr unsafe_promise_clamped(Expr value, Expr min, Expr max);
 }  // namespace Halide
 
 #endif
-

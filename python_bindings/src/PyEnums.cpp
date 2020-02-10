@@ -23,35 +23,30 @@ void define_enums(py::module &m) {
     py::enum_<LinkageType>(m, "LinkageType")
         .value("External", LinkageType::External)
         .value("ExternalPlusMetadata", LinkageType::ExternalPlusMetadata)
-        .value("Internal", LinkageType::Internal)
-    ;
+        .value("Internal", LinkageType::Internal);
 
     py::enum_<LoopAlignStrategy>(m, "LoopAlignStrategy")
         .value("AlignStart", LoopAlignStrategy::AlignStart)
         .value("AlignEnd", LoopAlignStrategy::AlignEnd)
         .value("NoAlign", LoopAlignStrategy::NoAlign)
-        .value("Auto", LoopAlignStrategy::Auto)
-    ;
+        .value("Auto", LoopAlignStrategy::Auto);
 
     py::enum_<MemoryType>(m, "MemoryType")
         .value("Auto", MemoryType::Auto)
         .value("Heap", MemoryType::Heap)
         .value("Stack", MemoryType::Stack)
         .value("Register", MemoryType::Register)
-        .value("GPUShared", MemoryType::GPUShared)
-    ;
+        .value("GPUShared", MemoryType::GPUShared);
 
     py::enum_<NameMangling>(m, "NameMangling")
         .value("Default", NameMangling::Default)
         .value("C", NameMangling::C)
-        .value("CPlusPlus", NameMangling::CPlusPlus)
-    ;
+        .value("CPlusPlus", NameMangling::CPlusPlus);
 
     py::enum_<PrefetchBoundStrategy>(m, "PrefetchBoundStrategy")
         .value("Clamp", PrefetchBoundStrategy::Clamp)
         .value("GuardWithIf", PrefetchBoundStrategy::GuardWithIf)
-        .value("NonFaulting", PrefetchBoundStrategy::NonFaulting)
-    ;
+        .value("NonFaulting", PrefetchBoundStrategy::NonFaulting);
 
     py::enum_<StmtOutputFormat>(m, "StmtOutputFormat")
         .value("Text", StmtOutputFormat::Text)
@@ -61,8 +56,7 @@ void define_enums(py::module &m) {
         .value("RoundUp", TailStrategy::RoundUp)
         .value("GuardWithIf", TailStrategy::GuardWithIf)
         .value("ShiftInwards", TailStrategy::ShiftInwards)
-        .value("Auto", TailStrategy::Auto)
-    ;
+        .value("Auto", TailStrategy::Auto);
 
     py::enum_<Target::OS>(m, "TargetOS")
         .value("OSUnknown", Target::OS::OSUnknown)
@@ -108,6 +102,7 @@ void define_enums(py::module &m) {
         .value("OpenCL", Target::Feature::OpenCL)
         .value("CLDoubles", Target::Feature::CLDoubles)
         .value("CLHalf", Target::Feature::CLHalf)
+        .value("CLAtomics64", Target::Feature::CLAtomics64)
         .value("OpenGL", Target::Feature::OpenGL)
         .value("OpenGLCompute", Target::Feature::OpenGLCompute)
         .value("EGL", Target::Feature::EGL)
@@ -137,7 +132,6 @@ void define_enums(py::module &m) {
         .value("TraceRealizations", Target::Feature::TraceRealizations)
         .value("D3D12Compute", Target::Feature::D3D12Compute)
         .value("StrictFloat", Target::Feature::StrictFloat)
-        .value("LegacyBufferWrappers", Target::Feature::LegacyBufferWrappers)
         .value("TSAN", Target::Feature::TSAN)
         .value("ASAN", Target::Feature::ASAN)
         .value("CheckUnsafePromises", Target::Feature::CheckUnsafePromises)
