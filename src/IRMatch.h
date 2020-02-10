@@ -4013,6 +4013,105 @@ void build_bfs_type_map(const Overflows<A> &op, bfs_node_type_map &type_map, int
     return;
 }
 
+struct Overflow {
+    struct pattern_tag {};
+
+    constexpr static uint32_t binds = 0;
+
+    template<uint32_t bound>
+    HALIDE_ALWAYS_INLINE bool match(const BaseExprNode &e, MatcherState &state) const noexcept {
+        if (e.node_type != Call::_node_type) {
+            return false;
+        }
+        const Call &op = (const Call &)e;
+        return (op.is_intrinsic(Call::signed_integer_overflow));
+    }
+
+    HALIDE_ALWAYS_INLINE
+    Expr make(MatcherState &state, halide_type_t type_hint) const {
+        type_hint.lanes |= MatcherState::signed_integer_overflow;
+        return make_const_special_expr(type_hint);
+    }
+
+    constexpr static bool foldable = true;
+
+    HALIDE_ALWAYS_INLINE
+    void make_folded_const(halide_scalar_value_t &val, halide_type_t &ty, MatcherState &state) const noexcept {
+        val.u.u64 = 0;
+        ty.lanes |= MatcherState::signed_integer_overflow;
+    }
+};
+
+inline std::ostream &operator<<(std::ostream &s, const Overflow &op) {
+    s << "overflow()";
+    return s;
+}
+
+inline std::string print_smt2(const Overflow &op, halide_type_t type_hint) {
+    return "overflow()";
+}
+
+inline std::string get_nonzero_assumptions(const Overflow &op) {
+    return "";
+}
+
+inline void build_divisor_set(const Overflow &op, std::set<std::string> &divisor_set) {
+    return;
+}
+
+inline halide_type_t typecheck(const Overflow &op, halide_type_t type_hint) {
+    return halide_type_of<int64_t>();
+}
+
+inline int get_variable_count(const Overflow &op) {
+    return 0;
+}
+
+inline int get_vector_ops_count(const Overflow &op) {
+    return 0;
+}
+
+inline bool is_vector_term(const Overflow &op) {
+    return false;
+}
+
+inline void build_bfs_type_map(const Overflow &op, bfs_node_type_map &type_map, int current_depth) {
+    update_bfs_node_type_map(type_map, IRNodeType::Variable, current_depth);
+}
+
+inline void build_variable_map(const Overflow &op, variable_map &varmap, halide_type_t type_hint) {
+    return;
+}
+
+inline void build_variable_count_map(const Overflow &op, variable_count_map &varcountmap) {
+    return;
+}
+
+inline void build_leaf_vec(const Overflow &op, leaf_vec &v) {
+    v.push_back(0); // assume the position of overflows doesn't matter
+}
+
+inline bool is_right_child_constant(const Overflow &op) {
+    return false;
+}
+
+inline bool is_constant(const Overflow &op) {
+    return false;
+}
+
+inline void count_terms(const Overflow &op, term_map &m) {
+    return;
+}
+
+// is this the right node type to return?
+inline IRNodeType get_node_type(const Overflow &op) {
+    return IRNodeType::Variable;
+}
+
+inline void build_node_type_list(const Overflow &op, node_type_list &l) {
+    l.push_back(get_node_type(op));
+}
+
 template<typename A>
 struct IsConst {
     struct pattern_tag {};
