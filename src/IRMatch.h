@@ -2102,6 +2102,7 @@ void build_divisor_set(const CmpOp<EQ, A, B> &op, std::set<std::string> &divisor
 
 template<typename A, typename B>
 void build_variable_map(const CmpOp<EQ, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
+    halide_type_t fresh_type_hint;
     halide_type_t lhs_t = typecheck(op.a, fresh_type_hint);
     halide_type_t rhs_t = typecheck(op.b, fresh_type_hint);
     if (lhs_t == Bool() || rhs_t == Bool()) {
@@ -2157,6 +2158,7 @@ void build_divisor_set(const CmpOp<NE, A, B> &op, std::set<std::string> &divisor
 
 template<typename A, typename B>
 void build_variable_map(const CmpOp<NE, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
+    halide_type_t fresh_type_hint;
     halide_type_t lhs_t = typecheck(op.a, fresh_type_hint);
     halide_type_t rhs_t = typecheck(op.b, fresh_type_hint);
     if (lhs_t == Bool() || rhs_t == Bool()) {
