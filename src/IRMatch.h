@@ -848,28 +848,7 @@ void build_node_type_list(const WildConst<i> &c, node_type_list &l) {
 
 template<int i>
 void build_variable_map(const WildConst<i> &c, variable_map &varmap, halide_type_t type_hint) {
-    std::string varname = print_smt2(c, type_hint);
-    halide_type_t t = typecheck(c, type_hint);
-    std::string type_string = "";
-    if (t == Bool()) {
-        type_string = "bool";
-    }
-    if (t == Int(64)) {
-        type_string = "int64";
-    }
-    auto search = varmap.find(varname);
-    if (search != varmap.end() && search->second != t) {
-        /*if (search->second == Bool()) {
-            debug(0) << varname << " previously had type bool\n";
-        }
-        if (search->second == Int(64)) {
-            debug(0) << varname << " previously had type int64\n";
-        }*/
-    }
-    if (t == Bool() || t == Int(64)) {
-        varmap.insert({varname, t});
-       // debug(0) << print_smt2(c, type_hint) << " given type " << type_string << "\n";
-    }
+    varmap.insert({print_smt2(c, type_hint), typecheck(c, type_hint)});
 }
 
 template<int i>
@@ -1011,28 +990,7 @@ void build_node_type_list(const Wild<i> &op, node_type_list &l) {
 
 template<int i>
 void build_variable_map(const Wild<i> &c, variable_map &varmap, halide_type_t type_hint) {
-    std::string varname = print_smt2(c, type_hint);
-    halide_type_t t = typecheck(c, type_hint);
-    std::string type_string = "";
-    if (t == Bool()) {
-        type_string = "bool";
-    }
-    if (t == Int(64)) {
-        type_string = "int64";
-    }
-    auto search = varmap.find(varname);
-    if (search != varmap.end() && search->second != t) {
-      /*  if (search->second == Bool()) {
-            debug(0) << varname << " previously had type bool\n";
-        }
-        if (search->second == Int(64)) {
-            debug(0) << varname << " previously had type int64\n";
-        }*/
-    }
-    //if (t == Bool() || t == Int(64)) {
-        varmap[varname] = t;
-       // debug(0) << print_smt2(c, type_hint) << " given type " << type_string << "\n";
-    //}
+    varmap.insert({print_smt2(c, type_hint), typecheck(c, type_hint)});
 }
 
 template<int i>
@@ -2144,18 +2102,14 @@ void build_divisor_set(const CmpOp<EQ, A, B> &op, std::set<std::string> &divisor
 
 template<typename A, typename B>
 void build_variable_map(const CmpOp<EQ, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
-    halide_type_t fresh_type_hint;
     halide_type_t lhs_t = typecheck(op.a, fresh_type_hint);
     halide_type_t rhs_t = typecheck(op.b, fresh_type_hint);
     if (lhs_t == Bool() || rhs_t == Bool()) {
         build_variable_map(op.a, varmap, halide_type_of<bool>());
         build_variable_map(op.b, varmap, halide_type_of<bool>());
-    } else if (lhs_t == Int(64) || rhs_t == Int(64)) {
+    } else {
         build_variable_map(op.a, varmap, halide_type_of<int64_t>());
         build_variable_map(op.b, varmap, halide_type_of<int64_t>());
-    } else {
-        build_variable_map(op.a, varmap, fresh_type_hint);
-        build_variable_map(op.b, varmap, fresh_type_hint);
     }
 }
 
@@ -2203,18 +2157,14 @@ void build_divisor_set(const CmpOp<NE, A, B> &op, std::set<std::string> &divisor
 
 template<typename A, typename B>
 void build_variable_map(const CmpOp<NE, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
-    halide_type_t fresh_type_hint;
     halide_type_t lhs_t = typecheck(op.a, fresh_type_hint);
     halide_type_t rhs_t = typecheck(op.b, fresh_type_hint);
     if (lhs_t == Bool() || rhs_t == Bool()) {
         build_variable_map(op.a, varmap, halide_type_of<bool>());
         build_variable_map(op.b, varmap, halide_type_of<bool>());
-    } else if (lhs_t == Int(64) || rhs_t == Int(64)) {
+    } else {
         build_variable_map(op.a, varmap, halide_type_of<int64_t>());
         build_variable_map(op.b, varmap, halide_type_of<int64_t>());
-    } else {
-        build_variable_map(op.a, varmap, fresh_type_hint);
-        build_variable_map(op.b, varmap, fresh_type_hint);
     }
 }
 
@@ -4197,8 +4147,7 @@ void build_bfs_type_map(const IsConst<A> &op, bfs_node_type_map &type_map, int c
 
 template<typename A>
 void build_variable_map(const IsConst<A> &op, variable_map &varmap, halide_type_t type_hint) {
-    halide_type_t fresh_type_hint;
-    build_variable_map(op.a, varmap, fresh_type_hint);
+    build_variable_map(op.a, varmap, type_hint);
 }
 
 template<typename A>
@@ -4318,8 +4267,7 @@ void build_bfs_type_map(const CanProve<A, Prover> &op, bfs_node_type_map &type_m
 
 template<typename A, typename Prover>
 void build_variable_map(const CanProve<A, Prover> &op, variable_map &varmap, halide_type_t type_hint) {
-    halide_type_t fresh_type_hint;
-    build_variable_map(op.a, varmap, fresh_type_hint);
+    build_variable_map(op.a, varmap, type_hint);
 }
 
 template<typename A, typename Prover>
@@ -4442,8 +4390,7 @@ void build_bfs_type_map(const IsFloat<A> &op, bfs_node_type_map &type_map, int c
 
 template<typename A>
 void build_variable_map(const IsFloat<A> &op, variable_map &varmap, halide_type_t type_hint) {
-    halide_type_t fresh_type_hint;
-    build_variable_map(op.a, varmap, fresh_type_hint);
+    build_variable_map(op.a, varmap, type_hint);
 }
 
 template<typename A>
@@ -4802,10 +4749,10 @@ HALIDE_ALWAYS_INLINE bool evaluate_predicate(Pattern p, MatcherState &state) {
 #define HALIDE_FUZZ_TEST_RULES 0
 
 // isolate z3 verification of rules
-#define HALIDE_VERIFY_SIMPLIFY_RULES 0
+#define HALIDE_VERIFY_SIMPLIFY_RULES 1
 
 // check various properties of rules when they match
-#define HALIDE_CHECK_RULES_PROPERTIES 1
+#define HALIDE_CHECK_RULES_PROPERTIES 0
 
 template<typename Instance>
 struct Rewriter {
