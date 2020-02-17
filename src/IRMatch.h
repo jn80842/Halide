@@ -1554,7 +1554,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Add, A, B> &op, halide_type_t type_hint) {
-    return "(+ " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(+ " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1599,7 +1599,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Sub, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
-    return "(- " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(- " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1644,7 +1644,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
-    return "(* " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(* " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1689,7 +1689,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
-    return "(zerodiv " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(zerodiv " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1825,7 +1825,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Min, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Min, A, B> &op, halide_type_t type_hint) {
-    return "(min " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(min " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -1870,7 +1870,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Max, A, B> &op, halide_type_t type_hint) {
-    return "(max " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(max " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -2190,7 +2190,7 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
 
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
-    return "(zeromod " + print_smt2(op.a, type_hint) + " " + print_smt2(op.b, type_hint) + ")";
+    return "(zeromod " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A, typename B>
@@ -2991,7 +2991,15 @@ std::ostream &operator<<(std::ostream &s, const SelectOp<C, T, F> &op) {
 
 template<typename C, typename T, typename F>
 std::string print_smt2(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
-    return "(ite " + print_smt2(op.c, halide_type_of<bool>()) + " " + print_smt2(op.t, type_hint) + " " + print_smt2(op.f, type_hint) + ")";
+    halide_type_t tbranch_type = typecheck(op.t, type_hint);
+    halide_type_t fbranch_type = typecheck(op.f, type_hint);
+    if (tbranch_type == Bool() || fbranch_type == Bool()) {
+        return "(ite " + print_smt2(op.c, halide_type_of<bool>()) + " " + print_smt2(op.t, halide_type_of<bool>()) + " " + print_smt2(op.f, halide_type_of<bool>()) + ")";
+    } else if (tbranch_type == Int(64) || fbranch_type == Int(64)) {
+        return "(ite " + print_smt2(op.c, halide_type_of<bool>()) + " " + print_smt2(op.t, halide_type_of<int64_t>()) + " " + print_smt2(op.f, halide_type_of<int64_t>()) + ")";
+    } else {
+        return "(ite " + print_smt2(op.c, halide_type_of<bool>()) + " " + print_smt2(op.t, type_hint) + " " + print_smt2(op.f, type_hint) + ")";
+    }
 }
 
 template<typename C, typename T, typename F>
@@ -3526,7 +3534,7 @@ std::ostream &operator<<(std::ostream &s, const NegateOp<A> &op) {
 
 template<typename A>
 std::string print_smt2(const NegateOp<A> &op, halide_type_t type_hint) {
-    return "(- " + print_smt2(op.a, type_hint) + ")";
+    return "(- " + print_smt2(op.a, halide_type_of<int64_t>()) + ")";
 }
 
 template<typename A>
