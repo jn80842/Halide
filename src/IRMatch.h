@@ -260,14 +260,6 @@ inline std::string print_smt2(SpecificExpr e, halide_type_t type_hint) {
     return s.str();
 }
 
-inline std::string get_nonzero_assumptions(SpecificExpr e) {
-    return "";
-}
-
-inline void build_divisor_set(SpecificExpr e, std::set<std::string> &divisor_set) {
-    return;
-}
-
 inline halide_type_t typecheck(SpecificExpr e, halide_type_t type_hint) {
     return type_hint;
 }
@@ -297,10 +289,6 @@ inline IRNodeType get_node_type(SpecificExpr e) {
     return IRNodeType::UIntImm;
 }
 
-inline void build_node_type_list(SpecificExpr e, node_type_list &l) {
-    l.push_back(get_node_type(e));
-}
-
 inline void build_variable_map(SpecificExpr e, variable_map &varmap, halide_type_t type_hint) {
     return;
 }
@@ -309,20 +297,8 @@ inline void build_variable_count_map(SpecificExpr e, variable_count_map &varcoun
     return;
 }
 
-inline void build_leaf_vec(SpecificExpr e, leaf_vec &v) {
-    return;
-}
-
 inline void wildcardconst_str(SpecificExpr e, std::string &s) {
     return;
-}
-
-inline bool is_right_child_constant(SpecificExpr e) {
-    return false;
-}
-
-inline bool is_constant(SpecificExpr e ) {
-    return false;
 }
 
 template<int i>
@@ -382,16 +358,6 @@ std::string print_smt2(const WildConstInt<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-std::string get_nonzero_assumptions(const WildConstInt<i> &c) {
-    return "";
-}
-
-template<int i>
-void build_divisor_set(const WildConstInt<i> &c, std::set<std::string> &divisor_set) {
-    return;
-}
-
-template<int i>
 halide_type_t typecheck(const WildConstInt<i> &c, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
@@ -427,11 +393,6 @@ IRNodeType get_node_type(const WildConstInt<i> &c) {
 }
 
 template<int i>
-void build_node_type_list(const WildConstInt<i> &c, node_type_list &l) {
-    l.push_back(get_node_type(c));
-}
-
-template<int i>
 void build_variable_map(const WildConstInt<i> &c, variable_map &varmap, halide_type_t type_hint) {
     varmap.insert({print_smt2(c, type_hint), halide_type_of<int64_t>()});
 }
@@ -442,24 +403,9 @@ void build_variable_count_map(const WildConstInt<i> &c, variable_count_map &varc
 }
 
 template<int i>
-void build_leaf_vec(const WildConstInt<i> &c, leaf_vec &v) {
-    v.push_back(1);
-}
-
-template<int i>
 void wildcardconst_str(const WildConstInt<i> &c, std::string &s) {
     s += "b";
     return;
-}
-
-template<int i>
-bool is_right_child_constant(const WildConstInt<i> &c) {
-    return false;
-}
-
-template<int i>
-bool is_constant(const WildConstInt<i> &c) {
-    return true;
 }
 
 template<int i>
@@ -519,16 +465,6 @@ std::string print_smt2(const WildConstUInt<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-std::string get_nonzero_assumptions(const WildConstUInt<i> &c) {
-    return "";
-}
-
-template<int i>
-void build_divisor_set(const WildConstUInt<i> &c, std::set<std::string> &divisor_set) {
-    return;
-}
-
-template<int i>
 halide_type_t typecheck(const WildConstUInt<i> &c, halide_type_t type_hint) {
     if (type_hint.bits == 1) {
         return halide_type_of<bool>();
@@ -568,11 +504,6 @@ IRNodeType get_node_type(const WildConstUInt<i> &c) {
 }
 
 template<int i>
-void build_node_type_list(const WildConstUInt<i> &c, node_type_list &l) {
-    l.push_back(get_node_type(c));
-}
-
-template<int i>
 void build_variable_map(const WildConstUInt<i> &c, variable_map &varmap, halide_type_t type_hint) {
     varmap.insert({print_smt2(c, type_hint), typecheck(c, type_hint)});
 }
@@ -583,24 +514,9 @@ void build_variable_count_map(const WildConstUInt<i> &c, variable_count_map &var
 }
 
 template<int i>
-void build_leaf_vec(const WildConstUInt<i> &c, leaf_vec &v) {
-    v.push_back(1);
-}
-
-template<int i>
 void wildcardconst_str(const WildConstUInt<i> &c, std::string &s) {
     s += "b";
     return;
-}
-
-template<int i>
-bool is_right_child_constant(const WildConstUInt<i> &c) {
-    return false;
-}
-
-template<int i>
-bool is_constant(const WildConstUInt<i> &c) {
-    return true;
 }
 
 template<int i>
@@ -661,16 +577,6 @@ std::string print_smt2(const WildConstFloat<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-std::string get_nonzero_assumptions(const WildConstFloat<i> &c) {
-    return "";
-}
-
-template<int i>
-void build_divisor_set(const WildConstFloat<i> &c, std::set<std::string> &divisor_set) {
-    return;
-}
-
-template<int i>
 halide_type_t typecheck(const WildConstFloat<i> &c, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
@@ -706,11 +612,6 @@ IRNodeType get_node_type(const WildConstFloat<i> &c) {
 }
 
 template<int i>
-void build_node_type_list(const WildConstFloat<i> &c, node_type_list &l) {
-    l.push_back(get_node_type(c));
-}
-
-template<int i>
 void build_variable_map(const WildConstFloat<i> &c, variable_map &varmap, halide_type_t type_hint) {
     varmap.insert({print_smt2(c, type_hint), typecheck(c, type_hint)});
 }
@@ -721,24 +622,9 @@ void build_variable_count_map(const WildConstFloat<i> &c, variable_count_map &va
 }
 
 template<int i>
-void build_leaf_vec(const WildConstFloat<i> &c, leaf_vec &v) {
-    v.push_back(1);
-}
-
-template<int i>
 void wildcardconst_str(const WildConstFloat<i> &c, std::string &s) {
     s += "b";
     return;
-}
-
-template<int i>
-bool is_right_child_constant(const WildConstFloat<i> &c) {
-    return false;
-}
-
-template<int i>
-bool is_constant(const WildConstFloat<i> &c) {
-    return true;
 }
 
 // Matches and binds to any constant Expr. Does not support constant-folding.
@@ -797,16 +683,6 @@ std::string print_smt2(const WildConst<i> &c, halide_type_t type_hint) {
 }
 
 template<int i>
-std::string get_nonzero_assumptions(const WildConst<i> &c) {
-    return "";
-}
-
-template<int i>
-void build_divisor_set(const WildConst<i> &c, std::set<std::string> &divisor_set) {
-    return;
-}
-
-template<int i>
 halide_type_t typecheck(const WildConst<i> &c, halide_type_t type_hint) {
     return type_hint;
 }
@@ -842,11 +718,6 @@ IRNodeType get_node_type(const WildConst<i> &c) {
 }
 
 template<int i>
-void build_node_type_list(const WildConst<i> &c, node_type_list &l) {
-    l.push_back(get_node_type(c));
-}
-
-template<int i>
 void build_variable_map(const WildConst<i> &c, variable_map &varmap, halide_type_t type_hint) {
     varmap.insert({print_smt2(c, type_hint), typecheck(c, type_hint)});
 }
@@ -857,24 +728,9 @@ void build_variable_count_map(const WildConst<i> &c, variable_count_map &varcoun
 }
 
 template<int i>
-void build_leaf_vec(const WildConst<i> &c, leaf_vec &v) {
-    v.push_back(1);
-}
-
-template<int i>
 void wildcardconst_str(const WildConst<i> &c, std::string &s) {
     s += "b";
     return;
-}
-
-template<int i>
-bool is_right_child_constant(const WildConst<i> &c) {
-    return false;
-}
-
-template<int i>
-bool is_constant(const WildConst<i> &c) {
-    return true;
 }
 
 // Matches and binds to any Expr
@@ -939,16 +795,6 @@ std::string print_smt2(const Wild<i> &op, halide_type_t type_hint) {
 }
 
 template<int i>
-std::string get_nonzero_assumptions(const Wild<i> &op) {
-    return "";
-}
-
-template<int i>
-void build_divisor_set(const Wild<i> &op, std::set<std::string> &divisor_set) {
-    return;
-}
-
-template<int i>
 halide_type_t typecheck(const Wild<i> &op, halide_type_t type_hint) {
     return type_hint;
 }
@@ -984,11 +830,6 @@ IRNodeType get_node_type(const Wild<i> &op) {
 }
 
 template<int i>
-void build_node_type_list(const Wild<i> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-}
-
-template<int i>
 void build_variable_map(const Wild<i> &c, variable_map &varmap, halide_type_t type_hint) {
     varmap.insert({print_smt2(c, type_hint), typecheck(c, type_hint)});
 }
@@ -1008,24 +849,9 @@ void build_variable_count_map(const Wild<i> &c, variable_count_map &varcountmap)
 }
 
 template<int i>
-void build_leaf_vec(const Wild<i> &c, leaf_vec &v) {
-    v.push_back(0);
-}
-
-template<int i>
 void wildcardconst_str(const Wild<i> &c, std::string &s) {
     s += "a";
     return;
-}
-
-template<int i>
-bool is_right_child_constant(const Wild<i> &c) {
-    return false;
-}
-
-template<int i>
-bool is_constant(const Wild<i> &c) {
-    return false;
 }
 
 // Matches a specific constant or broadcast of that constant. The
@@ -1143,14 +969,6 @@ inline std::string print_smt2(const Const &op, halide_type_t type_hint) {
     }
 }
 
-inline std::string get_nonzero_assumptions(const Const &op) {
-    return "";
-}
-
-inline void build_divisor_set(const Const &op, std::set<std::string> &divisor_set) {
-    return;
-}
-
 inline halide_type_t typecheck(const Const &op, halide_type_t type_hint) {
     return type_hint;
 }
@@ -1180,10 +998,6 @@ inline IRNodeType get_node_type(const Const &op) {
     return IRNodeType::UIntImm;
 }
 
-inline void build_node_type_list(const Const &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-}
-
 inline void build_variable_map(const Const &op, variable_map &varmap, halide_type_t type_hint) {
     return;
 }
@@ -1192,21 +1006,9 @@ inline void build_variable_count_map(const Const &op, variable_count_map &varcou
     return;
 }
 
-inline void build_leaf_vec(const Const &op, leaf_vec &v) {
-    v.push_back(1);
-}
-
 inline void wildcardconst_str(const Const &op, std::string &s) {
     s += "b";
     return;
-}
-
-inline bool is_right_child_constant(const Const &op) {
-    return false;
-}
-
-inline bool is_constant(const Const &op) {
-    return true;
 }
 
 template<typename Op>
@@ -1443,26 +1245,9 @@ void build_bfs_type_map(const CmpOp<Op, A, B> &op, bfs_node_type_map &type_map, 
 }
 
 template<typename Op, typename A, typename B>
-void build_leaf_vec(const CmpOp<Op, A, B> &op, leaf_vec &v) {
-    build_leaf_vec(op.a, v);
-    build_leaf_vec(op.b, v);
-}
-
-template<typename Op, typename A, typename B>
 void wildcardconst_str(const CmpOp<Op, A, B> &op, std::string &s) {
     wildcardconst_str(op.a, s);
     wildcardconst_str(op.b, s);
-}
-
-template<typename Op, typename A, typename B>
-bool is_right_child_constant(const CmpOp<Op, A, B> &op) {
- //   debug(0) << nt_string_lookup[get_node_type(op.b)] << "\n";
-    return is_constant(op.b);
-}
-
-template<typename Op, typename A, typename B>
-bool is_constant(const CmpOp<Op, A, B> &op) {
-    return false;
 }
 
 template<typename Op, typename A, typename B>
@@ -1498,46 +1283,15 @@ void build_bfs_type_map(const BinOp<Op, A, B> &op, bfs_node_type_map &type_map, 
 }
 
 template<typename Op, typename A, typename B>
-void build_leaf_vec(const BinOp<Op, A, B> &op, leaf_vec &v) {
-    build_leaf_vec(op.a, v);
-    build_leaf_vec(op.b, v);
-}
-
-template<typename Op, typename A, typename B>
 void wildcardconst_str(const BinOp<Op, A, B> &op, std::string &s) {
     wildcardconst_str(op.a, s);
     wildcardconst_str(op.b, s);
 }
 
 template<typename Op, typename A, typename B>
-bool is_right_child_constant(const BinOp<Op, A, B> &op) {
-  //  debug(0) << nt_string_lookup[get_node_type(op.b)] << "\n";
-    return is_constant(op.b);
-}
-
-template<typename Op, typename A, typename B>
-bool is_constant(const BinOp<Op, A, B> &op) {
-    return false;
-}
-
-template<typename Op, typename A, typename B>
-void build_node_type_list(const CmpOp<Op, A, B> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-    build_node_type_list(op.a,l);
-    build_node_type_list(op.b,l);
-}
-
-template<typename Op, typename A, typename B>
 void build_variable_count_map(const CmpOp<Op, A, B> &op, variable_count_map &varcountmap) {
     build_variable_count_map(op.a, varcountmap);
     build_variable_count_map(op.b, varcountmap);
-}
-
-template<typename Op, typename A, typename B>
-void build_node_type_list(const BinOp<Op, A, B> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-    build_node_type_list(op.a,l);
-    build_node_type_list(op.b,l);
 }
 
 template<typename Op, typename A, typename B>
@@ -1555,17 +1309,6 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Add, A, B> &op, halide_type_t type_hint) {
     return "(+ " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
-}
-
-template<typename A, typename B>
-std::string get_nonzero_assumptions(const BinOp<Add, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const BinOp<Add, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1603,17 +1346,6 @@ std::string print_smt2(const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string get_nonzero_assumptions(const BinOp<Sub, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const BinOp<Sub, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
-}
-
-template<typename A, typename B>
 halide_type_t typecheck(const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
@@ -1645,17 +1377,6 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
     return "(* " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
-}
-
-template<typename A, typename B>
-std::string get_nonzero_assumptions(const BinOp<Mul, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const BinOp<Mul, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1693,18 +1414,6 @@ std::string print_smt2(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string get_nonzero_assumptions(const BinOp<Div, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n";
-}
-
-template<typename A, typename B>
-void build_divisor_set(const BinOp<Div, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
-    divisor_set.insert(print_smt2(op.b, halide_type_of<int64_t>()));
-}
-
-template<typename A, typename B>
 halide_type_t typecheck(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
@@ -1736,17 +1445,6 @@ std::ostream &operator<<(std::ostream &s, const BinOp<And, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const BinOp<And, A, B> &op, halide_type_t type_name) {
     return "(and " + print_smt2(op.a, halide_type_of<bool>()) + " " + print_smt2(op.b, halide_type_of<bool>()) + ")";
-}
-
-template<typename A, typename B>
-std::string get_nonzero_assumptions(const BinOp<And, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const BinOp<And, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1784,17 +1482,6 @@ std::string print_smt2(const BinOp<Or, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string get_nonzero_assumptions(const BinOp<Or, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const BinOp<Or, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
-}
-
-template<typename A, typename B>
 halide_type_t typecheck(const BinOp<Or, A, B> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -1829,17 +1516,6 @@ std::string print_smt2(const BinOp<Min, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string get_nonzero_assumptions(const BinOp<Min, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const BinOp<Min, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
-}
-
-template<typename A, typename B>
 halide_type_t typecheck(const BinOp<Min, A, B> &op, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
@@ -1871,17 +1547,6 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Max, A, B> &op, halide_type_t type_hint) {
     return "(max " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
-}
-
-template<typename A, typename B>
-std::string get_nonzero_assumptions(const BinOp<Max, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const BinOp<Max, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -1921,17 +1586,6 @@ std::string print_smt2(const CmpOp<LE, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string get_nonzero_assumptions(const CmpOp<LE, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const CmpOp<LE, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
-}
-
-template<typename A, typename B>
 void build_variable_map(const CmpOp<LE, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
@@ -1958,17 +1612,6 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<LT, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<LT, A, B> &op, halide_type_t type_hint) {
     return "(< " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
-}
-
-template<typename A, typename B>
-std::string get_nonzero_assumptions(const CmpOp<LT, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const CmpOp<LT, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -2001,17 +1644,6 @@ std::string print_smt2(const CmpOp<GE, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string get_nonzero_assumptions(const CmpOp<GE, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const CmpOp<GE, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
-}
-
-template<typename A, typename B>
 void build_variable_map(const CmpOp<GE, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
     build_variable_map(op.b, varmap, halide_type_of<int64_t>());
@@ -2038,17 +1670,6 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const CmpOp<GT, A, B> &op, halide_type_t type_hint) {
     return "(> " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
-}
-
-template<typename A, typename B>
-std::string get_nonzero_assumptions(const CmpOp<GT, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const CmpOp<GT, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -2087,17 +1708,6 @@ std::string print_smt2(const CmpOp<EQ, A, B> &op, halide_type_t type_hint) {
     } else {
         return "(= " + print_smt2(op.a, fresh_type_hint) + " " + print_smt2(op.b, fresh_type_hint) + ")";
     }
-}
-
-template<typename A, typename B>
-std::string get_nonzero_assumptions(const CmpOp<EQ, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const CmpOp<EQ, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
 }
 
 template<typename A, typename B>
@@ -2146,17 +1756,6 @@ std::string print_smt2(const CmpOp<NE, A, B> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename B>
-std::string get_nonzero_assumptions(const CmpOp<NE, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B>
-void build_divisor_set(const CmpOp<NE, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
-}
-
-template<typename A, typename B>
 void build_variable_map(const CmpOp<NE, A, B> &op, variable_map &varmap, halide_type_t type_hint) {
     halide_type_t fresh_type_hint;
     halide_type_t lhs_t = typecheck(op.a, fresh_type_hint);
@@ -2191,18 +1790,6 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
 template<typename A, typename B>
 std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
     return "(zeromod " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
-}
-
-template<typename A, typename B>
-std::string get_nonzero_assumptions(const BinOp<Mod, A, B> &op) {
-    return get_nonzero_assumptions(op.a) + "(assert (not (= " + print_smt2(op.b, halide_type_of<int64_t>()) + " 0)))\n";
-}
-
-template<typename A, typename B>
-void build_divisor_set(const BinOp<Mod, A, B> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
-    divisor_set.insert(print_smt2(op.b, halide_type_of<int64_t>()));
 }
 
 template<typename A, typename B>
@@ -2701,16 +2288,6 @@ std::string print_smt2(const Intrin<Args...> &op, halide_type_t type_hint) {
 }
 
 template<typename... Args>
-std::string get_nonzero_assumptions(const Intrin<Args...> &op) {
-    return "";
-}
-
-template<typename... Args>
-void build_divisor_set(const Intrin<Args...> &op, std::set<std::string> &divisor_set) {
-    return;
-}
-
-template<typename... Args>
 halide_type_t typecheck(const Intrin<Args...> &op, halide_type_t type_hint) {
     return type_hint;
 }
@@ -2746,23 +2323,8 @@ void build_variable_count_map(const Intrin<Args...> &op, variable_count_map &var
 }
 
 template<typename... Args>
-void build_leaf_vec(const Intrin<Args...> &op, leaf_vec &v) {
-    return;
-}
-
-template<typename... Args>
 void wildcardconst_str(const Intrin<Args...> &op, std::string &s) {
     return;
-}
-
-template<typename... Args>
-bool is_right_child_constant(const Intrin<Args...> &op) {
-    return false;
-}
-
-template<typename... Args>
-bool is_constant(const Intrin<Args...> &op) {
-    return false;
 }
 
 template<typename... Args>
@@ -2774,11 +2336,6 @@ void count_terms(const Intrin<Args...> &op, term_map &m) {
 template<typename... Args>
 IRNodeType get_node_type(const Intrin<Args...> &op) {
     return IRNodeType::IntImm;
-}
-
-template<typename... Args>
-void build_node_type_list(const Intrin<Args...> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
 }
 
 template<typename... Args>
@@ -2844,16 +2401,6 @@ std::string print_smt2(const NotOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string get_nonzero_assumptions(const NotOp<A> &op) {
-    return get_nonzero_assumptions(op.a);
-}
-
-template<typename A>
-void build_divisor_set(const NotOp<A> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-}
-
-template<typename A>
 halide_type_t typecheck(const NotOp<A> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -2900,23 +2447,8 @@ void build_variable_count_map(const NotOp<A> &op, variable_count_map &varcountma
 }
 
 template<typename A>
-void build_leaf_vec(const NotOp<A> &op, leaf_vec &v) {
-    build_leaf_vec(op.a, v);
-}
-
-template<typename A>
 void wildcardconst_str(const NotOp<A> &op, std::string &s) {
     wildcardconst_str(op.a, s);
-}
-
-template<typename A>
-bool is_right_child_constant(const NotOp<A> &op) {
-    return false;
-}
-
-template<typename A>
-bool is_constant(const NotOp<A> &op) {
-    return false;
 }
 
 template<typename A>
@@ -2928,12 +2460,6 @@ void count_terms(const NotOp<A> &op, term_map &m) {
 template<typename A>
 IRNodeType get_node_type(const NotOp<A> &op) {
     return IRNodeType::Not;
-}
-
-template<typename A>
-void build_node_type_list(const NotOp<A> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-    build_node_type_list(op.a,l);
 }
 
 template<typename C, typename T, typename F>
@@ -3003,18 +2529,6 @@ std::string print_smt2(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
 }
 
 template<typename C, typename T, typename F>
-std::string get_nonzero_assumptions(const SelectOp<C, T, F> &op) {
-    return get_nonzero_assumptions(op.c) + get_nonzero_assumptions(op.t) + get_nonzero_assumptions(op.f);
-}
-
-template<typename C, typename T, typename F>
-void build_divisor_set(const SelectOp<C, T, F> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.c, divisor_set);
-    build_divisor_set(op.t, divisor_set);
-    build_divisor_set(op.f, divisor_set);
-}
-
-template<typename C, typename T, typename F>
 halide_type_t typecheck(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
     halide_type_t term_t_type = typecheck(op.t, type_hint);
     halide_type_t term_f_type = typecheck(op.f, type_hint);
@@ -3076,30 +2590,10 @@ void build_variable_count_map(const SelectOp<C, T, F> &op, variable_count_map &v
 }
 
 template<typename C, typename T, typename F>
-void build_leaf_vec(const SelectOp<C, T, F> &op, leaf_vec &v) {
-    build_leaf_vec(op.c, v);
-    build_leaf_vec(op.t, v);
-    build_leaf_vec(op.f, v);
-}
-
-template<typename C, typename T, typename F>
 void wildcardconst_str(const SelectOp<C, T, F> &op, std::string &s) {
     wildcardconst_str(op.c, s);
     wildcardconst_str(op.t, s);
     wildcardconst_str(op.f, s);
-}
-
-template<typename C, typename T, typename F>
-bool is_right_child_constant(const SelectOp<C, T, F> &op) {
-    // not sure that we care about moving constants to false branches
-  //  debug(0) << nt_string_lookup[get_node_type(op.f)] << "\n";
-  //  return is_constant(op.f);
-    return false;
-}
-
-template<typename C, typename T, typename F>
-bool is_constant(const SelectOp<C, T, F> &op) {
-    return false;
 }
 
 template<typename C, typename T, typename F>
@@ -3113,14 +2607,6 @@ void count_terms(const SelectOp<C, T, F> &op, term_map &m) {
 template<typename C, typename T, typename F>
 IRNodeType get_node_type(const SelectOp<C, T, F> &op) {
     return IRNodeType::Select;
-}
-
-template<typename C, typename T, typename F>
-void build_node_type_list(const SelectOp<C, T, F> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-    build_node_type_list(op.c,l);
-    build_node_type_list(op.t,l);
-    build_node_type_list(op.f,l);
 }
 
 template<typename C, typename T, typename F>
@@ -3182,16 +2668,6 @@ std::string print_smt2(const BroadcastOp<A, true> &op, halide_type_t type_hint) 
    return print_smt2(op.a, type_hint);
 }
 
-template<typename A, bool known_lanes>
-std::string get_nonzero_assumptions(const BroadcastOp<A, known_lanes> &op) {
-    return get_nonzero_assumptions(op.a);
-}
-
-template<typename A, bool known_lanes>
-void build_divisor_set(const BroadcastOp<A, known_lanes> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-}
-
 template<typename A>
 halide_type_t typecheck(const BroadcastOp<A, true> &op, halide_type_t type_hint) {
     return typecheck(op.a, type_hint);
@@ -3220,23 +2696,8 @@ void build_bfs_type_map(const BroadcastOp<A, known_lanes> &op, bfs_node_type_map
 }
 
 template<typename A, bool known_lanes>
-void build_leaf_vec(const BroadcastOp<A, known_lanes> &op, leaf_vec &v) {
-    build_leaf_vec(op.a, v);
-}
-
-template<typename A, bool known_lanes>
 void wildcardconst_str(const BroadcastOp<A, known_lanes> &op, std::string &s) {
     wildcardconst_str(op.a, s);
-}
-
-template<typename A, bool known_lanes>
-bool is_right_child_constant(const BroadcastOp<A, known_lanes> &op) {
-    return false;
-}
-
-template<typename A, bool known_lanes>
-bool is_constant(const BroadcastOp<A, known_lanes> &op) {
-    return false;
 }
 
 template<typename A>
@@ -3258,12 +2719,6 @@ void count_terms(const BroadcastOp<A, known_lanes> &op, term_map &m) {
 template<typename A, bool known_lanes>
 IRNodeType get_node_type(const BroadcastOp<A, known_lanes> &op) {
     return IRNodeType::Broadcast;
-}
-
-template<typename A, bool known_lanes>
-void build_node_type_list(const BroadcastOp<A, known_lanes> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-    build_node_type_list(op.a,l);
 }
 
 template<typename A>
@@ -3359,17 +2814,6 @@ std::string print_smt2(const RampOp<A, B, known_lanes> &op, halide_type_t type_h
 }
 
 template<typename A, typename B, bool known_lanes>
-std::string get_nonzero_assumptions(const RampOp<A, B, known_lanes> &op) {
-    return get_nonzero_assumptions(op.a) + get_nonzero_assumptions(op.b);
-}
-
-template<typename A, typename B, bool known_lanes>
-void build_divisor_set(const RampOp<A, B, known_lanes> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-    build_divisor_set(op.b, divisor_set);
-}
-
-template<typename A, typename B, bool known_lanes>
 halide_type_t typecheck(const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
@@ -3399,33 +2843,9 @@ IRNodeType get_node_type(const RampOp<A, B, known_lanes> &op) {
 }
 
 template<typename A, typename B, bool known_lanes>
-void build_node_type_list(const RampOp<A, B, known_lanes> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-    build_node_type_list(op.a,l);
-    build_node_type_list(op.b,l);
-}
-
-template<typename A, typename B, bool known_lanes>
-void build_leaf_vec(const RampOp<A, B, known_lanes> &op, leaf_vec &v) {
-    build_leaf_vec(op.a, v);
-    build_leaf_vec(op.b, v);
-}
-
-template<typename A, typename B, bool known_lanes>
 void wildcardconst_str(const RampOp<A, B, known_lanes> &op, std::string &s) {
     wildcardconst_str(op.a, s);
     wildcardconst_str(op.b, s);
-}
-
-template<typename A, typename B, bool known_lanes>
-bool is_right_child_constant(const RampOp<A, B, known_lanes> &op) {
-    // don't care about moving constants to stride
-    return false;
-}
-
-template<typename A, typename B, bool known_lanes>
-bool is_constant(const RampOp<A, B, known_lanes> &op) {
-    return false;
 }
 
 template<typename A, typename B, bool known_lanes>
@@ -3538,16 +2958,6 @@ std::string print_smt2(const NegateOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string get_nonzero_assumptions(const NegateOp<A> &op) {
-    return get_nonzero_assumptions(op.a);
-}
-
-template<typename A>
-void build_divisor_set(const NegateOp<A> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-}
-
-template<typename A>
 halide_type_t typecheck(const NegateOp<A> &op, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
@@ -3594,23 +3004,8 @@ void build_variable_count_map(const NegateOp<A> &op, variable_count_map &varcoun
 }
 
 template<typename A>
-void build_leaf_vec(const NegateOp<A> &op, leaf_vec &v) {
-    build_leaf_vec(op.a, v);
-}
-
-template<typename A>
 void wildcardconst_str(const NegateOp<A> &op, std::string &s) {
     wildcardconst_str(op.a, s);
-}
-
-template<typename A>
-bool is_right_child_constant(const NegateOp<A> &op) {
-    return false;
-}
-
-template<typename A>
-bool is_constant(const NegateOp<A> &op) {
-    return false;
 }
 
 template<typename A>
@@ -3622,12 +3017,6 @@ void count_terms(const NegateOp<A> &op, term_map &m) {
 template<typename A>
 IRNodeType get_node_type(const NegateOp<A> &op) {
     return IRNodeType::Sub;
-}
-
-template<typename A>
-void build_node_type_list(const NegateOp<A> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-    build_node_type_list(op.a,l);
 }
 
 template<typename A>
@@ -3682,16 +3071,6 @@ std::string print_smt2(const CastOp<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string get_nonzero_assumptions(const CastOp<A> &op) {
-    return "";
-}
-
-template<typename A>
-void build_divisor_set(const CastOp<A> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-}
-
-template<typename A>
 halide_type_t typecheck(const CastOp<A> &op, halide_type_t type_hint) {
     return typecheck(op.a, type_hint);
 }
@@ -3728,23 +3107,8 @@ void build_variable_count_map(const CastOp<A> &op, variable_count_map &varcountm
 }
 
 template<typename A>
-void build_leaf_vec(const CastOp<A> &op, leaf_vec &v) {
-    build_leaf_vec(op.a, v);
-}
-
-template<typename A>
 void wildcardconst_str(const CastOp<A> &op, std::string &s) {
     wildcardconst_str(op.a, s);
-}
-
-template<typename A>
-bool is_right_child_constant(const CastOp<A> &op) {
-    return false;
-}
-
-template<typename A>
-bool is_constant(const CastOp<A> &op) {
-    return false;
 }
 
 template<typename A>
@@ -3755,12 +3119,6 @@ void count_terms(const CastOp<A> &op, term_map &m) {
 template<typename A>
 IRNodeType get_node_type(const CastOp<A> &op) {
     return IRNodeType::Cast;
-}
-
-template<typename A>
-void build_node_type_list(const CastOp<A> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-    build_node_type_list(op.a,l);
 }
 
 template<typename A>
@@ -3811,16 +3169,6 @@ std::string print_smt2(const Fold<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string get_nonzero_assumptions(const Fold<A> &op) {
-    return get_nonzero_assumptions(op.a);
-}
-
-template<typename A>
-void build_divisor_set(const Fold<A> &op, std::set<std::string> &divisor_set) {
-    build_divisor_set(op.a, divisor_set);
-}
-
-template<typename A>
 halide_type_t typecheck(const Fold<A> &op, halide_type_t type_hint) {
     return typecheck(op.a, type_hint);
 }
@@ -3857,23 +3205,8 @@ void build_variable_count_map(const Fold<A> &op, variable_count_map &varcountmap
 }
 
 template<typename A>
-void build_leaf_vec(const Fold<A> &op, leaf_vec &v) {
-    v.push_back(1);
-}
-
-template<typename A>
 void wildcardconst_str(const Fold<A> &op, std::string &s) {
     wildcardconst_str(op.a,s);
-}
-
-template<typename A>
-bool is_right_child_constant(const Fold<A> &op) {
-    return true;
-}
-
-template<typename A>
-bool is_constant(const Fold<A> &op) {
-    return true;
 }
 
 template<typename A>
@@ -3885,11 +3218,6 @@ template<typename A>
 IRNodeType get_node_type(const Fold<A> &op) {
    // return IRNodeType::UIntImm;
     return get_node_type(op.a);
-}
-
-template<typename A>
-void build_node_type_list(const Fold<A> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
 }
 
 template<typename A>
@@ -3926,16 +3254,6 @@ template<typename A>
 std::string print_smt2(const Overflows<A> &op, halide_type_t type_hint) {
     // as we currently assume all numbers are infinite precision integers, they cannot overflow
     return "false";
-}
-
-template<typename A>
-std::string get_nonzero_assumptions(const Overflows<A> &op) {
-    return "";
-}
-
-template<typename A>
-void build_divisor_set(const Overflows<A> &op, std::set<std::string> &divisor_set) {
-    return;
 }
 
 template<typename A>
@@ -4011,14 +3329,6 @@ inline std::string print_smt2(const Overflow &op, halide_type_t type_hint) {
     return "overflow()";
 }
 
-inline std::string get_nonzero_assumptions(const Overflow &op) {
-    return "";
-}
-
-inline void build_divisor_set(const Overflow &op, std::set<std::string> &divisor_set) {
-    return;
-}
-
 inline halide_type_t typecheck(const Overflow &op, halide_type_t type_hint) {
     return halide_type_of<int64_t>();
 }
@@ -4047,18 +3357,6 @@ inline void build_variable_count_map(const Overflow &op, variable_count_map &var
     return;
 }
 
-inline void build_leaf_vec(const Overflow &op, leaf_vec &v) {
-    v.push_back(0); // assume the position of overflows doesn't matter
-}
-
-inline bool is_right_child_constant(const Overflow &op) {
-    return false;
-}
-
-inline bool is_constant(const Overflow &op) {
-    return false;
-}
-
 inline void count_terms(const Overflow &op, term_map &m) {
     return;
 }
@@ -4066,10 +3364,6 @@ inline void count_terms(const Overflow &op, term_map &m) {
 // is this the right node type to return?
 inline IRNodeType get_node_type(const Overflow &op) {
     return IRNodeType::Variable;
-}
-
-inline void build_node_type_list(const Overflow &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
 }
 
 template<typename A>
@@ -4111,16 +3405,6 @@ std::string print_smt2(const IsConst<A> &op, halide_type_t type_hint) {
     } else {
         return "false";
     }
-}
-
-template<typename A>
-std::string get_nonzero_assumptions(const IsConst<A> &op) {
-    return "";
-}
-
-template<typename A>
-void build_divisor_set(const IsConst<A> &op, std::set<std::string> &divisor_set) {
-    return;
 }
 
 template<typename A>
@@ -4166,23 +3450,8 @@ void build_variable_count_map(const IsConst<A> &op, variable_count_map &varcount
 }
 
 template<typename A>
-void build_leaf_vec(const IsConst<A> &op, leaf_vec &v) {
-    return;
-}
-
-template<typename A>
 void wildcardconst_str(const IsConst<A> &op, std::string &s) {
     return;
-}
-
-template<typename A>
-bool is_right_child_constant(const IsConst<A> &op) {
-    return false;
-}
-
-template<typename A>
-bool is_constant(const IsConst<A> &op) {
-    return false;
 }
 
 // don't think this can occur in before/after terms (?)
@@ -4195,11 +3464,6 @@ void count_terms(const IsConst<A> &op, term_map &m) {
 template<typename A>
 IRNodeType get_node_type(const IsConst<A> &op) {
     return IRNodeType::Variable;
-}
-
-template<typename A>
-void build_node_type_list(const IsConst<A> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
 }
 
 template<typename A, typename Prover>
@@ -4240,16 +3504,6 @@ std::string print_smt2(const CanProve<A, Prover> &op, halide_type_t type_hint) {
 }
 
 template<typename A, typename Prover>
-std::string get_nonzero_assumptions(const CanProve<A, Prover> &op) {
-    return "";
-}
-
-template<typename A, typename Prover>
-void build_divisor_set(const CanProve<A, Prover> &op, std::set<std::string> &divisor_set) {
-    return;
-}
-
-template<typename A, typename Prover>
 halide_type_t typecheck(const CanProve<A, Prover> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -4286,23 +3540,8 @@ void build_variable_count_map(const CanProve<A, Prover> &op, variable_count_map 
 }
 
 template<typename A, typename Prover>
-void build_leaf_vec(const CanProve<A, Prover> &op, leaf_vec &v) {
-    return;
-}
-
-template<typename A, typename Prover>
 void wildcardconst_str(const CanProve<A, Prover> &op, std::string &s) {
     return;
-}
-
-template<typename A, typename Prover>
-bool is_right_child_constant(const CanProve<A, Prover> &op) {
-    return false;
-}
-
-template<typename A, typename Prover>
-bool is_constant(const CanProve<A, Prover> &op) {
-    return false;
 }
 
 // can't occur in before/after terms (can't or doesn't?)
@@ -4315,11 +3554,6 @@ void count_terms(const CanProve<A, Prover> &op, term_map &m) {
 template<typename A, typename Prover>
 IRNodeType get_node_type(const CanProve<A, Prover> &op) {
     return IRNodeType::Variable;
-}
-
-template<typename A, typename Prover>
-void build_node_type_list(const CanProve<A,Prover> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
 }
 
 template<typename A>
@@ -4363,16 +3597,6 @@ std::string print_smt2(const IsFloat<A> &op, halide_type_t type_hint) {
 }
 
 template<typename A>
-std::string get_nonzero_assumptions(const IsFloat<A> &op) {
-    return "";
-}
-
-template<typename A>
-void build_divisor_set(const IsFloat<A> &op, std::set<std::string> &divisor_set) {
-    return;
-}
-
-template<typename A>
 halide_type_t typecheck(const IsFloat<A> &op, halide_type_t type_hint) {
     return halide_type_of<bool>();
 }
@@ -4409,23 +3633,8 @@ void build_variable_count_map(const IsFloat<A> &op, variable_count_map &varcount
 }
 
 template<typename A>
-void build_leaf_vec(const IsFloat<A> &op, leaf_vec &v) {
-    return;
-}
-
-template<typename A>
 void wildcardconst_str(const IsFloat<A> &op, std::string &s) {
     return;
-}
-
-template<typename A>
-bool is_right_child_constant(const IsFloat<A> &op) {
-    return false;
-}
-
-template<typename A>
-bool is_constant(const IsFloat<A> &op) {
-    return false;
 }
 
 // can't (or doesn't?) appear in before/after terms
@@ -4439,36 +3648,12 @@ IRNodeType get_node_type(const IsFloat<A> &op) {
     return IRNodeType::UIntImm;
 }
 
-template<typename A>
-void build_node_type_list(const IsFloat<A> &op, node_type_list &l) {
-    l.push_back(get_node_type(op));
-}
-
 template<typename Before,
         typename After,
         typename Predicate>
 HALIDE_ALWAYS_INLINE
 void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
                             halide_type_t wildcard_type, halide_type_t output_type) noexcept {
-
-    // Check that any divisor terms in RHS are present in LHS
-    // TODO: Check that new divisor terms are constants & guaranteed to be non-zero via predicates
-    std::set<std::string> before_divisors;
-    build_divisor_set(before, before_divisors);
-    std::set<std::string> after_divisors;
-    build_divisor_set(after, after_divisors);
-
-
-
-    bool new_divisors = false;
-
-    for (std::set<std::string>::iterator it=after_divisors.begin(); it!=after_divisors.end(); ++it) {
-        if (before_divisors.count(*it) == 0)
-            new_divisors = true;
-    }
-
-    //if (new_divisors)
-    //    debug(0) << "!!!! LHS" << before << " RHS " << after << ": contains new divisor terms in RHS\n\n";
 
     term_map LHS_term_map;
     term_map RHS_term_map;
@@ -4494,7 +3679,7 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     wildcardconst_str(after,RHS_wildcardstr);
 
     if (LHS_vector_count > RHS_vector_count) {
-            debug(0) << before << " ; " << after << " ;  VECTOR COUNT SUCCESS\n";
+        debug(0) << before << " ; " << after << " ;  VECTOR COUNT SUCCESS\n";
     } else if (LHS_vector_count < RHS_vector_count) {
         debug(0) << before << " ; " << after << " ; VECTOR COUNT FAILURE\n";
     // after ramp check, make sure all variable occurrences are equal or less in RHS
@@ -4762,7 +3947,7 @@ HALIDE_ALWAYS_INLINE bool evaluate_predicate(Pattern p, MatcherState &state) {
 #define HALIDE_VERIFY_SIMPLIFY_RULES 1
 
 // check various properties of rules when they match
-#define HALIDE_CHECK_RULES_PROPERTIES 0
+#define HALIDE_CHECK_RULES_PROPERTIES 1
 
 template<typename Instance>
 struct Rewriter {
