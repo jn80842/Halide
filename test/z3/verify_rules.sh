@@ -26,21 +26,24 @@ for filename in ../../bin/build/tmp/*.smt2; do
   then
     if [[ "$show_passing" == 'true' ]] ; then
       echo "---------------------------------------------------------------"
+      echo "$RELATION"
       echo "Filename: $filename"
-      echo "The relation $RELATION was verified."
+      echo "The relation was verified."
     fi
   elif [[ $OUTPUT =~ $unknownregex ]]
   then
     if [[ "$show_unknown" == 'true' ]] ; then
       echo "---------------------------------------------------------------"
+      echo "$RELATION"
       echo "Filename: $filename"
-      echo "The relation $RELATION could not be determined to be satisfied, but no counterexample could be found."
+      echo "The relation could not be determined to be satisfied, but no counterexample could be found."
     fi
   else
     if [[ "$show_failing" == 'true' ]] ; then
       echo "---------------------------------------------------------------"
+      echo "$RELATION"
       echo "Filename: $filename"
-      echo "The relation $RELATION could not be verified."
+      echo "The relation could not be verified."
       echo $OUTPUT
     fi
   fi
