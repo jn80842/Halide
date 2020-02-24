@@ -46,51 +46,51 @@ Expr Simplify::visit(const Max *op, ExprInfo *bounds) {
         if (EVAL_IN_LAMBDA
             (rewrite(max(x, x), x, "max47") ||
              rewrite(max(c0, c1), fold(max(c0, c1)), "max48") ||
-             rewrite(max(IRMatcher::Overflow(), x), a, "max49") ||
-             rewrite(max(x,IRMatcher::Overflow()), b, "max50") ||
+             rewrite(max(IRMatcher::Overflow(), x), IRMatcher::Overflow(), "max49") ||
+             rewrite(max(x,IRMatcher::Overflow()), IRMatcher::Overflow(), "max50") ||
              // Cases where one side dominates:
              rewrite(max(x, op->type.max()), b, "max52") ||
              rewrite(max(x, op->type.min()), x, "max53") ||
-             rewrite(max((x/c0)*c0, x), b, c0 > 0, "max54") ||
-             rewrite(max(x, (x/c0)*c0), a, c0 > 0, "max55") ||
-             rewrite(max(max(x, y), x), a, "max56") ||
-             rewrite(max(max(x, y), y), a, "max57") ||
-             rewrite(max(max(max(x, y), z), x), a, "max58") ||
-             rewrite(max(max(max(x, y), z), y), a, "max59") ||
-             rewrite(max(max(max(max(x, y), z), w), x), a, "max60") ||
-             rewrite(max(max(max(max(x, y), z), w), y), a, "max61") ||
-             rewrite(max(max(max(max(max(x, y), z), w), u), x), a, "max62") ||
-             rewrite(max(max(max(max(max(x, y), z), w), u), y), a, "max63") ||
-             rewrite(max(x, min(x, y)), a, "max64") ||
-             rewrite(max(x, min(y, x)), a, "max65") ||
-             rewrite(max(max(x, y), min(x, y)), a, "max66") ||
-             rewrite(max(max(x, y), min(y, x)), a, "max67") ||
-             rewrite(max(min(x, y), x), b, "max68") ||
-             rewrite(max(min(y, x), x), b, "max69") ||
-             rewrite(max(min(x, c0), c1), b, c1 >= c0, "max70") ||
+             rewrite(max((x/c0)*c0, x), x, c0 > 0, "max54") ||
+             rewrite(max(x, (x/c0)*c0), x, c0 > 0, "max55") ||
+             rewrite(max(max(x, y), x), max(x, y), "max56") ||
+             rewrite(max(max(x, y), y), max(x, y), "max57") ||
+             rewrite(max(max(max(x, y), z), x), max(max(x, y), z), "max58") ||
+             rewrite(max(max(max(x, y), z), y), max(max(x, y), z), "max59") ||
+             rewrite(max(max(max(max(x, y), z), w), x), max(max(max(x, y), z), w), "max60") ||
+             rewrite(max(max(max(max(x, y), z), w), y), max(max(max(x, y), z), w), "max61") ||
+             rewrite(max(max(max(max(max(x, y), z), w), u), x), max(max(max(max(x, y), z), w), u), "max62") ||
+             rewrite(max(max(max(max(max(x, y), z), w), u), y), max(max(max(max(x, y), z), w), u), "max63") ||
+             rewrite(max(x, min(x, y)), x, "max64") ||
+             rewrite(max(x, min(y, x)), x, "max65") ||
+             rewrite(max(max(x, y), min(x, y)), max(x, y), "max66") ||
+             rewrite(max(max(x, y), min(y, x)), max(x, y), "max67") ||
+             rewrite(max(min(x, y), x), x, "max68") ||
+             rewrite(max(min(y, x), x), x, "max69") ||
+             rewrite(max(min(x, c0), c1), c1, c1 >= c0, "max70") ||
 
-             rewrite(max(intrin(Call::likely, x), x), a, "max72") ||
-             rewrite(max(x, intrin(Call::likely, x)), b, "max73") ||
-             rewrite(max(intrin(Call::likely_if_innermost, x), x), a, "max74") ||
-             rewrite(max(x, intrin(Call::likely_if_innermost, x)), b, "max75") ||
+             rewrite(max(intrin(Call::likely, x), x), intrin(Call::likely, x), "max72") ||
+             rewrite(max(x, intrin(Call::likely, x)), intrin(Call::likely, x), "max73") ||
+             rewrite(max(intrin(Call::likely_if_innermost, x), x), intrin(Call::likely_if_innermost, x), "max74") ||
+             rewrite(max(x, intrin(Call::likely_if_innermost, x)), intrin(Call::likely_if_innermost, x), "max75") ||
 
              (no_overflow(op->type) &&
-              (rewrite(max(ramp(x, y), broadcast(z)), a, can_prove(x + y * (lanes - 1) >= z && x >= z, this), "max78") ||
-               rewrite(max(ramp(x, y), broadcast(z)), b, can_prove(x + y * (lanes - 1) <= z && x <= z, this), "max79") ||
+              (rewrite(max(ramp(x, y), broadcast(z)), ramp(x, y), can_prove(x + y * (lanes - 1) >= z && x >= z, this), "max78") ||
+               rewrite(max(ramp(x, y), broadcast(z)), broadcast(z), can_prove(x + y * (lanes - 1) <= z && x <= z, this), "max79") ||
                // Compare x to a stair-step function in x
-               rewrite(max(((x + c0)/c1)*c1 + c2, x), a, c1 > 0 && c0 + c2 >= c1 - 1, "max81") ||
-               rewrite(max(x, ((x + c0)/c1)*c1 + c2), b, c1 > 0 && c0 + c2 >= c1 - 1, "max82") ||
-               rewrite(max(((x + c0)/c1)*c1 + c2, x), b, c1 > 0 && c0 + c2 <= 0, "max83") ||
-               rewrite(max(x, ((x + c0)/c1)*c1 + c2), a, c1 > 0 && c0 + c2 <= 0, "max84") ||
+               rewrite(max(((x + c0)/c1)*c1 + c2, x), ((x + c0)/c1)*c1 + c2, c1 > 0 && c0 + c2 >= c1 - 1, "max81") ||
+               rewrite(max(x, ((x + c0)/c1)*c1 + c2), ((x + c0)/c1)*c1 + c2, c1 > 0 && c0 + c2 >= c1 - 1, "max82") ||
+               rewrite(max(((x + c0)/c1)*c1 + c2, x), x, c1 > 0 && c0 + c2 <= 0, "max83") ||
+               rewrite(max(x, ((x + c0)/c1)*c1 + c2), x, c1 > 0 && c0 + c2 <= 0, "max84") ||
                // Special cases where c0 or c2 is zero
-               rewrite(max((x/c1)*c1 + c2, x), a, c1 > 0 && c2 >= c1 - 1, "max86") ||
-               rewrite(max(x, (x/c1)*c1 + c2), b, c1 > 0 && c2 >= c1 - 1, "max87") ||
-               rewrite(max(((x + c0)/c1)*c1, x), a, c1 > 0 && c0 >= c1 - 1, "max88") ||
-               rewrite(max(x, ((x + c0)/c1)*c1), b, c1 > 0 && c0 >= c1 - 1, "max89") ||
-               rewrite(max((x/c1)*c1 + c2, x), b, c1 > 0 && c2 <= 0, "max90") ||
-               rewrite(max(x, (x/c1)*c1 + c2), a, c1 > 0 && c2 <= 0, "max91") ||
-               rewrite(max(((x + c0)/c1)*c1, x), b, c1 > 0 && c0 <= 0, "max92") ||
-               rewrite(max(x, ((x + c0)/c1)*c1), a, c1 > 0 && c0 <= 0, "max93"))))) {
+               rewrite(max((x/c1)*c1 + c2, x), (x/c1)*c1 + c2, c1 > 0 && c2 >= c1 - 1, "max86") ||
+               rewrite(max(x, (x/c1)*c1 + c2), (x/c1)*c1 + c2, c1 > 0 && c2 >= c1 - 1, "max87") ||
+               rewrite(max(((x + c0)/c1)*c1, x), ((x + c0)/c1)*c1, c1 > 0 && c0 >= c1 - 1, "max88") ||
+               rewrite(max(x, ((x + c0)/c1)*c1), ((x + c0)/c1)*c1, c1 > 0 && c0 >= c1 - 1, "max89") ||
+               rewrite(max((x/c1)*c1 + c2, x), x, c1 > 0 && c2 <= 0, "max90") ||
+               rewrite(max(x, (x/c1)*c1 + c2), x, c1 > 0 && c2 <= 0, "max91") ||
+               rewrite(max(((x + c0)/c1)*c1, x), x, c1 > 0 && c0 <= 0, "max92") ||
+               rewrite(max(x, ((x + c0)/c1)*c1), x, c1 > 0 && c0 <= 0, "max93"))))) {
             return rewrite.result;
         }
         // clang-format on
@@ -105,7 +105,7 @@ Expr Simplify::visit(const Max *op, ExprInfo *bounds) {
              rewrite(max(max(y, x), max(z, x)), max(max(y, z), x), "max105") ||
              rewrite(max(max(x, y), max(z, w)), max(max(max(x, y), z), w), "max106") ||
              rewrite(max(broadcast(x), broadcast(y)), broadcast(max(x, y), lanes), "max107") ||
-             rewrite(max(broadcast(x), ramp(y, z)), max(b, a), "max108") ||
+             rewrite(max(broadcast(x), ramp(y, z)), max(ramp(y, z), broadcast(x)), "max108") ||
              rewrite(max(max(x, broadcast(y)), broadcast(z)), max(x, broadcast(max(y, z), lanes)), "max109") ||
              rewrite(max(min(x, y), min(x, z)), min(x, max(y, z)), "max110") ||
              rewrite(max(min(x, y), min(z, x)), min(x, max(y, z)), "max111") ||

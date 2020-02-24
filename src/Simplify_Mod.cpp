@@ -64,8 +64,8 @@ Expr Simplify::visit(const Mod *op, ExprInfo *bounds) {
         auto rewrite = IRMatcher::rewriter(IRMatcher::mod(a, b), op->type);
 
         if (rewrite(c0 % c1, fold(c0 % c1), "mod66") ||
-            rewrite(IRMatcher::Overflow() % x, a, "mod67") ||
-            rewrite(x % IRMatcher::Overflow(), b, "mod68") ||
+            rewrite(IRMatcher::Overflow() % x, IRMatcher::Overflow(), "mod67") ||
+            rewrite(x % IRMatcher::Overflow(), IRMatcher::Overflow(), "mod68") ||
             rewrite(0 % x, 0, "mod69") ||
             rewrite(x % x, 0, "mod70") ||
             rewrite(x % 0, 0, "mod71") ||

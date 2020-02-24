@@ -3998,51 +3998,12 @@ struct Rewriter {
     }
 
     template<typename Before,
-             typename After,
-             typename = typename enable_if_pattern<Before>::type,
-             typename = typename enable_if_pattern<After>::type>
-    HALIDE_ALWAYS_INLINE bool operator()(Before before, After after) {
-        static_assert((Before::binds & After::binds) == After::binds, "Rule result uses unbound values");
-#if HALIDE_FUZZ_TEST_RULES
-        fuzz_test_rule(before, after, true, wildcard_type, output_type);
-
-#endif
-#if HALIDE_CHECK_RULES_PROPERTIES
-#endif
-        if (before.template match<0>(instance, state)) {
-            build_replacement(after);
-#if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << "\n";
-#endif
-            return true;
-        } else {
-#if HALIDE_DEBUG_UNMATCHED_RULES
-            debug(0) << instance << " does not match " << before << "\n";
-#endif
-            return false;
-        }
-    }
-
-    template<typename Before,
              typename = typename enable_if_pattern<Before>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, const Expr &after, std::string rulename) noexcept {
-        if (before.template match<0>(instance, state)) {
-            result = after;
-#if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << "\n";
+#if HALIDE_VERIFY_SIMPLIFY_RULES
+    //    verify_simplification_rule(before, after, true, wildcard_type, output_type, rulename);
+        debug(0) << "Need to verify: " << before << " -> " << after << "\n";
 #endif
-            return true;
-        } else {
-#if HALIDE_DEBUG_UNMATCHED_RULES
-            debug(0) << instance << " does not match " << before << "\n";
-#endif
-            return false;
-        }
-    }
-
-    template<typename Before,
-             typename = typename enable_if_pattern<Before>::type>
-    HALIDE_ALWAYS_INLINE bool operator()(Before before, const Expr &after) noexcept {
         if (before.template match<0>(instance, state)) {
             result = after;
 #if HALIDE_DEBUG_MATCHED_RULES
@@ -4065,33 +4026,6 @@ struct Rewriter {
 #endif
 #if HALIDE_VERIFY_SIMPLIFY_RULES
         verify_simplification_rule(before, Const(after), true, wildcard_type, output_type, rulename);
-#endif
-#if HALIDE_CHECK_RULES_PROPERTIES
-        check_rule_properties(before, Const(after), true, wildcard_type, output_type);
-#endif
-
-        if (before.template match<0>(instance, state)) {
-            result = make_const(output_type, after);
-#if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << "\n";
-#endif
-            return true;
-        } else {
-#if HALIDE_DEBUG_UNMATCHED_RULES
-            debug(0) << instance << " does not match " << before << "\n";
-#endif
-            return false;
-        }
-    }
-
-    template<typename Before,
-             typename = typename enable_if_pattern<Before>::type>
-    HALIDE_ALWAYS_INLINE bool operator()(Before before, int64_t after) noexcept {
-#if HALIDE_FUZZ_TEST_RULES
-        fuzz_test_rule(before, Const(after), true, wildcard_type, output_type);
-#endif
-#if HALIDE_VERIFY_SIMPLIFY_RULES
-        verify_simplification_rule(before, Const(after), true, wildcard_type, output_type);
 #endif
 #if HALIDE_CHECK_RULES_PROPERTIES
         check_rule_properties(before, Const(after), true, wildcard_type, output_type);
@@ -4147,64 +4081,10 @@ struct Rewriter {
     }
 
     template<typename Before,
-             typename After,
-             typename Predicate,
-             typename = typename enable_if_pattern<Before>::type,
-             typename = typename enable_if_pattern<After>::type,
-             typename = typename enable_if_pattern<Predicate>::type>
-    HALIDE_ALWAYS_INLINE bool operator()(Before before, After after, Predicate pred) {
-        static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
-        static_assert((Before::binds & After::binds) == After::binds, "Rule result uses unbound values");
-        static_assert((Before::binds & Predicate::binds) == Predicate::binds, "Rule predicate uses unbound values");
-#if HALIDE_FUZZ_TEST_RULES
-        fuzz_test_rule(before, after, pred, wildcard_type, output_type);
-#endif
-
-#if HALIDE_CHECK_RULES_PROPERTIES
-        check_rule_properties(before, after, pred, wildcard_type, output_type);
-#endif
-
-        if (before.template match<0>(instance, state) &&
-            evaluate_predicate(pred, state)) {
-            build_replacement(after);
-#if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << " when " << pred << "\n";
-#endif
-            return true;
-        } else {
-#if HALIDE_DEBUG_UNMATCHED_RULES
-            debug(0) << instance << " does not match " << before << "\n";
-#endif
-            return false;
-        }
-    }
-
-    template<typename Before,
          typename Predicate,
          typename = typename enable_if_pattern<Before>::type,
          typename = typename enable_if_pattern<Predicate>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, const Expr &after, Predicate pred, std::string rulename) {
-        static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
-        if (before.template match<0>(instance, state) &&
-            evaluate_predicate(pred, state)) {
-            result = after;
-#if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << " when " << pred << "\n";
-#endif
-            return true;
-        } else {
-#if HALIDE_DEBUG_UNMATCHED_RULES
-            debug(0) << instance << " does not match " << before << "\n";
-#endif
-            return false;
-        }
-    }
-
-    template<typename Before,
-             typename Predicate,
-             typename = typename enable_if_pattern<Before>::type,
-             typename = typename enable_if_pattern<Predicate>::type>
-    HALIDE_ALWAYS_INLINE bool operator()(Before before, const Expr &after, Predicate pred) {
         static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
         if (before.template match<0>(instance, state) &&
             evaluate_predicate(pred, state)) {
@@ -4252,34 +4132,6 @@ struct Rewriter {
         }
     }
 
-    template<typename Before,
-             typename Predicate,
-             typename = typename enable_if_pattern<Before>::type,
-             typename = typename enable_if_pattern<Predicate>::type>
-    HALIDE_ALWAYS_INLINE bool operator()(Before before, int64_t after, Predicate pred) {
-        static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
-#if HALIDE_FUZZ_TEST_RULES
-        fuzz_test_rule(before, Const(after), pred, wildcard_type, output_type);
-#endif
-
-#if HALIDE_CHECK_RULES_PROPERTIES
-        check_rule_properties(before, Const(after), pred, wildcard_type, output_type);
-#endif
-
-        if (before.template match<0>(instance, state) &&
-            evaluate_predicate(pred, state)) {
-            result = make_const(output_type, after);
-#if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << " when " << pred << "\n";
-#endif
-            return true;
-        } else {
-#if HALIDE_DEBUG_UNMATCHED_RULES
-            debug(0) << instance << " does not match " << before << "\n";
-#endif
-            return false;
-        }
-    }
 };
 
 /** Construct a rewriter for the given instance, which may be a pattern

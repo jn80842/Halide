@@ -20,28 +20,28 @@ Expr Simplify::visit(const And *op, ExprInfo *bounds) {
 
     // clang-format off
     if (EVAL_IN_LAMBDA
-        (rewrite(x && true, a, "and23") ||
-         rewrite(x && false, b, "and24") ||
-         rewrite(x && x, a, "and25") ||
+        (rewrite(x && true, x, "and23") ||
+         rewrite(x && false, false, "and24") ||
+         rewrite(x && x, x, "and25") ||
 
-         rewrite((x && y) && x, a, "and27") ||
-         rewrite(x && (x && y), b, "and28") ||
-         rewrite((x && y) && y, a, "and29") ||
-         rewrite(y && (x && y), b, "and30") ||
+         rewrite((x && y) && x, (x && y), "and27") ||
+         rewrite(x && (x && y), (x && y), "and28") ||
+         rewrite((x && y) && y, (x && y), "and29") ||
+         rewrite(y && (x && y), (x && y), "and30") ||
 
-         rewrite(((x && y) && z) && x, a, "and32") ||
-         rewrite(x && ((x && y) && z), b, "and33") ||
-         rewrite((z && (x && y)) && x, a, "and34") ||
-         rewrite(x && (z && (x && y)), b, "and35") ||
-         rewrite(((x && y) && z) && y, a, "and36") ||
-         rewrite(y && ((x && y) && z), b, "and37") ||
-         rewrite((z && (x && y)) && y, a, "and38") ||
-         rewrite(y && (z && (x && y)), b, "and39") ||
+         rewrite(((x && y) && z) && x, ((x && y) && z), "and32") ||
+         rewrite(x && ((x && y) && z), ((x && y) && z), "and33") ||
+         rewrite((z && (x && y)) && x, (z && (x && y)), "and34") ||
+         rewrite(x && (z && (x && y)), (z && (x && y)), "and35") ||
+         rewrite(((x && y) && z) && y, ((x && y) && z), "and36") ||
+         rewrite(y && ((x && y) && z), ((x && y) && z), "and37") ||
+         rewrite((z && (x && y)) && y, (z && (x && y)), "and38") ||
+         rewrite(y && (z && (x && y)), (z && (x && y)), "and39") ||
 
-         rewrite((x || y) && x, b, "and41") ||
-         rewrite(x && (x || y), a, "and42") ||
-         rewrite((x || y) && y, b, "and43") ||
-         rewrite(y && (x || y), a, "and44") ||
+         rewrite((x || y) && x, x, "and41") ||
+         rewrite(x && (x || y), x, "and42") ||
+         rewrite((x || y) && y, y, "and43") ||
+         rewrite(y && (x || y), y, "and44") ||
 
          rewrite(x != y && x == y, false, "and46") ||
          rewrite(x != y && y == x, false, "and47") ||
@@ -56,7 +56,7 @@ Expr Simplify::visit(const And *op, ExprInfo *bounds) {
          rewrite(x && !x, false, "and56") ||
          rewrite(!x && x, false, "and57") ||
          rewrite(y <= x && x < y, false, "and58") ||
-         rewrite(x != c0 && x == c1, b, c0 != c1, "and59") ||
+         rewrite(x != c0 && x == c1, x == c1, c0 != c1, "and59") ||
          // Note: In the predicate below, if undefined overflow
          // occurs, the predicate counts as false. If well-defined
          // overflow occurs, the condition couldn't possibly

@@ -19,9 +19,9 @@ Expr Simplify::visit(const Not *op, ExprInfo *bounds) {
         return rewrite.result;
     }
 
-    if (rewrite(!broadcast(x), broadcast(!x, op->type.lanes())) ||
-        rewrite(!intrin(Call::likely, x), intrin(Call::likely, !x)) ||
-        rewrite(!intrin(Call::likely_if_innermost, x), intrin(Call::likely_if_innermost, !x))) {
+    if (rewrite(!broadcast(x), broadcast(!x, op->type.lanes()), "not22") ||
+        rewrite(!intrin(Call::likely, x), intrin(Call::likely, !x), "not23") ||
+        rewrite(!intrin(Call::likely_if_innermost, x), intrin(Call::likely_if_innermost, !x), "not24")) {
         return mutate(std::move(rewrite.result), bounds);
     }
 

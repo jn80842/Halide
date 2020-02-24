@@ -111,8 +111,8 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
 
         auto rewrite = IRMatcher::rewriter(IRMatcher::div(a, b), op->type);
 
-        if (rewrite(IRMatcher::Overflow() / x, a, "div114") ||
-            rewrite(x / IRMatcher::Overflow(), b, "div115") ||
+        if (rewrite(IRMatcher::Overflow() / x, IRMatcher::Overflow(), "div114") ||
+            rewrite(x / IRMatcher::Overflow(), IRMatcher::Overflow(), "div115") ||
             rewrite(x / 1, x, "div116") ||
             rewrite(c0 / c1, fold(c0 / c1), "div117") ||
             (!op->type.is_float() && rewrite(x / 0, 0, "div118")) ||

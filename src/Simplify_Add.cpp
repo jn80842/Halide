@@ -49,7 +49,7 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
 
         // clang-format off
         if (EVAL_IN_LAMBDA
-            (rewrite(x + x, x * 2) ||
+            (rewrite(x + x, x * 2, "add52") ||
              rewrite(ramp(x, y) + ramp(z, w), ramp(x + z, y + w, lanes), "add53") ||
              rewrite(ramp(x, y) + broadcast(z), ramp(x + z, y, lanes), "add54") ||
              rewrite(broadcast(x) + broadcast(y), broadcast(x + y, lanes), "add55") ||

@@ -36,8 +36,8 @@ Expr Simplify::visit(const Sub *op, ExprInfo *bounds) {
         const int lanes = op->type.lanes();
 
         if (rewrite(c0 - c1, fold(c0 - c1), "sub38") ||
-            rewrite(IRMatcher::Overflow() - x, a, "sub39") ||
-            rewrite(x - IRMatcher::Overflow(), b, "sub40") ||
+            rewrite(IRMatcher::Overflow() - x, IRMatcher::Overflow(), "sub39") ||
+            rewrite(x - IRMatcher::Overflow(), IRMatcher::Overflow(), "sub40") ||
             rewrite(x - 0, x, "sub41")) {
             return rewrite.result;
         }

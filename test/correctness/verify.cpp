@@ -30,11 +30,14 @@ int main(int argc, char **argv) {
     Expr v10 = Var("v10"), v11 = Var("v11"), v12 = Var("v12"), v13 = Var("v13"), v14 = Var("v14");
     Expr v15 = Var("v15"), v16 = Var("v16"), v17 = Var("v17"), v18 = Var("v18"), v19 = Var("v19");
 
+ //   check(b1 && make_bool(true, 1));
+
     check(x + y);
     
     check(b1 && b2);
     check(x / y);
     check(x == 1);
+    check(c0 - x == 0);
     check(b1 == b2);
     check(x < y);
     check(max(x,y));
