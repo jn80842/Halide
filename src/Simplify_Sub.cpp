@@ -45,7 +45,7 @@ Expr Simplify::visit(const Sub *op, ExprInfo *bounds) {
         // clang-format off
         if (EVAL_IN_LAMBDA
             ((!op->type.is_uint() && (get_rule_flag("sub47", rflag) && rewrite(x - c0, x + fold(-c0), !overflows(-c0), "sub47"))) ||
-             (get_rule_flag("sub48", rflag) && rewrite(x - x, 0, "sub48") || // We want to remutate this just to get better bounds
+             (get_rule_flag("sub48", rflag) && rewrite(x - x, 0, "sub48")) || // We want to remutate this just to get better bounds
              (get_rule_flag("sub49", rflag) && rewrite(ramp(x, y) - ramp(z, w), ramp(x - z, y - w, lanes), "sub49")) ||
              (get_rule_flag("sub50", rflag) && rewrite(ramp(x, y) - broadcast(z), ramp(x - z, y, lanes), "sub50")) ||
              (get_rule_flag("sub51", rflag) && rewrite(broadcast(x) - ramp(z, w), ramp(x - z, -w, lanes), "sub51")) ||
@@ -272,7 +272,7 @@ Expr Simplify::visit(const Sub *op, ExprInfo *bounds) {
                (get_rule_flag("sub272", rflag) && rewrite(x/c0 - (x + y)/c0, ((fold(c0 - 1) - y) - (x % c0))/c0, c0 > 0, "sub272")) ||
                (get_rule_flag("sub273", rflag) && rewrite((x + y)/c0 - x/c0, ((x % c0) + y)/c0, c0 > 0, "sub273")) ||
                (get_rule_flag("sub274", rflag) && rewrite(x/c0 - (x - y)/c0, ((y + fold(c0 - 1)) - (x % c0))/c0, c0 > 0, "sub274")) ||
-               (get_rule_flag("sub275", rflag) && rewrite((x - y)/c0 - x/c0, ((x % c0) - y)/c0, c0 > 0, "sub275"))))))) {
+               (get_rule_flag("sub275", rflag) && rewrite((x - y)/c0 - x/c0, ((x % c0) - y)/c0, c0 > 0, "sub275")))))) {
             return mutate(std::move(rewrite.result), bounds);
         }
     }
