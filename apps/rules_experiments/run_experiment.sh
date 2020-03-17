@@ -55,7 +55,8 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
         wait_for_idle
     fi
     
-    echo "Running generator with seed ${SEED}"    
+    echo "Running generator with seed ${SEED}"
+        HL_EXCLUDE_MISORDERED_RULES=1 \
         HL_PERMIT_FAILED_UNROLL=1 \
         HL_SEED=${SEED} \
         HL_RANDOM_DROPOUT=1 \
@@ -71,6 +72,7 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
           > results/${SEED}/stdout.txt \
           2> results/${SEED}/stderr.txt
 
+        HL_EXCLUDE_MISORDERED_RULES=0 \
         HL_PERMIT_FAILED_UNROLL=1 \
         HL_SEED=${SEED} \
         HL_RANDOM_DROPOUT=1 \
