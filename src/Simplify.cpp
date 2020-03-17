@@ -18,8 +18,26 @@ using std::vector;
 int Simplify::debug_indent = 0;
 #endif
 
+namespace {
+
+bool get_exclude_misordered_rules_from_environment() {
+    static string env_var_value = get_env_variable("HL_EXCLUDE_MISORDERED_RULES");
+    static bool enable = env_var_value == "1";
+    static bool disable = env_var_value == "0";
+    if (enable == disable) {
+        user_warning << "HL_EXCLUDE_MISORDERED_RULES unset\n";
+    }
+    return enable;
+}
+
+}
+
 Simplify::Simplify(bool r, const Scope<Interval> *bi, const Scope<ModulusRemainder> *ai)
     : remove_dead_lets(r), no_float_simplify(false) {
+
+    populate_excluded_ruleset();
+    exclude_misordered_rules = get_exclude_misordered_rules_from_environment();
+    rflag = exclude_misordered_rules;
 
     // Only respect the constant bounds from the containing scope.
     for (auto iter = bi->cbegin(); iter != bi->cend(); ++iter) {

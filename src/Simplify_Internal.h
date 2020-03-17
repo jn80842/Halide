@@ -31,6 +31,10 @@ namespace Internal {
 class Simplify : public VariadicVisitor<Simplify, Expr, Stmt> {
     using Super = VariadicVisitor<Simplify, Expr, Stmt>;
 
+    bool rflag = false;
+    bool exclude_misordered_rules = false;
+
+
 public:
     Simplify(bool r, const Scope<Interval> *bi, const Scope<ModulusRemainder> *ai);
 
@@ -311,6 +315,21 @@ public:
     Stmt visit(const Acquire *op);
     Stmt visit(const Fork *op);
     Stmt visit(const Atomic *op);
+
+    std::set<std::string> excluded_rules;
+
+    void populate_excluded_ruleset() {
+        excluded_rules.insert("div176");
+    }
+
+    bool get_rule_flag(std::string rulename, bool experimental) {
+        if (experimental) {
+            return (excluded_rules.count(rulename) == 0);
+        } else {
+            return true;
+        }
+    }
+
 };
 
 }  // namespace Internal

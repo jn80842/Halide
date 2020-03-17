@@ -111,107 +111,107 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
 
         auto rewrite = IRMatcher::rewriter(IRMatcher::div(a, b), op->type);
 
-        if (rewrite(IRMatcher::Overflow() / x, IRMatcher::Overflow(), "div114") ||
-            rewrite(x / IRMatcher::Overflow(), IRMatcher::Overflow(), "div115") ||
-            rewrite(x / 1, x, "div116") ||
-            rewrite(c0 / c1, fold(c0 / c1), "div117") ||
-            (!op->type.is_float() && rewrite(x / 0, 0, "div118")) ||
-            (!op->type.is_float() && denominator_non_zero && rewrite(x / x, 1, "div119")) ||
-            rewrite(0 / x, 0, "div120") ||
+        if ((get_rule_flag("div114", rflag) && rewrite(IRMatcher::Overflow() / x, IRMatcher::Overflow(), "div114")) ||
+            (get_rule_flag("div115", rflag) && rewrite(x / IRMatcher::Overflow(), IRMatcher::Overflow(), "div115")) ||
+            (get_rule_flag("div116", rflag) && rewrite(x / 1, x, "div116")) ||
+            (get_rule_flag("div117", rflag) && rewrite(c0 / c1, fold(c0 / c1), "div117")) ||
+            (!op->type.is_float() && (get_rule_flag("div118", rflag) && rewrite(x / 0, 0, "div118"))) ||
+            (!op->type.is_float() && denominator_non_zero && (get_rule_flag("div119", rflag) && rewrite(x / x, 1, "div119"))) ||
+            (get_rule_flag("div120", rflag) && rewrite(0 / x, 0, "div120")) ||
             false) {
             return rewrite.result;
         }
 
         // clang-format off
         if (EVAL_IN_LAMBDA
-            (rewrite(broadcast(x) / broadcast(y), broadcast(x / y, lanes), "div127") ||
-             rewrite(select(x, c0, c1) / c2, select(x, fold(c0/c2), fold(c1/c2)), "div128") ||
+            ((get_rule_flag("div127", rflag) && rewrite(broadcast(x) / broadcast(y), broadcast(x / y, lanes), "div127")) ||
+             (get_rule_flag("div128", rflag) && rewrite(select(x, c0, c1) / c2, select(x, fold(c0/c2), fold(c1/c2)), "div128")) ||
              (!op->type.is_float() &&
-              rewrite(x / x, select(x == 0, 0, 1), "div130")) ||
+              (get_rule_flag("div130", rflag) && rewrite(x / x, select(x == 0, 0, 1), "div130"))) ||
              (no_overflow(op->type) &&
               (// Fold repeated division
-               rewrite((x / c0) / c2, x / fold(c0 * c2),                          c0 > 0 && c2 > 0 && !overflows(c0 * c2), "div133") ||
-               rewrite((x / c0 + c1) / c2, (x + fold(c1 * c0)) / fold(c0 * c2),   c0 > 0 && c2 > 0 && !overflows(c0 * c2) && !overflows(c0 * c1), "div134") ||
-               rewrite((x * c0) / c1, x / fold(c1 / c0),                          c1 % c0 == 0 && c0 > 0 && c1 / c0 != 0, "div135") ||
+               (get_rule_flag("div133", rflag) && rewrite((x / c0) / c2, x / fold(c0 * c2),                          c0 > 0 && c2 > 0 && !overflows(c0 * c2), "div133")) ||
+               (get_rule_flag("div134", rflag) && rewrite((x / c0 + c1) / c2, (x + fold(c1 * c0)) / fold(c0 * c2),   c0 > 0 && c2 > 0 && !overflows(c0 * c2) && !overflows(c0 * c1), "div134")) ||
+               (get_rule_flag("div135", rflag) && rewrite((x * c0) / c1, x / fold(c1 / c0),                          c1 % c0 == 0 && c0 > 0 && c1 / c0 != 0, "div135")) ||
                // Pull out terms that are a multiple of the denominator
-               rewrite((x * c0) / c1, x * fold(c0 / c1),                          c0 % c1 == 0 && c1 > 0, "div137") ||
+               (get_rule_flag("div137", rflag) && rewrite((x * c0) / c1, x * fold(c0 / c1),                          c0 % c1 == 0 && c1 > 0, "div137")) ||
 
-               rewrite((x * c0 + y) / c1, y / c1 + x * fold(c0 / c1),             c0 % c1 == 0 && c1 > 0, "div139") ||
-               rewrite((x * c0 - y) / c1, (-y) / c1 + x * fold(c0 / c1),          c0 % c1 == 0 && c1 > 0, "div140") ||
-               rewrite((y + x * c0) / c1, y / c1 + x * fold(c0 / c1),             c0 % c1 == 0 && c1 > 0, "div141") ||
-               rewrite((y - x * c0) / c1, y / c1 - x * fold(c0 / c1),             c0 % c1 == 0 && c1 > 0, "div142") ||
+               (get_rule_flag("div139", rflag) && rewrite((x * c0 + y) / c1, y / c1 + x * fold(c0 / c1),             c0 % c1 == 0 && c1 > 0, "div139")) ||
+               (get_rule_flag("div140", rflag) && rewrite((x * c0 - y) / c1, (-y) / c1 + x * fold(c0 / c1),          c0 % c1 == 0 && c1 > 0, "div140")) ||
+               (get_rule_flag("div141", rflag) && rewrite((y + x * c0) / c1, y / c1 + x * fold(c0 / c1),             c0 % c1 == 0 && c1 > 0, "div141")) ||
+               (get_rule_flag("div142", rflag) && rewrite((y - x * c0) / c1, y / c1 - x * fold(c0 / c1),             c0 % c1 == 0 && c1 > 0, "div142")) ||
 
-               rewrite(((x * c0 + y) + z) / c1, (y + z) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div144") ||
-               rewrite(((x * c0 - y) + z) / c1, (z - y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div145") ||
-               rewrite(((x * c0 + y) - z) / c1, (y - z) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div146") ||
-               rewrite(((x * c0 - y) - z) / c1, (-y - z) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div147") ||
+               (get_rule_flag("div144", rflag) && rewrite(((x * c0 + y) + z) / c1, (y + z) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div144")) ||
+               (get_rule_flag("div145", rflag) && rewrite(((x * c0 - y) + z) / c1, (z - y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div145")) ||
+               (get_rule_flag("div146", rflag) && rewrite(((x * c0 + y) - z) / c1, (y - z) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div146")) ||
+               (get_rule_flag("div147", rflag) && rewrite(((x * c0 - y) - z) / c1, (-y - z) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div147")) ||
 
-               rewrite(((y + x * c0) + z) / c1, (y + z) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div149") ||
-               rewrite(((y + x * c0) - z) / c1, (y - z) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div150") ||
-               rewrite(((y - x * c0) - z) / c1, (y - z) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div151") ||
-               rewrite(((y - x * c0) + z) / c1, (y + z) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div152") ||
+               (get_rule_flag("div149", rflag) && rewrite(((y + x * c0) + z) / c1, (y + z) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div149")) ||
+               (get_rule_flag("div150", rflag) && rewrite(((y + x * c0) - z) / c1, (y - z) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div150")) ||
+               (get_rule_flag("div151", rflag) && rewrite(((y - x * c0) - z) / c1, (y - z) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div151")) ||
+               (get_rule_flag("div152", rflag) && rewrite(((y - x * c0) + z) / c1, (y + z) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div152")) ||
 
-               rewrite((z + (x * c0 + y)) / c1, (z + y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div154") ||
-               rewrite((z + (x * c0 - y)) / c1, (z - y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div155") ||
-               rewrite((z - (x * c0 - y)) / c1, (z + y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div156") ||
-               rewrite((z - (x * c0 + y)) / c1, (z - y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div157") ||
+               (get_rule_flag("div154", rflag) && rewrite((z + (x * c0 + y)) / c1, (z + y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div154")) ||
+               (get_rule_flag("div155", rflag) && rewrite((z + (x * c0 - y)) / c1, (z - y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div155")) ||
+               (get_rule_flag("div156", rflag) && rewrite((z - (x * c0 - y)) / c1, (z + y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div156")) ||
+               (get_rule_flag("div157", rflag) && rewrite((z - (x * c0 + y)) / c1, (z - y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div157")) ||
 
-               rewrite((z + (y + x * c0)) / c1, (z + y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div159") ||
-               rewrite((z - (y + x * c0)) / c1, (z - y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div160") ||
-               rewrite((z + (y - x * c0)) / c1, (z + y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div161") ||
-               rewrite((z - (y - x * c0)) / c1, (z - y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div162") ||
+               (get_rule_flag("div159", rflag) && rewrite((z + (y + x * c0)) / c1, (z + y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div159")) ||
+               (get_rule_flag("div160", rflag) && rewrite((z - (y + x * c0)) / c1, (z - y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div160")) ||
+               (get_rule_flag("div161", rflag) && rewrite((z + (y - x * c0)) / c1, (z + y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div161")) ||
+               (get_rule_flag("div162", rflag) && rewrite((z - (y - x * c0)) / c1, (z - y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div162")) ||
 
                // For the next depth, stick to addition
-               rewrite((((x * c0 + y) + z) + w) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div165") ||
-               rewrite((((y + x * c0) + z) + w) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div166") ||
-               rewrite(((z + (x * c0 + y)) + w) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div167") ||
-               rewrite(((z + (y + x * c0)) + w) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div168") ||
-               rewrite((w + ((x * c0 + y) + z)) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div169") ||
-               rewrite((w + ((y + x * c0) + z)) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div170") ||
-               rewrite((w + (z + (x * c0 + y))) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div171") ||
-               rewrite((w + (z + (y + x * c0))) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div172") ||
+               (get_rule_flag("div165", rflag) && rewrite((((x * c0 + y) + z) + w) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div165")) ||
+               (get_rule_flag("div166", rflag) && rewrite((((y + x * c0) + z) + w) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div166")) ||
+               (get_rule_flag("div167", rflag) && rewrite(((z + (x * c0 + y)) + w) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div167")) ||
+               (get_rule_flag("div168", rflag) && rewrite(((z + (y + x * c0)) + w) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div168")) ||
+               (get_rule_flag("div169", rflag) && rewrite((w + ((x * c0 + y) + z)) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div169")) ||
+               (get_rule_flag("div170", rflag) && rewrite((w + ((y + x * c0) + z)) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div170")) ||
+               (get_rule_flag("div171", rflag) && rewrite((w + (z + (x * c0 + y))) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div171")) ||
+               (get_rule_flag("div172", rflag) && rewrite((w + (z + (y + x * c0))) / c1, (y + z + w) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div172")) ||
 
                // Finally, pull out constant additions that are a multiple of the denominator
-               rewrite((x + c0) / c1, x / c1 + fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div175") ||
-               rewrite((c0 - y)/c1, fold(c0 / c1) - y / c1, (c0 + 1) % c1 == 0 && c1 > 0, "div176") ||
+               (get_rule_flag("div175", rflag) && rewrite((x + c0) / c1, x / c1 + fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div175")) ||
+               (get_rule_flag("div176", rflag) && rewrite((c0 - y)/c1, fold(c0 / c1) - y / c1, (c0 + 1) % c1 == 0 && c1 > 0, "div176")) ||
                (denominator_non_zero &&
-                (rewrite((x + y)/x, y/x + 1, "div178") ||
-                 rewrite((y + x)/x, y/x + 1, "div179") ||
-                 rewrite((x - y)/x, (-y)/x + 1, "div180") ||
-                 rewrite((y - x)/x, y/x - 1, "div181") ||
-                 rewrite(((x + y) + z)/x, (y + z)/x + 1, "div182") ||
-                 rewrite(((y + x) + z)/x, (y + z)/x + 1, "div183") ||
-                 rewrite((z + (x + y))/x, (z + y)/x + 1, "div184") ||
-                 rewrite((z + (y + x))/x, (z + y)/x + 1, "div185") ||
-                 rewrite((x*y)/x, y, "div186") ||
-                 rewrite((y*x)/x, y, "div187") ||
-                 rewrite((x*y + z)/x, y + z/x, "div188") ||
-                 rewrite((y*x + z)/x, y + z/x, "div189") ||
-                 rewrite((z + x*y)/x, z/x + y, "div190") ||
-                 rewrite((z + y*x)/x, z/x + y, "div191") ||
-                 rewrite((x*y - z)/x, y + (-z)/x, "div192") ||
-                 rewrite((y*x - z)/x, y + (-z)/x, "div193") ||
-                 rewrite((z - x*y)/x, z/x - y, "div194") ||
-                 rewrite((z - y*x)/x, z/x - y, "div195") ||
+                ((get_rule_flag("div178", rflag) && rewrite((x + y)/x, y/x + 1, "div178")) ||
+                 (get_rule_flag("div179", rflag) && rewrite((y + x)/x, y/x + 1, "div179")) ||
+                 (get_rule_flag("div180", rflag) && rewrite((x - y)/x, (-y)/x + 1, "div180")) ||
+                 (get_rule_flag("div181", rflag) && rewrite((y - x)/x, y/x - 1, "div181")) ||
+                 (get_rule_flag("div182", rflag) && rewrite(((x + y) + z)/x, (y + z)/x + 1, "div182")) ||
+                 (get_rule_flag("div183", rflag) && rewrite(((y + x) + z)/x, (y + z)/x + 1, "div183")) ||
+                 (get_rule_flag("div184", rflag) && rewrite((z + (x + y))/x, (z + y)/x + 1, "div184")) ||
+                 (get_rule_flag("div185", rflag) && rewrite((z + (y + x))/x, (z + y)/x + 1, "div185")) ||
+                 (get_rule_flag("div186", rflag) && rewrite((x*y)/x, y, "div186")) ||
+                 (get_rule_flag("div187", rflag) && rewrite((y*x)/x, y, "div187")) ||
+                 (get_rule_flag("div188", rflag) && rewrite((x*y + z)/x, y + z/x, "div188")) ||
+                 (get_rule_flag("div189", rflag) && rewrite((y*x + z)/x, y + z/x, "div189")) ||
+                 (get_rule_flag("div190", rflag) && rewrite((z + x*y)/x, z/x + y, "div190")) ||
+                 (get_rule_flag("div191", rflag) && rewrite((z + y*x)/x, z/x + y, "div191")) ||
+                 (get_rule_flag("div192", rflag) && rewrite((x*y - z)/x, y + (-z)/x, "div192")) ||
+                 (get_rule_flag("div193", rflag) && rewrite((y*x - z)/x, y + (-z)/x, "div193")) ||
+                 (get_rule_flag("div194", rflag) && rewrite((z - x*y)/x, z/x - y, "div194")) ||
+                 (get_rule_flag("div195", rflag) && rewrite((z - y*x)/x, z/x - y, "div195")) ||
                  false)) ||
 
-               (op->type.is_float() && rewrite(x/c0, x * fold(1/c0), "div198")))) ||
+               (op->type.is_float() && (get_rule_flag("div198", rflag) && rewrite(x/c0, x * fold(1/c0), "div198"))))) ||
              (no_overflow_int(op->type) &&
-              (rewrite(ramp(x, c0) / broadcast(c1), ramp(x / c1, fold(c0 / c1), lanes), c0 % c1 == 0, "div200") ||
-               rewrite(ramp(x, c0) / broadcast(c1), broadcast(x / c1, lanes),
+              ((get_rule_flag("div200", rflag) && rewrite(ramp(x, c0) / broadcast(c1), ramp(x / c1, fold(c0 / c1), lanes), c0 % c1 == 0, "div200")) ||
+               (get_rule_flag("div201", rflag) && rewrite(ramp(x, c0) / broadcast(c1), broadcast(x / c1, lanes),
                        // First and last lanes are the same when...
-                       can_prove((x % c1 + c0 * (lanes - 1)) / c1 == 0, this), "div201"))) ||
+                       can_prove((x % c1 + c0 * (lanes - 1)) / c1 == 0, this), "div201")))) ||
              (no_overflow_scalar_int(op->type) &&
-              (rewrite(x / -1, -x, "div205") ||
-               rewrite(c0 / y, select(y < 0, fold(-c0), c0), c0 == -1, "div206" ) ||
-               rewrite((x * c0 + c1) / c2,
+              ((get_rule_flag("div205", rflag) && rewrite(x / -1, -x, "div205")) ||
+               (get_rule_flag("div206", rflag) && rewrite(c0 / y, select(y < 0, fold(-c0), c0), c0 == -1, "div206" )) ||
+               (get_rule_flag("div207", rflag) && rewrite((x * c0 + c1) / c2,
                        (x + fold(c1 / c0)) / fold(c2 / c0),
-                       c2 > 0 && c0 > 0 && c2 % c0 == 0, "div207") ||
-               rewrite((x * c0 + c1) / c2,
+                       c2 > 0 && c0 > 0 && c2 % c0 == 0, "div207")) ||
+               (get_rule_flag("div210", rflag) && rewrite((x * c0 + c1) / c2,
                        x * fold(c0 / c2) + fold(c1 / c2),
-                       c2 > 0 && c0 % c2 == 0, "div210") ||
+                       c2 > 0 && c0 % c2 == 0, "div210")) ||
                // A very specific pattern that comes up in bounds in upsampling code.
-               rewrite((x % 2 + c0) / 2, x % 2 + fold(c0 / 2), c0 % 2 == 1, "div214"))))) {
+               (get_rule_flag("div214", rflag) && rewrite((x % 2 + c0) / 2, x % 2 + fold(c0 / 2), c0 % 2 == 1, "div214")))))) {
             return mutate(std::move(rewrite.result), bounds);
         }
         // clang-format on
