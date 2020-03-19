@@ -14,7 +14,7 @@ Expr broadcast(const Expr &base, int w) {
 }
 
 void check (const Expr &a) {
-    std::cout << "called expr check " << simplify(a) << "\n";
+   // std::cout << "called expr check " << simplify(a) << "\n";
     simplify(a);
 }
 

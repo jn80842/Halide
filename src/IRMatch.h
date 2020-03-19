@@ -3292,6 +3292,11 @@ void build_bfs_type_map(const Overflows<A> &op, bfs_node_type_map &type_map, int
     return;
 }
 
+template<typename A>
+void wildcardconst_str(const Overflows<A> &op, std::string &s) {
+    wildcardconst_str(op.a,s);
+}
+
 struct Overflow {
     struct pattern_tag {};
 
@@ -3365,6 +3370,10 @@ inline void count_terms(const Overflow &op, term_map &m) {
 // is this the right node type to return?
 inline IRNodeType get_node_type(const Overflow &op) {
     return IRNodeType::Variable;
+}
+
+inline void wildcardconst_str(const Overflow &op, std::string &s) {
+    return;
 }
 
 template<typename A>
@@ -3654,7 +3663,7 @@ template<typename Before,
         typename Predicate>
 HALIDE_ALWAYS_INLINE
 void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
-                            halide_type_t wildcard_type, halide_type_t output_type) noexcept {
+                            halide_type_t wildcard_type, halide_type_t output_type, std::string rulename) noexcept {
 
     term_map LHS_term_map;
     term_map RHS_term_map;
@@ -3680,43 +3689,43 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     wildcardconst_str(after,RHS_wildcardstr);
 
     if (LHS_vector_count > RHS_vector_count) {
-        debug(0) << before << " ; " << after << " ;  VECTOR COUNT SUCCESS\n";
+        debug(0) << rulename << " " << before << " ; " << after << " ;  VECTOR COUNT SUCCESS\n";
     } else if (LHS_vector_count < RHS_vector_count) {
-        debug(0) << before << " ; " << after << " ; VECTOR COUNT FAILURE\n";
+        debug(0) << rulename << " "  << before << " ; " << after << " ; VECTOR COUNT FAILURE\n";
     // after ramp check, make sure all variable occurrences are equal or less in RHS
     } else if (variable_counts_geq(LHS_var_count_map, RHS_var_count_map)) {
         // if at least one variable count goes down, the rule is good
         if (variable_counts_atleastone_gt(LHS_var_count_map, RHS_var_count_map)) {
-            debug(0) << before << " ; " << after << " ; VARIABLE OCCURRENCE SUCCESS\n";
+            debug(0)  << rulename << " " << before << " ; " << after << " ; VARIABLE OCCURRENCE SUCCESS\n";
         } else if (get_expensive_arith_count(LHS_term_map) > get_expensive_arith_count(RHS_term_map)) {
-            debug(0) << before << " ; " << after << " ; ARITH COUNT SUCCESS\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; ARITH COUNT SUCCESS\n";
         } else if (get_expensive_arith_count(LHS_term_map) < get_expensive_arith_count(RHS_term_map)) {
-            debug(0) << before << " ; " << after << " ; ARITH COUNT FAILURE\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; ARITH COUNT FAILURE\n";
         } else if (get_total_op_count(LHS_term_map) > get_total_op_count(RHS_term_map)) {
-            debug(0) << before << " ; " << after << " ; TOTAL OP COUNT SUCCESS\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; TOTAL OP COUNT SUCCESS\n";
         } else if (get_total_op_count(LHS_term_map) < get_total_op_count(RHS_term_map)) {
-            debug(0) << before << " ; " << after << " ; TOTAL OP COUNT FAILURE\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; TOTAL OP COUNT FAILURE\n";
         } else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::GT) {
-            debug(0) << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
+            debug(0) << rulename << " "  << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
         }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
-            debug(0) << before << " ; " << after << " ; HISTO COUNT FAILURE\n"; 
+            debug(0) << rulename << " "  << before << " ; " << after << " ; HISTO COUNT FAILURE\n"; 
         } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
-            debug(0) << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT SUCCESS\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT SUCCESS\n";
         } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
-            debug(0) << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT FAILURE\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT FAILURE\n";
         } else if (LHS_wildcardstr.compare(RHS_wildcardstr) > 0) {
-            debug(0) << before << " ; " << after << " ; RIGHT CONSTANT STRING SUCCESS\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; RIGHT CONSTANT STRING SUCCESS\n";
         } else if (LHS_wildcardstr.compare(RHS_wildcardstr) < 0) {
-            debug(0) << before << " ; " << after << " ; RIGHT CONSTANT STRING FAILURE\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; RIGHT CONSTANT STRING FAILURE\n";
         } else if (mpo_full(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
-            debug(0) << before << " ; " << after << " ; ORDERING OVER BFS OPS SUCCESS\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; ORDERING OVER BFS OPS SUCCESS\n";
         } else if (mpo_full(LHS_bfs_node_type_map,RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
-            debug(0) << before << " ; " << after << " ; ORDERING OVER BFS OPS FAILURE\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; ORDERING OVER BFS OPS FAILURE\n";
         } else {
-            debug(0) << before << " ; " << after << " ; TERMS ARE EQUAL UNDER ORDERING FAILURE\n";
+            debug(0) << rulename << " "  << before << " ; " << after << " ; TERMS ARE EQUAL UNDER ORDERING FAILURE\n";
         }
     } else {
-        debug(0) << before << " ; " << after << " ; VARIABLE COUNT FAILURE\n"; 
+        debug(0) << rulename << " "  << before << " ; " << after << " ; VARIABLE COUNT FAILURE\n"; 
     }
 
 }
@@ -3945,10 +3954,10 @@ HALIDE_ALWAYS_INLINE bool evaluate_predicate(Pattern p, MatcherState &state) {
 #define HALIDE_FUZZ_TEST_RULES 0
 
 // isolate z3 verification of rules
-#define HALIDE_VERIFY_SIMPLIFY_RULES 1
+#define HALIDE_VERIFY_SIMPLIFY_RULES 0
 
 // check various properties of rules when they match
-#define HALIDE_CHECK_RULES_PROPERTIES 0
+#define HALIDE_CHECK_RULES_PROPERTIES 1
 
 template<typename Instance>
 struct Rewriter {
@@ -3982,11 +3991,12 @@ struct Rewriter {
         verify_simplification_rule(before, after, true, wildcard_type, output_type, rulename);
 #endif
 #if HALIDE_CHECK_RULES_PROPERTIES
+        check_rule_properties(before, after, true, wildcard_type, output_type, rulename);
 #endif
         if (before.template match<0>(instance, state)) {
             build_replacement(after);
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << "\n";
+            debug(0) << matched << " " << rulename << " " << instance << " -> " << result << " via " << before << " -> " << after << "\n";
 #endif
             return true;
         } else {
@@ -4004,10 +4014,15 @@ struct Rewriter {
     //    verify_simplification_rule(before, after, true, wildcard_type, output_type, rulename);
         debug(0) << "Need to verify: " << before << " -> " << after << "\n";
 #endif
+
+#if HALIDE_CHECK_RULES_PROPERTIES
+    //    check_rule_properties(before, after, true, wildcard_type, output_type, rulename);
+                debug(0) << rulename << " not checked.\n";
+#endif
         if (before.template match<0>(instance, state)) {
             result = after;
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << "\n";
+            debug(0) << matched << " " << rulename << " " << instance << " -> " << result << " via " << before << " -> " << after << "\n";
 #endif
             return true;
         } else {
@@ -4028,13 +4043,13 @@ struct Rewriter {
         verify_simplification_rule(before, Const(after), true, wildcard_type, output_type, rulename);
 #endif
 #if HALIDE_CHECK_RULES_PROPERTIES
-        check_rule_properties(before, Const(after), true, wildcard_type, output_type);
+        check_rule_properties(before, Const(after), true, wildcard_type, output_type, rulename);
 #endif
 
         if (before.template match<0>(instance, state)) {
             result = make_const(output_type, after);
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << "\n";
+            debug(0) << matched << " " << rulename << " " << instance << " -> " << result << " via " << before << " -> " << after << "\n";
 #endif
             return true;
         } else {
@@ -4062,14 +4077,14 @@ struct Rewriter {
         verify_simplification_rule(before, after, pred, wildcard_type, output_type, rulename);
 #endif
 #if HALIDE_CHECK_RULES_PROPERTIES
-        check_rule_properties(before, after, pred, wildcard_type, output_type);
+        check_rule_properties(before, after, pred, wildcard_type, output_type, rulename);
 #endif
 
         if (before.template match<0>(instance, state) &&
             evaluate_predicate(pred, state)) {
             build_replacement(after);
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << " when " << pred << "\n";
+            debug(0) << matched << " " << rulename << " " << instance << " -> " << result << " via " << before << " -> " << after << " when " << pred << "\n";
 #endif
             return true;
         } else {
@@ -4090,7 +4105,10 @@ struct Rewriter {
             evaluate_predicate(pred, state)) {
             result = after;
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << " when " << pred << "\n";
+            debug(0) << matched << " " << rulename << " " << instance << " -> " << result << " via " << before << " -> " << after << " when " << pred << "\n";
+#endif
+#if HALIDE_CHECK_RULES_PROPERTIES
+            check_rule_properties(before, after, pred, wildcard_type, output_type, rulename);
 #endif
             return true;
         } else {
@@ -4114,14 +4132,14 @@ struct Rewriter {
         verify_simplification_rule(before, Const(after), pred, wildcard_type, output_type, rulename);
 #endif
 #if HALIDE_CHECK_RULES_PROPERTIES
-        check_rule_properties(before, Const(after), pred, wildcard_type, output_type);
+        check_rule_properties(before, Const(after), pred, wildcard_type, output_type, rulename);
 #endif
 
         if (before.template match<0>(instance, state) &&
             evaluate_predicate(pred, state)) {
             result = make_const(output_type, after);
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << before << " -> " << after << " when " << pred << "\n";
+            debug(0) << matched << " " << rulename << " " << instance << " -> " << result << " via " << before << " -> " << after << " when " << pred << "\n";
 #endif
             return true;
         } else {
