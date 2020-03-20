@@ -62,7 +62,7 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
         HL_RANDOM_DROPOUT=1 \
         HL_BEAM_SIZE=1 \
         HL_DEBUG_CODEGEN=1 \
-        ${GENERATOR} \
+        ./bin/host/${APP}.generator \
         -g ${APP} \
         -o results/${SEED} \
         -e stmt,assembly,static_library,c_header,registration,schedule,featurization \
@@ -78,7 +78,7 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
         HL_RANDOM_DROPOUT=1 \
         HL_BEAM_SIZE=1 \
         HL_DEBUG_CODEGEN=1 \
-        ${GENERATOR} \
+        ./bin/host/${APP}.generator \
         -g ${APP} \
         -o results/${SEED} \
         -e stmt,assembly,static_library,c_header,registration,schedule,featurization \
