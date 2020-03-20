@@ -326,6 +326,14 @@ void update_bfs_node_type_map(bfs_node_type_map &type_map, IRNodeType t, int cur
     }
 }
 
+void update_bfs_const_str_map(const_str_map &const_map, std::string s, int current_depth) {
+    if (const_map.count(current_depth) == 0) {
+        const_map.insert({current_depth, s});
+    } else {
+        const_map[current_depth] = const_map[current_depth] + s;
+    }
+}
+
 node_type_strings node_type_string_lookup = {
     {IRNodeType::Ramp,"Ramp "},
     {IRNodeType::Broadcast,"Broadcast "},
@@ -371,7 +379,7 @@ node_type_ordering nto = {
     {IRNodeType::Mul,19},
     {IRNodeType::Mod,18},
     {IRNodeType::Sub,17},
-    {IRNodeType::Add,17},
+    {IRNodeType::Add,16},
     {IRNodeType::Max,14},
     {IRNodeType::Min,14},
 
@@ -430,6 +438,51 @@ CompIRNodeTypeStatus multiset_node_order(std::list<IRNodeType> &m1, std::list<IR
     }
 }
 
+void print_const_str_map(const_str_map &map1) {
+    int largest_key = 0;
+    for (auto it = map1.begin(); it != map1.end(); ++it) {
+        if (it->first > largest_key) {
+            largest_key = it->first;
+        }
+    }
+    for (int i = 0; i<=largest_key; i++) {
+        debug(0) << map1[i] << "::";
+    }
+    debug(0) << "\n";
+}
+
+std::string const_str_map_to_string(const_str_map &map1) {
+    int largest_key = 0;
+    for (auto it = map1.begin(); it != map1.end(); ++it) {
+        if (it->first > largest_key) {
+            largest_key = it->first;
+        }
+    }
+    std::string s;
+    for (int i = 0; i<=largest_key; i++) {
+        if (map1.count(i) != 0) {
+            s += map1[i];
+        }
+    }
+    return s;
+}
+
+int compare_const_str_maps(const_str_map &map1, const_str_map &map2) {
+    if (map1.empty()) {
+        return -1;
+    } else {
+        int map1_len = map1.size();
+        for (int i = 0; i<=map1_len; i++) {
+            if (map2.count(i) == 0) {
+                return 1;
+            } else if (map1[i].compare(map2[i]) != 0) {
+                return map1[i].compare(map2[i]);
+            }
+        }
+        return 0;
+    }
+}
+
 // not implementing the full recursive checks; root and first layer should be sufficient
 CompIRNodeTypeStatus mpo(bfs_node_type_map &map1, bfs_node_type_map &map2, node_type_ordering &comparator) {
     // if t2 is variable and t1 is not, t1 > t2
@@ -479,7 +532,7 @@ node_type_ordering root_nto = {
     {IRNodeType::Max,17},
     {IRNodeType::Min,17},
     {IRNodeType::Sub,15},
-    {IRNodeType::Add,15},
+    {IRNodeType::Add,14},
     {IRNodeType::Or,12},
     {IRNodeType::And,11},
     {IRNodeType::GE,10},
@@ -658,11 +711,11 @@ CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2) {
         debug(0) << "Terms count tie breaker " << " Mod " << m1[IRNodeType::Mod] << " " << m2[IRNodeType::Mod] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Mod],m2[IRNodeType::Mod])) << "\n";
         return ternary_comp(m1[IRNodeType::Mod], m2[IRNodeType::Mod]);
     } else if (m1[IRNodeType::Sub] != m2[IRNodeType::Sub]) { // Adds also go in this bucket
-        debug(0) << "Terms count tie breaker " << " AddSub " << m1[IRNodeType::Sub] << " " << m2[IRNodeType::Sub] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Sub],m2[IRNodeType::Sub])) << "\n";
+        debug(0) << "Terms count tie breaker " << " Sub " << m1[IRNodeType::Sub] << " " << m2[IRNodeType::Sub] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Sub],m2[IRNodeType::Sub])) << "\n";
         return ternary_comp(m1[IRNodeType::Sub], m2[IRNodeType::Sub]);
- //   } else if (m1[IRNodeType::Add] != m2[IRNodeType::Add]) {
- //       debug(0) << "Terms count tie breaker " << " Add " << m1[IRNodeType::Add] << " " << m2[IRNodeType::Add] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Add],m2[IRNodeType::Add])) << "\n";
- //       return ternary_comp(m1[IRNodeType::Add], m2[IRNodeType::Add]);
+    } else if (m1[IRNodeType::Add] != m2[IRNodeType::Add]) {
+        debug(0) << "Terms count tie breaker " << " Add " << m1[IRNodeType::Add] << " " << m2[IRNodeType::Add] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Add],m2[IRNodeType::Add])) << "\n";
+        return ternary_comp(m1[IRNodeType::Add], m2[IRNodeType::Add]);
     } else if (m1[IRNodeType::Min] != m2[IRNodeType::Min]) { // max ops go in this bucket too
         debug(0) << "Terms count tie breaker " << " MaxMin " << m1[IRNodeType::Min] << " " << m2[IRNodeType::Min] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Min],m2[IRNodeType::Min])) << "\n";
         return ternary_comp(m1[IRNodeType::Min], m2[IRNodeType::Min]);

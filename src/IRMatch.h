@@ -81,10 +81,14 @@ typedef std::map<IRNodeType, int> node_type_ordering;
 typedef std::map<IRNodeType, std::string> node_type_strings;
 typedef std::list<IRNodeType> node_type_list;
 typedef std::map<int, std::list<IRNodeType>> bfs_node_type_map;
+typedef std::map<int, std::string> const_str_map;
 
 void update_bfs_node_type_map(bfs_node_type_map &type_map, IRNodeType t, int current_depth);
 std::string print_bfs_node_type_map(bfs_node_type_map &type_map);
-
+void update_bfs_const_str_map(const_str_map &const_map, std::string s, int current_depth);
+int compare_const_str_maps(const_str_map &map1, const_str_map &map2);
+void print_const_str_map(const_str_map &map1);
+std::string const_str_map_to_string(const_str_map &map1);
 
 void increment_term(IRNodeType node_type, term_map &m);
 bool term_map_gt(term_map &m1, term_map &m2);
@@ -281,6 +285,10 @@ inline void build_bfs_type_map(SpecificExpr e, bfs_node_type_map &type_map, int 
     return;
 }
 
+inline void build_bfs_const_map(SpecificExpr e, const_str_map const_map, int current_depth) {
+    return;
+}
+
 inline void count_terms(SpecificExpr e, term_map &m) {
     return;
 }
@@ -300,6 +308,10 @@ inline void build_variable_count_map(SpecificExpr e, variable_count_map &varcoun
 
 inline void wildcardconst_str(SpecificExpr e, std::string &s) {
     return;
+}
+
+inline int count_leaves(SpecificExpr e) {
+    return 1;
 }
 
 template<int i>
@@ -384,6 +396,11 @@ void build_bfs_type_map(const WildConstInt<i> &c, bfs_node_type_map &type_map, i
 }
 
 template<int i>
+void build_bfs_const_map(const WildConstInt<i> &c, const_str_map &const_map, int current_depth) {
+    update_bfs_const_str_map(const_map, "b", current_depth);
+}
+
+template<int i>
 void count_terms(const WildConstInt<i> &c, term_map &m) {
     return;
 }
@@ -407,6 +424,11 @@ template<int i>
 void wildcardconst_str(const WildConstInt<i> &c, std::string &s) {
     s += "b";
     return;
+}
+
+template<int i>
+int count_leaves(const WildConstInt<i> &c) {
+    return 1;
 }
 
 template<int i>
@@ -495,6 +517,11 @@ void build_bfs_type_map(const WildConstUInt<i> &c, bfs_node_type_map &type_map, 
 }
 
 template<int i>
+void build_bfs_const_map(const WildConstUInt<i> &c, const_str_map &const_map, int current_depth) {
+    update_bfs_const_str_map(const_map, "b", current_depth);
+}
+
+template<int i>
 void count_terms(const WildConstUInt<i> &c, term_map &m) {
     return;
 }
@@ -518,6 +545,11 @@ template<int i>
 void wildcardconst_str(const WildConstUInt<i> &c, std::string &s) {
     s += "b";
     return;
+}
+
+template<int i>
+int count_leaves(const WildConstUInt<i> &c) {
+    return 1;
 }
 
 template<int i>
@@ -603,6 +635,11 @@ void build_bfs_type_map(const WildConstFloat<i> &c, bfs_node_type_map &type_map,
 }
 
 template<int i>
+void build_bfs_const_map(const WildConstFloat<i> &c, const_str_map &const_map, int current_depth) {
+    update_bfs_const_str_map(const_map, "b", current_depth);
+}
+
+template<int i>
 void count_terms(const WildConstFloat<i> &c, term_map &m) {
     return;
 }
@@ -626,6 +663,11 @@ template<int i>
 void wildcardconst_str(const WildConstFloat<i> &c, std::string &s) {
     s += "b";
     return;
+}
+
+template<int i>
+int count_leaves(const WildConstFloat<i> &c) {
+    return 1;
 }
 
 // Matches and binds to any constant Expr. Does not support constant-folding.
@@ -709,6 +751,11 @@ void build_bfs_type_map(const WildConst<i> &c, bfs_node_type_map &type_map, int 
 }
 
 template<int i>
+void build_bfs_const_map(const WildConst<i> &c, const_str_map &const_map, int current_depth) {
+    update_bfs_const_str_map(const_map, "b", current_depth);
+}
+
+template<int i>
 void count_terms(const WildConst<i> &c, term_map &m) {
     return;
 }
@@ -732,6 +779,11 @@ template<int i>
 void wildcardconst_str(const WildConst<i> &c, std::string &s) {
     s += "b";
     return;
+}
+
+template<int i>
+int count_leaves(const WildConst<i> &c) {
+    return 1;
 }
 
 // Matches and binds to any Expr
@@ -821,6 +873,11 @@ void build_bfs_type_map(const Wild<i> &op, bfs_node_type_map &type_map, int curr
 }
 
 template<int i>
+void build_bfs_const_map(const Wild<i> &c, const_str_map &const_map, int current_depth) {
+    update_bfs_const_str_map(const_map, "a", current_depth);
+}
+
+template<int i>
 void count_terms(const Wild<i> &op, term_map &m) {
     return;
 }
@@ -853,6 +910,11 @@ template<int i>
 void wildcardconst_str(const Wild<i> &c, std::string &s) {
     s += "a";
     return;
+}
+
+template<int i>
+int count_leaves(const Wild<i> &c) {
+    return 1;
 }
 
 // Matches a specific constant or broadcast of that constant. The
@@ -990,6 +1052,10 @@ inline void build_bfs_type_map(const Const &op, bfs_node_type_map &type_map, int
     return;
 }
 
+inline void build_bfs_const_map(const Const &op, const_str_map &const_map, int current_depth) {
+    update_bfs_const_str_map(const_map, "b", current_depth);
+}
+
 // since type is not known, choose strongest term type
 inline void count_terms(const Const &op, term_map &m) {
     return;
@@ -1010,6 +1076,10 @@ inline void build_variable_count_map(const Const &op, variable_count_map &varcou
 inline void wildcardconst_str(const Const &op, std::string &s) {
     s += "b";
     return;
+}
+
+inline int count_leaves(const Const &op) {
+    return 1;
 }
 
 template<typename Op>
@@ -1246,9 +1316,20 @@ void build_bfs_type_map(const CmpOp<Op, A, B> &op, bfs_node_type_map &type_map, 
 }
 
 template<typename Op, typename A, typename B>
+void build_bfs_const_map(const CmpOp<Op, A, B> &op, const_str_map &const_map, int current_depth) {
+    build_bfs_const_map(op.a, const_map, current_depth + 1);
+    build_bfs_const_map(op.b, const_map, current_depth + 1);
+}
+
+template<typename Op, typename A, typename B>
 void wildcardconst_str(const CmpOp<Op, A, B> &op, std::string &s) {
     wildcardconst_str(op.a, s);
     wildcardconst_str(op.b, s);
+}
+
+template<typename Op, typename A, typename B>
+int count_leaves(const CmpOp<Op, A, B> &op) {
+    return count_leaves(op.a) + count_leaves(op.b);
 }
 
 template<typename Op, typename A, typename B>
@@ -1284,9 +1365,20 @@ void build_bfs_type_map(const BinOp<Op, A, B> &op, bfs_node_type_map &type_map, 
 }
 
 template<typename Op, typename A, typename B>
+void build_bfs_const_map(const BinOp<Op, A, B> &op, const_str_map &const_map, int current_depth) {
+    build_bfs_const_map(op.a, const_map, current_depth + 1);
+    build_bfs_const_map(op.b, const_map, current_depth + 1);
+}
+
+template<typename Op, typename A, typename B>
 void wildcardconst_str(const BinOp<Op, A, B> &op, std::string &s) {
     wildcardconst_str(op.a, s);
     wildcardconst_str(op.b, s);
+}
+
+template<typename Op, typename A, typename B>
+int count_leaves(const BinOp<Op, A, B> &op) {
+    return count_leaves(op.a) + count_leaves(op.b);
 }
 
 template<typename Op, typename A, typename B>
@@ -1327,7 +1419,7 @@ template<typename A, typename B>
 void count_terms(const BinOp<Add, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::Sub, m); // adds and subs count for the same now
+    increment_term(IRNodeType::Add, m); // adds and subs count for the same now
 }
 
 template<typename A, typename B>
@@ -2314,6 +2406,11 @@ void build_bfs_type_map(const Intrin<Args...> &op, bfs_node_type_map &type_map, 
 }
 
 template<typename... Args>
+void build_bfs_const_map(const Intrin<Args...> &op, const_str_map &const_map, int current_depth) {
+    return;
+}
+
+template<typename... Args>
 void build_variable_map(const Intrin<Args...> &op, variable_map &varmap, halide_type_t type_hint) {
     return;
 }
@@ -2326,6 +2423,11 @@ void build_variable_count_map(const Intrin<Args...> &op, variable_count_map &var
 template<typename... Args>
 void wildcardconst_str(const Intrin<Args...> &op, std::string &s) {
     return;
+}
+
+template<typename... Args>
+int count_leaves(const Intrin<Args...> &op) {
+    return 1;
 }
 
 template<typename... Args>
@@ -2438,6 +2540,11 @@ void build_bfs_type_map(const NotOp<A> &op, bfs_node_type_map &type_map, int cur
 }
 
 template<typename A>
+void build_bfs_const_map(const NotOp<A> &op, const_str_map &const_map, int current_depth) {
+    build_bfs_const_map(op.a, const_map, current_depth + 1);
+}
+
+template<typename A>
 void build_variable_map(const NotOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<bool>());
 }
@@ -2450,6 +2557,11 @@ void build_variable_count_map(const NotOp<A> &op, variable_count_map &varcountma
 template<typename A>
 void wildcardconst_str(const NotOp<A> &op, std::string &s) {
     wildcardconst_str(op.a, s);
+}
+
+template<typename A>
+int count_leaves(const NotOp<A> &op) {
+    return count_leaves(op.a);
 }
 
 template<typename A>
@@ -2576,6 +2688,13 @@ void build_bfs_type_map(const SelectOp<C, T, F> &op, bfs_node_type_map &type_map
 }
 
 template<typename C, typename T, typename F>
+void build_bfs_const_map(const SelectOp<C, T, F> &op, const_str_map &const_map, int current_depth) {
+    build_bfs_const_map(op.c, const_map, current_depth + 1);
+    build_bfs_const_map(op.t, const_map, current_depth + 1);
+    build_bfs_const_map(op.f, const_map, current_depth + 1);
+}
+
+template<typename C, typename T, typename F>
 void build_variable_map(const SelectOp<C, T, F> &op, variable_map &varmap, halide_type_t type_hint) {
     type_hint = typecheck(op, type_hint);
     build_variable_map(op.c, varmap, halide_type_of<bool>());
@@ -2595,6 +2714,11 @@ void wildcardconst_str(const SelectOp<C, T, F> &op, std::string &s) {
     wildcardconst_str(op.c, s);
     wildcardconst_str(op.t, s);
     wildcardconst_str(op.f, s);
+}
+
+template<typename C, typename T, typename F>
+int count_leaves(const SelectOp<C, T, F> &op) {
+    return count_leaves(op.c) + count_leaves(op.t) + count_leaves(op.f);
 }
 
 template<typename C, typename T, typename F>
@@ -2697,8 +2821,18 @@ void build_bfs_type_map(const BroadcastOp<A, known_lanes> &op, bfs_node_type_map
 }
 
 template<typename A, bool known_lanes>
+void build_bfs_const_map(const BroadcastOp<A, known_lanes> &op, const_str_map &const_map, int current_depth) {
+    build_bfs_const_map(op.a, const_map, current_depth + 1);
+}
+
+template<typename A, bool known_lanes>
 void wildcardconst_str(const BroadcastOp<A, known_lanes> &op, std::string &s) {
     wildcardconst_str(op.a, s);
+}
+
+template<typename A, bool known_lanes>
+int count_leaves(const BroadcastOp<A, known_lanes> &op) {
+    return count_leaves(op.a);
 }
 
 template<typename A>
@@ -2850,6 +2984,11 @@ void wildcardconst_str(const RampOp<A, B, known_lanes> &op, std::string &s) {
 }
 
 template<typename A, typename B, bool known_lanes>
+int count_leaves(const RampOp<A, B, known_lanes> &op) {
+    return count_leaves(op.a) + count_leaves(op.b);
+}
+
+template<typename A, typename B, bool known_lanes>
 int get_variable_count(const RampOp<A, B, known_lanes> &op) {
     return get_variable_count(op.a) + get_variable_count(op.b);
 }
@@ -2870,6 +3009,12 @@ void build_bfs_type_map(const RampOp<A, B, known_lanes> &op, bfs_node_type_map &
     update_bfs_node_type_map(type_map, get_node_type(op), current_depth);
     build_bfs_type_map(op.a, type_map, current_depth + 1);
     build_bfs_type_map(op.b, type_map, current_depth + 1);
+}
+
+template<typename A, typename B, bool known_lanes>
+void build_bfs_const_map(const RampOp<A, B, known_lanes> &op, const_str_map &const_map, int current_depth) {
+    build_bfs_const_map(op.a, const_map, current_depth + 1);
+    build_bfs_const_map(op.b, const_map, current_depth + 1);
 }
 
 template<typename A, typename B>
@@ -2995,6 +3140,11 @@ void build_bfs_type_map(const NegateOp<A> &op, bfs_node_type_map &type_map, int 
 }
 
 template<typename A>
+void build_bfs_const_map(const NegateOp<A> &op, const_str_map &const_map, int current_depth) {
+    build_bfs_const_map(op.a, const_map, current_depth + 1);
+}
+
+template<typename A>
 void build_variable_map(const NegateOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, halide_type_of<int64_t>());
 }
@@ -3007,6 +3157,11 @@ void build_variable_count_map(const NegateOp<A> &op, variable_count_map &varcoun
 template<typename A>
 void wildcardconst_str(const NegateOp<A> &op, std::string &s) {
     wildcardconst_str(op.a, s);
+}
+
+template<typename A>
+int count_leaves(const NegateOp<A> &op) {
+    return count_leaves(op.a);
 }
 
 template<typename A>
@@ -3098,6 +3253,11 @@ void build_bfs_type_map(const CastOp<A> &op, bfs_node_type_map &type_map, int cu
 }
 
 template<typename A>
+void build_bfs_const_map(const CastOp<A> &op, const_str_map &const_map, int current_depth) {
+    return;
+}
+
+template<typename A>
 void build_variable_map(const CastOp<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
 }
@@ -3110,6 +3270,11 @@ void build_variable_count_map(const CastOp<A> &op, variable_count_map &varcountm
 template<typename A>
 void wildcardconst_str(const CastOp<A> &op, std::string &s) {
     wildcardconst_str(op.a, s);
+}
+
+template<typename A>
+int count_leaves(const CastOp<A> &op) {
+    return count_leaves(op.a);
 }
 
 template<typename A>
@@ -3192,7 +3357,13 @@ bool is_vector_term(const Fold<A> &op) {
 // everything under the fold is promoted one depth level
 template<typename A>
 void build_bfs_type_map(const Fold<A> &op, bfs_node_type_map &type_map, int current_depth) {
-    build_bfs_type_map(op.a, type_map, current_depth);
+   // build_bfs_type_map(op.a, type_map, current_depth);
+    return;
+}
+
+template<typename A>
+void build_bfs_const_map(const Fold<A> &op, const_str_map &const_map, int current_depth) {
+    update_bfs_const_str_map(const_map, "b", current_depth);
 }
 
 template<typename A>
@@ -3207,18 +3378,24 @@ void build_variable_count_map(const Fold<A> &op, variable_count_map &varcountmap
 
 template<typename A>
 void wildcardconst_str(const Fold<A> &op, std::string &s) {
-    wildcardconst_str(op.a,s);
+    s += "b";
+    return;
+}
+
+template<typename A>
+int count_leaves(const Fold<A> &op) {
+    return 1;
 }
 
 template<typename A>
 void count_terms(const Fold<A> &op, term_map &m) {
-    count_terms(op.a,m);
+    return;
 }
 
 template<typename A>
 IRNodeType get_node_type(const Fold<A> &op) {
-   // return IRNodeType::UIntImm;
-    return get_node_type(op.a);
+    return IRNodeType::UIntImm;
+  //  return get_node_type(op.a);
 }
 
 template<typename A>
@@ -3293,8 +3470,18 @@ void build_bfs_type_map(const Overflows<A> &op, bfs_node_type_map &type_map, int
 }
 
 template<typename A>
+void build_bfs_const_map(const Overflows<A> &op, const_str_map &const_map, int current_depth) {
+    return;
+}
+
+template<typename A>
 void wildcardconst_str(const Overflows<A> &op, std::string &s) {
     wildcardconst_str(op.a,s);
+}
+
+template<typename A>
+int count_leaves(const Overflows<A> &op) {
+    return 1;
 }
 
 struct Overflow {
@@ -3355,6 +3542,10 @@ inline void build_bfs_type_map(const Overflow &op, bfs_node_type_map &type_map, 
     update_bfs_node_type_map(type_map, IRNodeType::Variable, current_depth);
 }
 
+inline void build_bfs_const_map(const Overflow &op, const_str_map &const_map, int current_depth) {
+    return;
+}
+
 inline void build_variable_map(const Overflow &op, variable_map &varmap, halide_type_t type_hint) {
     return;
 }
@@ -3374,6 +3565,10 @@ inline IRNodeType get_node_type(const Overflow &op) {
 
 inline void wildcardconst_str(const Overflow &op, std::string &s) {
     return;
+}
+
+inline int count_leaves(const Overflow &op) {
+    return 1;
 }
 
 template<typename A>
@@ -3450,6 +3645,11 @@ void build_bfs_type_map(const IsConst<A> &op, bfs_node_type_map &type_map, int c
 }
 
 template<typename A>
+void build_bfs_const_map(const IsConst<A> &op, const_str_map &const_map, int current_depth) {
+    return;
+}
+
+template<typename A>
 void build_variable_map(const IsConst<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
 }
@@ -3462,6 +3662,11 @@ void build_variable_count_map(const IsConst<A> &op, variable_count_map &varcount
 template<typename A>
 void wildcardconst_str(const IsConst<A> &op, std::string &s) {
     return;
+}
+
+template<typename A>
+int count_leaves(const IsConst<A> &op) {
+    return 1;
 }
 
 // don't think this can occur in before/after terms (?)
@@ -3540,6 +3745,11 @@ void build_bfs_type_map(const CanProve<A, Prover> &op, bfs_node_type_map &type_m
 }
 
 template<typename A, typename Prover>
+void build_bfs_const_map(const CanProve<A, Prover> &op, const_str_map &const_map, int current_depth) {
+    return;
+}
+
+template<typename A, typename Prover>
 void build_variable_map(const CanProve<A, Prover> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
 }
@@ -3552,6 +3762,11 @@ void build_variable_count_map(const CanProve<A, Prover> &op, variable_count_map 
 template<typename A, typename Prover>
 void wildcardconst_str(const CanProve<A, Prover> &op, std::string &s) {
     return;
+}
+
+template<typename A, typename Prover>
+int count_leaves(const CanProve<A, Prover> &op) {
+    return 1;
 }
 
 // can't occur in before/after terms (can't or doesn't?)
@@ -3633,6 +3848,11 @@ void build_bfs_type_map(const IsFloat<A> &op, bfs_node_type_map &type_map, int c
 }
 
 template<typename A>
+void build_bfs_const_map(const IsFloat<A> &op, const_str_map &const_map, int current_depth) {
+    return;
+}
+
+template<typename A>
 void build_variable_map(const IsFloat<A> &op, variable_map &varmap, halide_type_t type_hint) {
     build_variable_map(op.a, varmap, type_hint);
 }
@@ -3645,6 +3865,11 @@ void build_variable_count_map(const IsFloat<A> &op, variable_count_map &varcount
 template<typename A>
 void wildcardconst_str(const IsFloat<A> &op, std::string &s) {
     return;
+}
+
+template<typename A>
+int count_leaves(const IsFloat<A> &op) {
+    return 1;
 }
 
 // can't (or doesn't?) appear in before/after terms
@@ -3683,10 +3908,15 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     int LHS_vector_count = LHS_term_map[IRNodeType::Ramp] + LHS_term_map[IRNodeType::Broadcast];
     int RHS_vector_count = RHS_term_map[IRNodeType::Ramp] + RHS_term_map[IRNodeType::Broadcast];
 
-    std::string LHS_wildcardstr;
-    wildcardconst_str(before,LHS_wildcardstr);
-    std::string RHS_wildcardstr;
-    wildcardconst_str(after,RHS_wildcardstr);
+    const_str_map LHS_const_str_map, RHS_const_str_map;
+    build_bfs_const_map(before, LHS_const_str_map, 0);
+    build_bfs_const_map(after, RHS_const_str_map, 0);
+
+    std::string LHS_const_strs = const_str_map_to_string(LHS_const_str_map);
+    std::string RHS_const_strs = const_str_map_to_string(RHS_const_str_map);
+
+    int LHS_leaf_count = count_leaves(before);
+    int RHS_leaf_count = count_leaves(after);
 
     if (LHS_vector_count > RHS_vector_count) {
         debug(0) << rulename << " " << before << " ; " << after << " ;  VECTOR COUNT SUCCESS\n";
@@ -3701,6 +3931,10 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
             debug(0) << rulename << " "  << before << " ; " << after << " ; ARITH COUNT SUCCESS\n";
         } else if (get_expensive_arith_count(LHS_term_map) < get_expensive_arith_count(RHS_term_map)) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; ARITH COUNT FAILURE\n";
+        } else if (LHS_leaf_count > RHS_leaf_count) {
+            debug(0) << rulename << " " << before << " ; " << after << " ; LEAF COUNT SUCCESS\n";
+        } else if (LHS_leaf_count < RHS_leaf_count) {
+            debug(0) << rulename << " " << before << " ; " << after << " ; LEAF COUNT FAILURE\n";
         } else if (get_total_op_count(LHS_term_map) > get_total_op_count(RHS_term_map)) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; TOTAL OP COUNT SUCCESS\n";
         } else if (get_total_op_count(LHS_term_map) < get_total_op_count(RHS_term_map)) {
@@ -3713,10 +3947,11 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
             debug(0) << rulename << " "  << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT SUCCESS\n";
         } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT FAILURE\n";
-        } else if (LHS_wildcardstr.compare(RHS_wildcardstr) > 0) {
+        } else if (LHS_const_strs.compare(RHS_const_strs) < 0) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; RIGHT CONSTANT STRING SUCCESS\n";
-        } else if (LHS_wildcardstr.compare(RHS_wildcardstr) < 0) {
+        } else if (LHS_const_strs.compare(RHS_const_strs) > 0) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; RIGHT CONSTANT STRING FAILURE\n";
+            debug(0) << rulename << " " << LHS_const_strs << " ; " << RHS_const_strs << "\n";
         } else if (mpo_full(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; ORDERING OVER BFS OPS SUCCESS\n";
         } else if (mpo_full(LHS_bfs_node_type_map,RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
