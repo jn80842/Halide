@@ -72,7 +72,37 @@ void expr_match_test();
 namespace IRMatcher {
 
 constexpr int max_wild = 6;
-
+/*
+enum class IRNodeType {
+    IntImm,
+    UIntImm,
+    FloatImm,
+    StringImm,
+    Broadcast,
+    Cast,
+    Variable,
+    Add,
+    Sub,
+    SubByConstant,
+    Mod,
+    Mul,
+    MulByConstant,
+    Div,
+    Min,
+    Max,
+    EQ,
+    NE,
+    LT,
+    LE,
+    GT,
+    GE,
+    And,
+    Or,
+    Not,
+    Select,
+    Ramp,
+};
+*/
 typedef std::map<std::string, halide_type_t> variable_map;
 typedef std::map<std::string, int> variable_count_map;
 typedef std::map<IRNodeType, int> term_map;
@@ -314,6 +344,10 @@ inline int count_leaves(SpecificExpr e) {
     return 1;
 }
 
+inline bool is_constant(SpecificExpr e) {
+    return false;
+}
+
 template<int i>
 struct WildConstInt {
     struct pattern_tag {};
@@ -429,6 +463,11 @@ void wildcardconst_str(const WildConstInt<i> &c, std::string &s) {
 template<int i>
 int count_leaves(const WildConstInt<i> &c) {
     return 1;
+}
+
+template<int i>
+bool is_constant(const WildConstInt<i> &c) {
+    return true;
 }
 
 template<int i>
@@ -553,6 +592,11 @@ int count_leaves(const WildConstUInt<i> &c) {
 }
 
 template<int i>
+bool is_constant(const WildConstUInt<i> &c) {
+    return true;
+}
+
+template<int i>
 struct WildConstFloat {
     struct pattern_tag {};
 
@@ -670,6 +714,11 @@ int count_leaves(const WildConstFloat<i> &c) {
     return 1;
 }
 
+template<int i>
+bool is_constant(const WildConstFloat<i> &c) {
+    return false;
+}
+
 // Matches and binds to any constant Expr. Does not support constant-folding.
 template<int i>
 struct WildConst {
@@ -784,6 +833,11 @@ void wildcardconst_str(const WildConst<i> &c, std::string &s) {
 template<int i>
 int count_leaves(const WildConst<i> &c) {
     return 1;
+}
+
+template<int i>
+bool is_constant(const WildConst<i> &c) {
+    return false;
 }
 
 // Matches and binds to any Expr
@@ -915,6 +969,11 @@ void wildcardconst_str(const Wild<i> &c, std::string &s) {
 template<int i>
 int count_leaves(const Wild<i> &c) {
     return 1;
+}
+
+template<int i>
+bool is_constant(const Wild<i> &c) {
+    return false;
 }
 
 // Matches a specific constant or broadcast of that constant. The
@@ -1080,6 +1139,10 @@ inline void wildcardconst_str(const Const &op, std::string &s) {
 
 inline int count_leaves(const Const &op) {
     return 1;
+}
+
+inline bool is_constant(const Const &op) {
+    return true;
 }
 
 template<typename Op>
@@ -1333,6 +1396,11 @@ int count_leaves(const CmpOp<Op, A, B> &op) {
 }
 
 template<typename Op, typename A, typename B>
+bool is_constant(const CmpOp<Op, A, B> &op) {
+    return false;
+}
+
+template<typename Op, typename A, typename B>
 int get_variable_count(const BinOp<Op, A, B> &op) {
     return get_variable_count(op.a) + get_variable_count(op.b);
 }
@@ -1379,6 +1447,11 @@ void wildcardconst_str(const BinOp<Op, A, B> &op, std::string &s) {
 template<typename Op, typename A, typename B>
 int count_leaves(const BinOp<Op, A, B> &op) {
     return count_leaves(op.a) + count_leaves(op.b);
+}
+
+template<typename Op, typename A, typename B>
+bool is_constant(const BinOp<Op, A, B> &op) {
+    return false;
 }
 
 template<typename Op, typename A, typename B>
@@ -1458,7 +1531,11 @@ void count_terms(const BinOp<Sub, A, B> &op, term_map &m) {
 
 template<typename A, typename B>
 IRNodeType get_node_type(const BinOp<Sub, A, B> &op) {
-    return IRNodeType::Sub;
+ //   if (is_constant(op.b)) {
+ //       return IRNodeType::SubByConstant;
+ //   } else {
+        return IRNodeType::Sub;
+ //   }
 }
 
 template<typename A, typename B>
@@ -1492,7 +1569,11 @@ void count_terms(const BinOp<Mul, A, B> &op, term_map &m) {
 
 template<typename A, typename B>
 IRNodeType get_node_type(const BinOp<Mul, A, B> &op) {
-    return IRNodeType::Mul;
+//    if (is_constant(op.b)) {
+//        return IRNodeType::MulByConstant;
+//    } else {
+        return IRNodeType::Mul;
+//    }
 }
 
 template<typename A, typename B>
@@ -2431,6 +2512,11 @@ int count_leaves(const Intrin<Args...> &op) {
 }
 
 template<typename... Args>
+bool is_constant(const Intrin<Args...> &op) {
+    return false;
+}
+
+template<typename... Args>
 void count_terms(const Intrin<Args...> &op, term_map &m) {
     return;
 }
@@ -2562,6 +2648,11 @@ void wildcardconst_str(const NotOp<A> &op, std::string &s) {
 template<typename A>
 int count_leaves(const NotOp<A> &op) {
     return count_leaves(op.a);
+}
+
+template<typename A>
+bool is_constant(const NotOp<A> &op) {
+    return false;
 }
 
 template<typename A>
@@ -2722,6 +2813,11 @@ int count_leaves(const SelectOp<C, T, F> &op) {
 }
 
 template<typename C, typename T, typename F>
+bool is_constant(const SelectOp<C, T, F> &op) {
+    return false;
+}
+
+template<typename C, typename T, typename F>
 void count_terms(const SelectOp<C, T, F> &op, term_map &m) {
     count_terms(op.c, m);
     count_terms(op.t, m);
@@ -2833,6 +2929,11 @@ void wildcardconst_str(const BroadcastOp<A, known_lanes> &op, std::string &s) {
 template<typename A, bool known_lanes>
 int count_leaves(const BroadcastOp<A, known_lanes> &op) {
     return count_leaves(op.a);
+}
+
+template<typename A, bool known_lanes>
+bool is_constant(const BroadcastOp<A, known_lanes> &op) {
+    return false;
 }
 
 template<typename A>
@@ -2986,6 +3087,11 @@ void wildcardconst_str(const RampOp<A, B, known_lanes> &op, std::string &s) {
 template<typename A, typename B, bool known_lanes>
 int count_leaves(const RampOp<A, B, known_lanes> &op) {
     return count_leaves(op.a) + count_leaves(op.b);
+}
+
+template<typename A, typename B, bool known_lanes>
+bool is_constant(const RampOp<A, B, known_lanes> &op) {
+    return false;
 }
 
 template<typename A, typename B, bool known_lanes>
@@ -3165,6 +3271,11 @@ int count_leaves(const NegateOp<A> &op) {
 }
 
 template<typename A>
+bool is_constant(const NegateOp<A> &op) {
+    return false;
+}
+
+template<typename A>
 void count_terms(const NegateOp<A> &op, term_map &m) {
     count_terms(op.a,m);
     increment_term(IRNodeType::Sub, m);
@@ -3278,6 +3389,11 @@ int count_leaves(const CastOp<A> &op) {
 }
 
 template<typename A>
+bool is_constant(const CastOp<A> &op) {
+    return false;
+}
+
+template<typename A>
 void count_terms(const CastOp<A> &op, term_map &m) {
     count_terms(op.a, m);
 }
@@ -3388,6 +3504,11 @@ int count_leaves(const Fold<A> &op) {
 }
 
 template<typename A>
+bool is_constant(const Fold<A> &op) {
+    return true;
+}
+
+template<typename A>
 void count_terms(const Fold<A> &op, term_map &m) {
     return;
 }
@@ -3484,6 +3605,11 @@ int count_leaves(const Overflows<A> &op) {
     return 1;
 }
 
+template<typename A>
+bool is_constant(const Overflows<A> &op) {
+    return false;
+}
+
 struct Overflow {
     struct pattern_tag {};
 
@@ -3569,6 +3695,10 @@ inline void wildcardconst_str(const Overflow &op, std::string &s) {
 
 inline int count_leaves(const Overflow &op) {
     return 1;
+}
+
+inline bool is_constant(const Overflow &op) {
+    return false;
 }
 
 template<typename A>
@@ -3669,6 +3799,11 @@ int count_leaves(const IsConst<A> &op) {
     return 1;
 }
 
+template<typename A>
+bool is_constant(const IsConst<A> &op) {
+    return false;
+}
+
 // don't think this can occur in before/after terms (?)
 template<typename A>
 void count_terms(const IsConst<A> &op, term_map &m) {
@@ -3767,6 +3902,11 @@ void wildcardconst_str(const CanProve<A, Prover> &op, std::string &s) {
 template<typename A, typename Prover>
 int count_leaves(const CanProve<A, Prover> &op) {
     return 1;
+}
+
+template<typename A, typename Prover>
+bool is_constant(const CanProve<A, Prover> &op) {
+    return false;
 }
 
 // can't occur in before/after terms (can't or doesn't?)
@@ -3870,6 +4010,11 @@ void wildcardconst_str(const IsFloat<A> &op, std::string &s) {
 template<typename A>
 int count_leaves(const IsFloat<A> &op) {
     return 1;
+}
+
+template<typename A>
+bool is_constant(const IsFloat<A> &op) {
+    return false;
 }
 
 // can't (or doesn't?) appear in before/after terms
@@ -4192,7 +4337,7 @@ HALIDE_ALWAYS_INLINE bool evaluate_predicate(Pattern p, MatcherState &state) {
 #define HALIDE_VERIFY_SIMPLIFY_RULES 0
 
 // check various properties of rules when they match
-#define HALIDE_CHECK_RULES_PROPERTIES 1
+#define HALIDE_CHECK_RULES_PROPERTIES 0
 
 template<typename Instance>
 struct Rewriter {

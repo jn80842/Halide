@@ -377,11 +377,13 @@ node_type_ordering nto = {
     {IRNodeType::Select,21},
     {IRNodeType::Div,20},
     {IRNodeType::Mul,19},
-    {IRNodeType::Mod,18},
-    {IRNodeType::Sub,17},
-    {IRNodeType::Add,16},
-    {IRNodeType::Max,14},
-    {IRNodeType::Min,14},
+ //   {IRNodeType::MulByConstant,18},
+    {IRNodeType::Mod,17},
+    {IRNodeType::Sub,16},
+ //   {IRNodeType::SubByConstant,15},
+    {IRNodeType::Add,14},
+    {IRNodeType::Max,13},
+    {IRNodeType::Min,13},
 
     {IRNodeType::Or,12},
     {IRNodeType::And,11},
@@ -401,8 +403,10 @@ node_type_ordering nto_adds = {
     {IRNodeType::Select,100},
     {IRNodeType::Div,100},
     {IRNodeType::Mul,100},
+ //   {IRNodeType::MulByConstant,100},
     {IRNodeType::Mod,100},
     {IRNodeType::Sub,1},
+ //   {IRNodeType::SubByConstant,1},
     {IRNodeType::Add,1},
     {IRNodeType::Max,100},
     {IRNodeType::Min,100},
@@ -606,7 +610,7 @@ bool compare_node_type_lists(node_type_list before_list, node_type_list after_li
 }
 
 int get_expensive_arith_count(term_map &t) {
-    return t[IRNodeType::Div] + t[IRNodeType::Mod] + t[IRNodeType::Mul];
+    return t[IRNodeType::Div] + t[IRNodeType::Mod] + t[IRNodeType::Mul]; //+ t[IRNodeType::MulByConstant];
 }
 
 bool variable_counts_geq(variable_count_map &m1, variable_count_map &m2) {
@@ -707,12 +711,18 @@ CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2) {
     } else if (m1[IRNodeType::Mul] != m2[IRNodeType::Mul]) {
         debug(0) << "Terms count tie breaker " << " Mul " << m1[IRNodeType::Mul] << " " << m2[IRNodeType::Mul] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Mul],m2[IRNodeType::Mul])) << "\n";
         return ternary_comp(m1[IRNodeType::Mul], m2[IRNodeType::Mul]);
+//    } else if (m1[IRNodeType::MulByConstant] != m2[IRNodeType::MulByConstant]) {
+//        debug(0) << "Terms count tie breaker " << " Mul " << m1[IRNodeType::MulByConstant] << " " << m2[IRNodeType::MulByConstant] << " " << comp_to_s(ternary_comp(m1[IRNodeType::MulByConstant],m2[IRNodeType::MulByConstant])) << "\n";
+//        return ternary_comp(m1[IRNodeType::MulByConstant], m2[IRNodeType::MulByConstant]);
     } else if (m1[IRNodeType::Mod] != m2[IRNodeType::Mod]) {
         debug(0) << "Terms count tie breaker " << " Mod " << m1[IRNodeType::Mod] << " " << m2[IRNodeType::Mod] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Mod],m2[IRNodeType::Mod])) << "\n";
         return ternary_comp(m1[IRNodeType::Mod], m2[IRNodeType::Mod]);
     } else if (m1[IRNodeType::Sub] != m2[IRNodeType::Sub]) { // Adds also go in this bucket
         debug(0) << "Terms count tie breaker " << " Sub " << m1[IRNodeType::Sub] << " " << m2[IRNodeType::Sub] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Sub],m2[IRNodeType::Sub])) << "\n";
         return ternary_comp(m1[IRNodeType::Sub], m2[IRNodeType::Sub]);
+//    } else if (m1[IRNodeType::SubByConstant] != m2[IRNodeType::SubByConstant]) { // Adds also go in this bucket
+//        debug(0) << "Terms count tie breaker " << " Sub " << m1[IRNodeType::SubByConstant] << " " << m2[IRNodeType::SubByConstant] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Sub],m2[IRNodeType::SubByConstant])) << "\n";
+//        return ternary_comp(m1[IRNodeType::SubByConstant], m2[IRNodeType::SubByConstant]);
     } else if (m1[IRNodeType::Add] != m2[IRNodeType::Add]) {
         debug(0) << "Terms count tie breaker " << " Add " << m1[IRNodeType::Add] << " " << m2[IRNodeType::Add] << " " << comp_to_s(ternary_comp(m1[IRNodeType::Add],m2[IRNodeType::Add])) << "\n";
         return ternary_comp(m1[IRNodeType::Add], m2[IRNodeType::Add]);
