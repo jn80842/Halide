@@ -72,8 +72,8 @@ void expr_match_test();
 namespace IRMatcher {
 
 constexpr int max_wild = 6;
-/*
-enum class IRNodeType {
+
+enum class IRMatcherType {
     IntImm,
     UIntImm,
     FloatImm,
@@ -82,6 +82,7 @@ enum class IRNodeType {
     Cast,
     Variable,
     Add,
+    AddByConstant,
     Sub,
     SubByConstant,
     Mod,
@@ -102,25 +103,25 @@ enum class IRNodeType {
     Select,
     Ramp,
 };
-*/
+
 typedef std::map<std::string, halide_type_t> variable_map;
 typedef std::map<std::string, int> variable_count_map;
-typedef std::map<IRNodeType, int> term_map;
+typedef std::map<IRMatcherType, int> term_map;
 typedef std::vector<int> leaf_vec;
-typedef std::map<IRNodeType, int> node_type_ordering;
-typedef std::map<IRNodeType, std::string> node_type_strings;
-typedef std::list<IRNodeType> node_type_list;
-typedef std::map<int, std::list<IRNodeType>> bfs_node_type_map;
+typedef std::map<IRMatcherType, int> node_type_ordering;
+typedef std::map<IRMatcherType, std::string> node_type_strings;
+typedef std::list<IRMatcherType> node_type_list;
+typedef std::map<int, std::list<IRMatcherType>> bfs_node_type_map;
 typedef std::map<int, std::string> const_str_map;
 
-void update_bfs_node_type_map(bfs_node_type_map &type_map, IRNodeType t, int current_depth);
+void update_bfs_node_type_map(bfs_node_type_map &type_map, IRMatcherType t, int current_depth);
 std::string print_bfs_node_type_map(bfs_node_type_map &type_map);
 void update_bfs_const_str_map(const_str_map &const_map, std::string s, int current_depth);
 int compare_const_str_maps(const_str_map &map1, const_str_map &map2);
 void print_const_str_map(const_str_map &map1);
 std::string const_str_map_to_string(const_str_map &map1);
 
-void increment_term(IRNodeType node_type, term_map &m);
+void increment_term(IRMatcherType node_type, term_map &m);
 bool term_map_gt(term_map &m1, term_map &m2);
 int get_total_op_count(term_map &t);
 int get_expensive_arith_count(term_map &t);
@@ -128,16 +129,16 @@ bool variable_counts_geq(variable_count_map &m1, variable_count_map &m2);
 bool variable_counts_gt(variable_count_map &m1, variable_count_map &m2);
 bool variable_counts_atleastone_gt(variable_count_map &m1, variable_count_map &m2);
 
-enum class CompIRNodeTypeStatus {
+enum class CompStatus {
     GT, EQ, LT
 };
 
-CompIRNodeTypeStatus compare_node_types(IRNodeType n1, IRNodeType n2);
-CompIRNodeTypeStatus compare_root_node_types(IRNodeType n1, IRNodeType n2);
+CompStatus compare_node_types(IRMatcherType n1, IRMatcherType n2);
+CompStatus compare_root_node_types(IRMatcherType n1, IRMatcherType n2);
 bool compare_node_type_lists(node_type_list before_list, node_type_list after_list);
-CompIRNodeTypeStatus term_map_comp(term_map &m1, term_map &m2);
-CompIRNodeTypeStatus mpo_adds(bfs_node_type_map &map1, bfs_node_type_map &map2);
-CompIRNodeTypeStatus mpo_full(bfs_node_type_map &map1, bfs_node_type_map &map2);
+CompStatus term_map_comp(term_map &m1, term_map &m2);
+CompStatus mpo_adds(bfs_node_type_map &map1, bfs_node_type_map &map2);
+CompStatus mpo_full(bfs_node_type_map &map1, bfs_node_type_map &map2);
 
 /** To save stack space, the matcher objects are largely stateless and
  * immutable. This state object is built up during matching and then
@@ -324,8 +325,8 @@ inline void count_terms(SpecificExpr e, term_map &m) {
 }
 
 // what node type to use here?
-inline IRNodeType get_node_type(SpecificExpr e) {
-    return IRNodeType::UIntImm;
+inline IRMatcherType get_node_type(SpecificExpr e) {
+    return IRMatcherType::UIntImm;
 }
 
 inline void build_variable_map(SpecificExpr e, variable_map &varmap, halide_type_t type_hint) {
@@ -440,8 +441,8 @@ void count_terms(const WildConstInt<i> &c, term_map &m) {
 }
 
 template<int i>
-IRNodeType get_node_type(const WildConstInt<i> &c) {
-    return IRNodeType::IntImm;
+IRMatcherType get_node_type(const WildConstInt<i> &c) {
+    return IRMatcherType::IntImm;
 }
 
 template<int i>
@@ -566,8 +567,8 @@ void count_terms(const WildConstUInt<i> &c, term_map &m) {
 }
 
 template<int i>
-IRNodeType get_node_type(const WildConstUInt<i> &c) {
-    return IRNodeType::UIntImm;
+IRMatcherType get_node_type(const WildConstUInt<i> &c) {
+    return IRMatcherType::UIntImm;
 }
 
 template<int i>
@@ -689,8 +690,8 @@ void count_terms(const WildConstFloat<i> &c, term_map &m) {
 }
 
 template<int i>
-IRNodeType get_node_type(const WildConstFloat<i> &c) {
-    return IRNodeType::FloatImm;
+IRMatcherType get_node_type(const WildConstFloat<i> &c) {
+    return IRMatcherType::FloatImm;
 }
 
 template<int i>
@@ -716,7 +717,7 @@ int count_leaves(const WildConstFloat<i> &c) {
 
 template<int i>
 bool is_constant(const WildConstFloat<i> &c) {
-    return false;
+    return true;
 }
 
 // Matches and binds to any constant Expr. Does not support constant-folding.
@@ -810,8 +811,8 @@ void count_terms(const WildConst<i> &c, term_map &m) {
 }
 
 template<int i>
-IRNodeType get_node_type(const WildConst<i> &c) {
-    return IRNodeType::UIntImm;
+IRMatcherType get_node_type(const WildConst<i> &c) {
+    return IRMatcherType::UIntImm;
 }
 
 template<int i>
@@ -837,7 +838,7 @@ int count_leaves(const WildConst<i> &c) {
 
 template<int i>
 bool is_constant(const WildConst<i> &c) {
-    return false;
+    return true;
 }
 
 // Matches and binds to any Expr
@@ -937,8 +938,8 @@ void count_terms(const Wild<i> &op, term_map &m) {
 }
 
 template<int i>
-IRNodeType get_node_type(const Wild<i> &op) {
-    return IRNodeType::Variable;
+IRMatcherType get_node_type(const Wild<i> &op) {
+    return IRMatcherType::Variable;
 }
 
 template<int i>
@@ -1120,8 +1121,8 @@ inline void count_terms(const Const &op, term_map &m) {
     return;
 }
 
-inline IRNodeType get_node_type(const Const &op) {
-    return IRNodeType::UIntImm;
+inline IRMatcherType get_node_type(const Const &op) {
+    return IRMatcherType::UIntImm;
 }
 
 inline void build_variable_map(const Const &op, variable_map &varmap, halide_type_t type_hint) {
@@ -1492,12 +1493,20 @@ template<typename A, typename B>
 void count_terms(const BinOp<Add, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::Add, m); // adds and subs count for the same now
+    if (is_constant(op.b)) {
+        increment_term(IRMatcherType::AddByConstant, m);
+    } else {
+        increment_term(IRMatcherType::Add, m);
+    }
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const BinOp<Add, A, B> &op) {
-    return IRNodeType::Add;
+IRMatcherType get_node_type(const BinOp<Add, A, B> &op) {
+    if (is_constant(op.b)) {
+        return IRMatcherType::AddByConstant;
+    } else {
+        return IRMatcherType::Add;
+    }
 }
 
 template<typename A, typename B>
@@ -1526,16 +1535,20 @@ template<typename A, typename B>
 void count_terms(const BinOp<Sub, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::Sub, m);
+    if (is_constant(op.b)) {
+        increment_term(IRMatcherType::SubByConstant, m);
+    } else {
+        increment_term(IRMatcherType::Sub, m);
+    }
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const BinOp<Sub, A, B> &op) {
- //   if (is_constant(op.b)) {
- //       return IRNodeType::SubByConstant;
- //   } else {
-        return IRNodeType::Sub;
- //   }
+IRMatcherType get_node_type(const BinOp<Sub, A, B> &op) {
+    if (is_constant(op.b)) {
+        return IRMatcherType::SubByConstant;
+    } else {
+        return IRMatcherType::Sub;
+    }
 }
 
 template<typename A, typename B>
@@ -1564,16 +1577,20 @@ template<typename A, typename B>
 void count_terms(const BinOp<Mul, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::Mul, m);
+    if (is_constant(op.b)) {
+        increment_term(IRMatcherType::MulByConstant, m);
+    } else {
+        increment_term(IRMatcherType::Mul, m);
+    }
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const BinOp<Mul, A, B> &op) {
-//    if (is_constant(op.b)) {
-//        return IRNodeType::MulByConstant;
-//    } else {
-        return IRNodeType::Mul;
-//    }
+IRMatcherType get_node_type(const BinOp<Mul, A, B> &op) {
+    if (is_constant(op.b)) {
+        return IRMatcherType::MulByConstant;
+    } else {
+        return IRMatcherType::Mul;
+    }
 }
 
 template<typename A, typename B>
@@ -1602,12 +1619,12 @@ template<typename A, typename B>
 void count_terms(const BinOp<Div, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::Div, m);
+    increment_term(IRMatcherType::Div, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const BinOp<Div, A, B> &op) {
-    return IRNodeType::Div;
+IRMatcherType get_node_type(const BinOp<Div, A, B> &op) {
+    return IRMatcherType::Div;
 }
 
 template<typename A, typename B>
@@ -1636,12 +1653,12 @@ template<typename A, typename B>
 void count_terms(const BinOp<And, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::And, m);
+    increment_term(IRMatcherType::And, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const BinOp<And, A, B> &op) {
-    return IRNodeType::And;
+IRMatcherType get_node_type(const BinOp<And, A, B> &op) {
+    return IRMatcherType::And;
 }
 
 template<typename A, typename B>
@@ -1670,12 +1687,12 @@ template<typename A, typename B>
 void count_terms(const BinOp<Or, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::Or, m);
+    increment_term(IRMatcherType::Or, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const BinOp<Or, A, B> &op) {
-    return IRNodeType::Or;
+IRMatcherType get_node_type(const BinOp<Or, A, B> &op) {
+    return IRMatcherType::Or;
 }
 
 template<typename A, typename B>
@@ -1704,12 +1721,12 @@ template<typename A, typename B>
 void count_terms(const BinOp<Min, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::Min, m);
+    increment_term(IRMatcherType::Min, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const BinOp<Min, A, B> &op) {
-    return IRNodeType::Min;
+IRMatcherType get_node_type(const BinOp<Min, A, B> &op) {
+    return IRMatcherType::Min;
 }
 
 template<typename A, typename B>
@@ -1739,12 +1756,12 @@ void count_terms(const BinOp<Max, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
     // min and max have equal cost, so put both in Min bucket
-    increment_term(IRNodeType::Min, m);
+    increment_term(IRMatcherType::Min, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const BinOp<Max, A, B> &op) {
-    return IRNodeType::Max;
+IRMatcherType get_node_type(const BinOp<Max, A, B> &op) {
+    return IRMatcherType::Max;
 }
 
 template<typename A, typename B>
@@ -1769,12 +1786,12 @@ template<typename A, typename B>
 void count_terms(const CmpOp<LE, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::LE, m);
+    increment_term(IRMatcherType::LE, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const CmpOp<LE, A, B> &op) {
-    return IRNodeType::LE;
+IRMatcherType get_node_type(const CmpOp<LE, A, B> &op) {
+    return IRMatcherType::LE;
 }
 
 template<typename A, typename B>
@@ -1798,12 +1815,12 @@ template<typename A, typename B>
 void count_terms(const CmpOp<LT, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::LT, m);
+    increment_term(IRMatcherType::LT, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const CmpOp<LT, A, B> &op) {
-    return IRNodeType::LT;
+IRMatcherType get_node_type(const CmpOp<LT, A, B> &op) {
+    return IRMatcherType::LT;
 }
 
 template<typename A, typename B>
@@ -1827,12 +1844,12 @@ template<typename A, typename B>
 void count_terms(const CmpOp<GE, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::GE, m);
+    increment_term(IRMatcherType::GE, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const CmpOp<GE, A, B> &op) {
-    return IRNodeType::GE;
+IRMatcherType get_node_type(const CmpOp<GE, A, B> &op) {
+    return IRMatcherType::GE;
 }
 
 template<typename A, typename B>
@@ -1856,12 +1873,12 @@ template<typename A, typename B>
 void count_terms(const CmpOp<GT, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::GT, m);
+    increment_term(IRMatcherType::GT, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const CmpOp<GT, A, B> &op) {
-    return IRNodeType::GT;
+IRMatcherType get_node_type(const CmpOp<GT, A, B> &op) {
+    return IRMatcherType::GT;
 }
 
 template<typename A, typename B>
@@ -1902,12 +1919,12 @@ template<typename A, typename B>
 void count_terms(const CmpOp<EQ, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::EQ, m);
+    increment_term(IRMatcherType::EQ, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const CmpOp<EQ, A, B> &op) {
-    return IRNodeType::EQ;
+IRMatcherType get_node_type(const CmpOp<EQ, A, B> &op) {
+    return IRMatcherType::EQ;
 }
 
 template<typename A, typename B>
@@ -1947,12 +1964,12 @@ template<typename A, typename B>
 void count_terms(const CmpOp<NE, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::NE, m);
+    increment_term(IRMatcherType::NE, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const CmpOp<NE, A, B> &op) {
-    return IRNodeType::NE;
+IRMatcherType get_node_type(const CmpOp<NE, A, B> &op) {
+    return IRMatcherType::NE;
 }
 
 template<typename A, typename B>
@@ -1981,12 +1998,12 @@ template<typename A, typename B>
 void count_terms(const BinOp<Mod, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::Mod, m);
+    increment_term(IRMatcherType::Mod, m);
 }
 
 template<typename A, typename B>
-IRNodeType get_node_type(const BinOp<Mod, A, B> &op) {
-    return IRNodeType::Mod;
+IRMatcherType get_node_type(const BinOp<Mod, A, B> &op) {
+    return IRMatcherType::Mod;
 }
 
 template<typename A, typename B>
@@ -2523,8 +2540,8 @@ void count_terms(const Intrin<Args...> &op, term_map &m) {
 
 // what node type to use?
 template<typename... Args>
-IRNodeType get_node_type(const Intrin<Args...> &op) {
-    return IRNodeType::IntImm;
+IRMatcherType get_node_type(const Intrin<Args...> &op) {
+    return IRMatcherType::IntImm;
 }
 
 template<typename... Args>
@@ -2658,12 +2675,12 @@ bool is_constant(const NotOp<A> &op) {
 template<typename A>
 void count_terms(const NotOp<A> &op, term_map &m) {
     count_terms(op.a, m);
-    increment_term(IRNodeType::Not, m);
+    increment_term(IRMatcherType::Not, m);
 }
 
 template<typename A>
-IRNodeType get_node_type(const NotOp<A> &op) {
-    return IRNodeType::Not;
+IRMatcherType get_node_type(const NotOp<A> &op) {
+    return IRMatcherType::Not;
 }
 
 template<typename C, typename T, typename F>
@@ -2822,12 +2839,12 @@ void count_terms(const SelectOp<C, T, F> &op, term_map &m) {
     count_terms(op.c, m);
     count_terms(op.t, m);
     count_terms(op.f, m);
-    increment_term(IRNodeType::Select, m);
+    increment_term(IRMatcherType::Select, m);
 }
 
 template<typename C, typename T, typename F>
-IRNodeType get_node_type(const SelectOp<C, T, F> &op) {
-    return IRNodeType::Select;
+IRMatcherType get_node_type(const SelectOp<C, T, F> &op) {
+    return IRMatcherType::Select;
 }
 
 template<typename C, typename T, typename F>
@@ -2949,12 +2966,12 @@ void build_variable_count_map(const BroadcastOp<A, known_lanes> &op, variable_co
 template<typename A, bool known_lanes>
 void count_terms(const BroadcastOp<A, known_lanes> &op, term_map &m) {
     count_terms(op.a, m);
-    increment_term(IRNodeType::Broadcast, m);
+    increment_term(IRMatcherType::Broadcast, m);
 }
 
 template<typename A, bool known_lanes>
-IRNodeType get_node_type(const BroadcastOp<A, known_lanes> &op) {
-    return IRNodeType::Broadcast;
+IRMatcherType get_node_type(const BroadcastOp<A, known_lanes> &op) {
+    return IRMatcherType::Broadcast;
 }
 
 template<typename A>
@@ -3070,12 +3087,12 @@ template<typename A, typename B, bool known_lanes>
 void count_terms(const RampOp<A, B, known_lanes> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRNodeType::Ramp, m);
+    increment_term(IRMatcherType::Ramp, m);
 }
 
 template<typename A, typename B, bool known_lanes>
-IRNodeType get_node_type(const RampOp<A, B, known_lanes> &op) {
-    return IRNodeType::Ramp;
+IRMatcherType get_node_type(const RampOp<A, B, known_lanes> &op) {
+    return IRMatcherType::Ramp;
 }
 
 template<typename A, typename B, bool known_lanes>
@@ -3278,12 +3295,12 @@ bool is_constant(const NegateOp<A> &op) {
 template<typename A>
 void count_terms(const NegateOp<A> &op, term_map &m) {
     count_terms(op.a,m);
-    increment_term(IRNodeType::Sub, m);
+    increment_term(IRMatcherType::Sub, m);
 }
 
 template<typename A>
-IRNodeType get_node_type(const NegateOp<A> &op) {
-    return IRNodeType::Sub;
+IRMatcherType get_node_type(const NegateOp<A> &op) {
+    return IRMatcherType::Sub;
 }
 
 template<typename A>
@@ -3399,8 +3416,8 @@ void count_terms(const CastOp<A> &op, term_map &m) {
 }
 
 template<typename A>
-IRNodeType get_node_type(const CastOp<A> &op) {
-    return IRNodeType::Cast;
+IRMatcherType get_node_type(const CastOp<A> &op) {
+    return IRMatcherType::Cast;
 }
 
 template<typename A>
@@ -3514,8 +3531,8 @@ void count_terms(const Fold<A> &op, term_map &m) {
 }
 
 template<typename A>
-IRNodeType get_node_type(const Fold<A> &op) {
-    return IRNodeType::UIntImm;
+IRMatcherType get_node_type(const Fold<A> &op) {
+    return IRMatcherType::UIntImm;
   //  return get_node_type(op.a);
 }
 
@@ -3665,7 +3682,7 @@ inline bool is_vector_term(const Overflow &op) {
 }
 
 inline void build_bfs_type_map(const Overflow &op, bfs_node_type_map &type_map, int current_depth) {
-    update_bfs_node_type_map(type_map, IRNodeType::Variable, current_depth);
+    update_bfs_node_type_map(type_map, IRMatcherType::Variable, current_depth);
 }
 
 inline void build_bfs_const_map(const Overflow &op, const_str_map &const_map, int current_depth) {
@@ -3685,8 +3702,8 @@ inline void count_terms(const Overflow &op, term_map &m) {
 }
 
 // is this the right node type to return?
-inline IRNodeType get_node_type(const Overflow &op) {
-    return IRNodeType::Variable;
+inline IRMatcherType get_node_type(const Overflow &op) {
+    return IRMatcherType::Variable;
 }
 
 inline void wildcardconst_str(const Overflow &op, std::string &s) {
@@ -3812,8 +3829,8 @@ void count_terms(const IsConst<A> &op, term_map &m) {
 
 // is this the right node type to return?
 template<typename A>
-IRNodeType get_node_type(const IsConst<A> &op) {
-    return IRNodeType::Variable;
+IRMatcherType get_node_type(const IsConst<A> &op) {
+    return IRMatcherType::Variable;
 }
 
 template<typename A, typename Prover>
@@ -3917,8 +3934,8 @@ void count_terms(const CanProve<A, Prover> &op, term_map &m) {
 
 // is this the right node type to return?
 template<typename A, typename Prover>
-IRNodeType get_node_type(const CanProve<A, Prover> &op) {
-    return IRNodeType::Variable;
+IRMatcherType get_node_type(const CanProve<A, Prover> &op) {
+    return IRMatcherType::Variable;
 }
 
 template<typename A>
@@ -4024,8 +4041,8 @@ void count_terms(const IsFloat<A> &op, term_map &m) {
 }
 
 template<typename A>
-IRNodeType get_node_type(const IsFloat<A> &op) {
-    return IRNodeType::UIntImm;
+IRMatcherType get_node_type(const IsFloat<A> &op) {
+    return IRMatcherType::UIntImm;
 }
 
 template<typename Before,
@@ -4040,7 +4057,15 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
 
     count_terms(before, LHS_term_map);
     count_terms(after, RHS_term_map);
-
+/*
+    if (term_map_comp(LHS_term_map, RHS_term_map) == CompStatus::GT) {
+            debug(0) << rulename << " "  << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
+    }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompStatus::LT) {
+        debug(0) << rulename << " "  << before << " ; " << after << " ; HISTO COUNT FAILURE\n"; 
+    } else {
+        debug(0) << rulename << " " << before << " ; " << after << " ; HISTO COUNT EQUAL\n";
+    }
+*/
     variable_count_map LHS_var_count_map;
     variable_count_map RHS_var_count_map;
     build_variable_count_map(before, LHS_var_count_map);
@@ -4050,8 +4075,17 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     bfs_node_type_map RHS_bfs_node_type_map;
     build_bfs_type_map(before, LHS_bfs_node_type_map,0);
     build_bfs_type_map(after, RHS_bfs_node_type_map,0);
-    int LHS_vector_count = LHS_term_map[IRNodeType::Ramp] + LHS_term_map[IRNodeType::Broadcast];
-    int RHS_vector_count = RHS_term_map[IRNodeType::Ramp] + RHS_term_map[IRNodeType::Broadcast];
+/*
+    if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompStatus::GT) {
+            debug(0) << rulename << " "  << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT SUCCESS\n";
+        } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompStatus::LT) {
+            debug(0) << rulename << " "  << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT FAILURE\n";
+        } else {
+            debug(0) << rulename << " "  << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT EQUAL\n";
+        }
+        */
+    int LHS_vector_count = LHS_term_map[IRMatcherType::Ramp] + LHS_term_map[IRMatcherType::Broadcast];
+    int RHS_vector_count = RHS_term_map[IRMatcherType::Ramp] + RHS_term_map[IRMatcherType::Broadcast];
 
     const_str_map LHS_const_str_map, RHS_const_str_map;
     build_bfs_const_map(before, LHS_const_str_map, 0);
@@ -4084,22 +4118,22 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
             debug(0) << rulename << " "  << before << " ; " << after << " ; TOTAL OP COUNT SUCCESS\n";
         } else if (get_total_op_count(LHS_term_map) < get_total_op_count(RHS_term_map)) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; TOTAL OP COUNT FAILURE\n";
-        } else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::GT) {
+        } else if (term_map_comp(LHS_term_map, RHS_term_map) == CompStatus::GT) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; HISTO COUNT SUCCESS\n"; 
-        }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompIRNodeTypeStatus::LT) {
+        }  else if (term_map_comp(LHS_term_map, RHS_term_map) == CompStatus::LT) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; HISTO COUNT FAILURE\n"; 
-        } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
+        } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompStatus::GT) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT SUCCESS\n";
-        } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
+        } else if (mpo_adds(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompStatus::LT) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; PROMOTING ADD TOWARD ROOT FAILURE\n";
         } else if (LHS_const_strs.compare(RHS_const_strs) < 0) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; RIGHT CONSTANT STRING SUCCESS\n";
         } else if (LHS_const_strs.compare(RHS_const_strs) > 0) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; RIGHT CONSTANT STRING FAILURE\n";
             debug(0) << rulename << " " << LHS_const_strs << " ; " << RHS_const_strs << "\n";
-        } else if (mpo_full(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompIRNodeTypeStatus::LT) {
+        } else if (mpo_full(LHS_bfs_node_type_map, RHS_bfs_node_type_map) == CompStatus::LT) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; ORDERING OVER BFS OPS SUCCESS\n";
-        } else if (mpo_full(LHS_bfs_node_type_map,RHS_bfs_node_type_map) == CompIRNodeTypeStatus::GT) {
+        } else if (mpo_full(LHS_bfs_node_type_map,RHS_bfs_node_type_map) == CompStatus::GT) {
             debug(0) << rulename << " "  << before << " ; " << after << " ; ORDERING OVER BFS OPS FAILURE\n";
         } else {
             debug(0) << rulename << " "  << before << " ; " << after << " ; TERMS ARE EQUAL UNDER ORDERING FAILURE\n";
@@ -4337,7 +4371,7 @@ HALIDE_ALWAYS_INLINE bool evaluate_predicate(Pattern p, MatcherState &state) {
 #define HALIDE_VERIFY_SIMPLIFY_RULES 0
 
 // check various properties of rules when they match
-#define HALIDE_CHECK_RULES_PROPERTIES 0
+#define HALIDE_CHECK_RULES_PROPERTIES 1
 
 template<typename Instance>
 struct Rewriter {
