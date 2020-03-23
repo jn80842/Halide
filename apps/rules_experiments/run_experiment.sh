@@ -65,7 +65,7 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
         ./bin/host/${APP}.generator \
         -g ${APP} \
         -o results/${SEED} \
-        -e stmt,assembly,static_library,c_header,registration,schedule,featurization \
+        -e stmt,static_library,h,assembly,registration \
         target=host-no_runtime \
         auto_schedule=true \
         -p ../autoscheduler/bin/libauto_schedule.so \
@@ -80,8 +80,8 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
         HL_DEBUG_CODEGEN=1 \
         ./bin/host/${APP}.generator \
         -g ${APP} \
-        -o results/${SEED} \
-        -e stmt,assembly,static_library,c_header,registration,schedule,featurization \
+        -o results_baseline/${SEED} \
+        -e stmt,static_library,h,assembly,registration \
         target=host-no_runtime \
         auto_schedule=true \
         -p ../autoscheduler/bin/libauto_schedule.so \
