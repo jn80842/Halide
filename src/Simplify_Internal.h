@@ -321,34 +321,6 @@ public:
     void populate_excluded_ruleset() {
         excluded_rules.insert("add58");
         excluded_rules.insert("add59");
-        excluded_rules.insert("add87");
-        excluded_rules.insert("add89");
-        excluded_rules.insert("add90");
-        excluded_rules.insert("add92");
-        excluded_rules.insert("add97");
-        excluded_rules.insert("add98");
-        excluded_rules.insert("div140");
-        excluded_rules.insert("div147");
-        excluded_rules.insert("div157");
-        excluded_rules.insert("div160");
-        excluded_rules.insert("lt62");
-        excluded_rules.insert("max106");
-        excluded_rules.insert("max108");
-        excluded_rules.insert("max183");
-        excluded_rules.insert("max184");
-        excluded_rules.insert("min106");
-        excluded_rules.insert("min108");
-        excluded_rules.insert("min119");
-        excluded_rules.insert("min186");
-        excluded_rules.insert("min187");
-        excluded_rules.insert("mod81");
-        excluded_rules.insert("mod82");
-        excluded_rules.insert("mod83");
-        excluded_rules.insert("mul85");
-        excluded_rules.insert("sub260");
-        excluded_rules.insert("sub261");
-        excluded_rules.insert("sub266");
-        excluded_rules.insert("sub87");
     }
 
     bool get_rule_flag(std::string rulename, bool experimental) {
