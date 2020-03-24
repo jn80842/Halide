@@ -68,7 +68,7 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
         target=host-no_runtime \
         auto_schedule=true \
         -p ../autoscheduler/bin/libauto_schedule.so \
-        -s Adams2019
+        -s Adams2019 \
           > results/${SEED}/stdout.txt \
           2> results/${SEED}/stderr.txt
 
@@ -85,7 +85,7 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
         target=host-no_runtime \
         auto_schedule=true \
         -p ../autoscheduler/bin/libauto_schedule.so \
-        -s Adams2019
+        -s Adams2019 \
           > results_baseline/${SEED}/stdout.txt \
           2> results_baseline/${SEED}/stderr.txt
 
