@@ -2065,7 +2065,7 @@ struct Rewriter {
         if (before.template match<0>(instance, state)) {
             build_replacement(after);
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
+            debug(0) << "matched " << rulename << " " << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
 #endif
             return true;
         } else {
@@ -2082,7 +2082,7 @@ struct Rewriter {
         if (before.template match<0>(instance, state)) {
             result = after;
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
+            debug(0) << "matched " << rulename << " "  << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
 #endif
             return true;
         } else {
@@ -2102,7 +2102,7 @@ struct Rewriter {
         if (before.template match<0>(instance, state)) {
             result = make_const(output_type, after);
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
+            debug(0) << "matched " << rulename << " "  << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
 #endif
             return true;
         } else {
@@ -2130,7 +2130,7 @@ struct Rewriter {
             evaluate_predicate(pred, state)) {
             build_replacement(after);
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
+            debug(0) << "matched " << rulename << " "  << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
 #endif
             return true;
         } else {
@@ -2151,7 +2151,7 @@ struct Rewriter {
             evaluate_predicate(pred, state)) {
             result = after;
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
+            debug(0) << "matched " << rulename << " "  << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
 #endif
             return true;
         } else {
@@ -2175,7 +2175,7 @@ struct Rewriter {
             evaluate_predicate(pred, state)) {
             result = make_const(output_type, after);
 #if HALIDE_DEBUG_MATCHED_RULES
-            debug(0) << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
+            debug(0) << "matched " << rulename << " "  << instance << " -> " << result << " via " << rulename << " " << before << " -> " << after << "\n";
 #endif
             return true;
         } else {
