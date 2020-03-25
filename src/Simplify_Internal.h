@@ -321,6 +321,10 @@ public:
     void populate_excluded_ruleset() {
         excluded_rules.insert("add58");
         excluded_rules.insert("add59");
+        excluded_rules.insert("add87");
+        excluded_rules.insert("add89");
+        excluded_rules.insert("add90");
+        excluded_rules.insert("add92");
     }
 
     bool get_rule_flag(std::string rulename, bool experimental) {

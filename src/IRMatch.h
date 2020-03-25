@@ -2026,7 +2026,7 @@ HALIDE_ALWAYS_INLINE bool evaluate_predicate(Pattern p, MatcherState &state) {
 // #defines for testing
 
 // Print all successful or failed matches
-#define HALIDE_DEBUG_MATCHED_RULES 0
+#define HALIDE_DEBUG_MATCHED_RULES 1
 #define HALIDE_DEBUG_UNMATCHED_RULES 0
 
 // Set to true if you want to fuzz test every rewrite passed to
