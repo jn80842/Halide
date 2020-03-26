@@ -55,6 +55,6 @@ cp header.csv results.csv
 
 for sheet in runtime peak_memory halide_compile_time llvm_optimization_time llvm_backend_time proof_failures non_monotonic code_size; do
     cp header.csv results_${sheet}.csv
-    paste -d, harris_${sheet}.csv local_laplacian_${sheet}.csv unsharp_${sheet}.csv bilateral_grid_${sheet}.csv camera_pipe_${sheet}.csv nl_means_${sheet}.csv stencil_chain_${sheet}.csv >> results_${sheet}.csv
+    paste -d, harris_${sheet}.csv local_laplacian_${sheet}.csv unsharp_${sheet}.csv bilateral_grid_${sheet}.csv camera_pipe_${sheet}.csv nl_means_${sheet}.csv stencil_chain_${sheet}.csv iir_blur_${sheet}.csv interpolate_${sheet}.csv max_filter_${sheet}.csv >> results_${sheet}.csv
 done
 
