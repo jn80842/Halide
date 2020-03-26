@@ -49,7 +49,7 @@ for app in harris local_laplacian unsharp bilateral_grid camera_pipe nl_means st
     echo
 done
 
-echo harris,,local_laplacian,,unsharp,,bilateral_grid,,camera_pipe,,nl_means,,stencil_chain, > header.csv
+echo harris,,local_laplacian,,unsharp,,bilateral_grid,,camera_pipe,,nl_means,,stencil_chain,,iir_blur,,interpolate,,max_filter > header.csv
 
 cp header.csv results.csv
 
