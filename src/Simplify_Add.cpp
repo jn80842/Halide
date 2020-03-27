@@ -126,7 +126,7 @@ Expr Simplify::visit(const Add *op, ExprInfo *bounds) {
                (get_rule_flag("add126", rflag) && rewrite(max(x, y + c0) + c1, max(x + c1, y), c0 + c1 == 0, "add126")) ||
                (get_rule_flag("add127", rflag) && rewrite(max(y + c0, x) + c1, max(y, x + c1), c0 + c1 == 0, "add127")) ||
                (get_rule_flag("add128", rflag) && rewrite(max(x, y) + min(x, y), x + y, "add128")) ||
-               (get_rule_flag("add139", rflag) && rewrite(max(x, y) + min(y, x), x + y, "add129")))) ||
+               (get_rule_flag("add129", rflag) && rewrite(max(x, y) + min(y, x), x + y, "add129")))) ||
              (no_overflow_int(op->type) &&
               ((get_rule_flag("add131", rflag) && rewrite((x/c0)*c0 + x%c0, x, c0 != 0, "add131")) ||
                (get_rule_flag("add132", rflag) && rewrite((z + x/c0)*c0 + x%c0, z*c0 + x, c0 != 0, "add132")) ||
