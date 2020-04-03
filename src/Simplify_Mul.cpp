@@ -66,6 +66,7 @@ Expr Simplify::visit(const Mul *op, ExprInfo *bounds) {
 
         // Order commutative operations by node type
         if (should_commute(a, b)) {
+            debug(0) << "triggered should_commute: " << a << " ; " << b << "\n";
             std::swap(a, b);
             std::swap(a_bounds, b_bounds);
         }
