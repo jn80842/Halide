@@ -12,7 +12,6 @@ Expr Simplify::visit(const Or *op, ExprInfo *bounds) {
     Expr b = mutate(op->b, nullptr);
 
     if (should_commute(a, b)) {
-        debug(0) << "triggered should_commute: " << a << " ; " << b << "\n";
         std::swap(a, b);
     }
 

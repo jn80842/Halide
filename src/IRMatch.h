@@ -2428,7 +2428,6 @@ struct Rewriter {
              typename = typename enable_if_pattern<Before>::type,
              typename = typename enable_if_pattern<After>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, After after, std::string rulename) {
-        check_should_commute(before,rulename);
         static_assert((Before::binds & After::binds) == After::binds, "Rule result uses unbound values");
 #if HALIDE_FUZZ_TEST_RULES
         fuzz_test_rule(before, after, true, wildcard_type, output_type);
@@ -2450,7 +2449,6 @@ struct Rewriter {
     template<typename Before,
              typename = typename enable_if_pattern<Before>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, const Expr &after, std::string rulename) noexcept {
-        check_should_commute(before,rulename);
         if (before.template match<0>(instance, state)) {
             result = after;
 #if HALIDE_DEBUG_MATCHED_RULES
@@ -2468,7 +2466,6 @@ struct Rewriter {
     template<typename Before,
              typename = typename enable_if_pattern<Before>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, int64_t after, std::string rulename) noexcept {
-        check_should_commute(before,rulename);
 #if HALIDE_FUZZ_TEST_RULES
         fuzz_test_rule(before, Const(after), true, wildcard_type, output_type);
 #endif
@@ -2493,7 +2490,6 @@ struct Rewriter {
              typename = typename enable_if_pattern<After>::type,
              typename = typename enable_if_pattern<Predicate>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, After after, Predicate pred, std::string rulename) {
-        check_should_commute(before,rulename);
         static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
         static_assert((Before::binds & After::binds) == After::binds, "Rule result uses unbound values");
         static_assert((Before::binds & Predicate::binds) == Predicate::binds, "Rule predicate uses unbound values");
@@ -2520,7 +2516,6 @@ struct Rewriter {
              typename = typename enable_if_pattern<Before>::type,
              typename = typename enable_if_pattern<Predicate>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, const Expr &after, Predicate pred, std::string rulename) {
-        check_should_commute(before,rulename);
         static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
         if (before.template match<0>(instance, state) &&
             evaluate_predicate(pred, state)) {
@@ -2542,7 +2537,6 @@ struct Rewriter {
              typename = typename enable_if_pattern<Before>::type,
              typename = typename enable_if_pattern<Predicate>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, int64_t after, Predicate pred, std::string rulename) {
-        check_should_commute(before,rulename);
         static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
 #if HALIDE_FUZZ_TEST_RULES
         fuzz_test_rule(before, Const(after), pred, wildcard_type, output_type);
