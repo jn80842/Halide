@@ -1849,7 +1849,7 @@ $(BIN_DIR)/tutorial_lesson_21_auto_scheduler_run: $(ROOT_DIR)/tutorial/lesson_21
 
 test_internal: $(BIN_DIR)/test_internal
 	@-mkdir -p $(TMP_DIR)
-	cd $(TMP_DIR) ; $(CURDIR)/$<
+	cd $(TMP_DIR) ; ( $(CURDIR)/$< 2>stderr_$*.txt > stdout_$*.txt && echo -n . ) || ( echo ; echo FAILED TEST: $* ; cat stdout_$*.txt stderr_$*.txt ; false )
 	@-echo
 
 correctness_%: $(BIN_DIR)/correctness_%
@@ -1891,12 +1891,12 @@ performance_%: $(BIN_DIR)/performance_%
 
 error_%: $(BIN_DIR)/error_%
 	@-mkdir -p $(TMP_DIR)
-	cd $(TMP_DIR) ; $(CURDIR)/$< 2>&1 | egrep --q "terminating with uncaught exception|^terminate called|^Error|Assertion.*failed"
+	cd $(TMP_DIR) ; ( $(CURDIR)/$< 2>stderr_$*.txt > stdout_$*.txt && echo -n . ) || ( echo ; echo FAILED TEST: $* ; cat stdout_$*.txt stderr_$*.txt ; false )
 	@-echo
 
 warning_%: $(BIN_DIR)/warning_%
 	@-mkdir -p $(TMP_DIR)
-	cd $(TMP_DIR) ; $(CURDIR)/$< 2>&1 | egrep --q "^Warning"
+	cd $(TMP_DIR) ; ( $(CURDIR)/$< 2>stderr_$*.txt > stdout_$*.txt && echo -n . ) || ( echo ; echo FAILED TEST: $* ; cat stdout_$*.txt stderr_$*.txt ; false )
 	@-echo
 
 opengl_%: $(BIN_DIR)/opengl_%
@@ -1906,17 +1906,17 @@ opengl_%: $(BIN_DIR)/opengl_%
 
 generator_jit_%: $(BIN_DIR)/generator_jit_%
 	@-mkdir -p $(TMP_DIR)
-	cd $(TMP_DIR) ; $(CURDIR)/$<
+	cd $(TMP_DIR) ; ( $(CURDIR)/$< 2>stderr_$*.txt > stdout_$*.txt && echo -n . ) || ( echo ; echo FAILED TEST: $* ; cat stdout_$*.txt stderr_$*.txt ; false )
 	@-echo
 
 generator_aot_%: $(BIN_DIR)/$(TARGET)/generator_aot_%
 	@-mkdir -p $(TMP_DIR)
-	cd $(TMP_DIR) ; $(CURDIR)/$<
+	cd $(TMP_DIR) ; ( $(CURDIR)/$< 2>stderr_$*.txt > stdout_$*.txt && echo -n . ) || ( echo ; echo FAILED TEST: $* ; cat stdout_$*.txt stderr_$*.txt ; false )
 	@-echo
 
 generator_aotcpp_%: $(BIN_DIR)/$(TARGET)/generator_aotcpp_%
 	@-mkdir -p $(TMP_DIR)
-	cd $(TMP_DIR) ; $(CURDIR)/$<
+	cd $(TMP_DIR) ; ( $(CURDIR)/$< 2>stderr_$*.txt > stdout_$*.txt && echo -n . ) || ( echo ; echo FAILED TEST: $* ; cat stdout_$*.txt stderr_$*.txt ; false )
 	@-echo
 
 ifneq ($(WITH_WEBASSEMBLY), )
@@ -1932,12 +1932,12 @@ $(TMP_DIR)/images/%.png: $(ROOT_DIR)/tutorial/images/%.png
 
 tutorial_%: $(BIN_DIR)/tutorial_% $(TMP_DIR)/images/rgb.png $(TMP_DIR)/images/gray.png
 	@-mkdir -p $(TMP_DIR)
-	cd $(TMP_DIR) ; $(CURDIR)/$<
+	cd $(TMP_DIR) ; ( $(CURDIR)/$< 2>stderr_$*.txt > stdout_$*.txt && echo -n . ) || ( echo ; echo FAILED TEST: $* ; cat stdout_$*.txt stderr_$*.txt ; false )
 	@-echo
 
 auto_schedule_%: $(BIN_DIR)/auto_schedule_%
 	@-mkdir -p $(TMP_DIR)
-	cd $(TMP_DIR) ; $(CURDIR)/$<
+	cd $(TMP_DIR) ; ( $(CURDIR)/$< 2>stderr_$*.txt > stdout_$*.txt && echo -n . ) || ( echo ; echo FAILED TEST: $* ; cat stdout_$*.txt stderr_$*.txt ; false )
 	@-echo
 
 time_compilation_test_%: $(BIN_DIR)/test_%
