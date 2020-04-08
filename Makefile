@@ -1886,7 +1886,7 @@ valgrind_tracing_stack: $(BIN_DIR)/correctness_tracing_stack
 
 performance_%: $(BIN_DIR)/performance_%
 	@-mkdir -p $(TMP_DIR)
-	cd $(TMP_DIR) ; $(CURDIR)/$<
+	cd $(TMP_DIR) ; ( $(CURDIR)/$< 2>stderr_$*.txt > stdout_$*.txt && echo -n . ) || ( echo ; echo FAILED TEST: $* ; cat stdout_$*.txt stderr_$*.txt ; false )
 	@-echo
 
 error_%: $(BIN_DIR)/error_%
