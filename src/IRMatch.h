@@ -218,6 +218,15 @@ inline std::ostream &operator<<(std::ostream &s, const SpecificExpr &e) {
     return s;
 }
 
+inline IRNodeType get_node_type(const SpecificExpr &e) {
+    debug(0) << "get_node_type SpecificExpr IntImm\n";
+    return IRNodeType::IntImm;
+}
+
+inline bool should_commute(const SpecificExpr &e) {
+    return false;
+}
+
 template<int i>
 struct WildConstInt {
     struct pattern_tag {};
@@ -265,6 +274,17 @@ template<int i>
 std::ostream &operator<<(std::ostream &s, const WildConstInt<i> &c) {
     s << "ci" << i;
     return s;
+}
+
+template<int i>
+IRNodeType get_node_type(const WildConstInt<i> &c) {
+    debug(0) << "get_node_type WildConstInt IntImm\n";
+    return IRNodeType::IntImm;
+}
+
+template<int i>
+bool should_commute(const WildConstInt<i> &c) {
+    return false;
 }
 
 template<int i>
@@ -317,6 +337,17 @@ std::ostream &operator<<(std::ostream &s, const WildConstUInt<i> &c) {
 }
 
 template<int i>
+IRNodeType get_node_type(const WildConstUInt<i> &c) {
+    debug(0) << "get_node_type WildConstUInt UIntImm\n";
+    return IRNodeType::UIntImm;
+}
+
+template<int i>
+bool should_commute(const WildConstUInt<i> &c) {
+    return false;
+}
+
+template<int i>
 struct WildConstFloat {
     struct pattern_tag {};
 
@@ -366,6 +397,17 @@ std::ostream &operator<<(std::ostream &s, const WildConstFloat<i> &c) {
     return s;
 }
 
+template<int i>
+IRNodeType get_node_type(const WildConstFloat<i> &c) {
+    debug(0) << "get_node_type WildConstFloat FloatImm\n";
+    return IRNodeType::FloatImm;
+}
+
+template<int i>
+bool should_commute(const WildConstFloat<i> &c) {
+    return false;
+}
+
 // Matches and binds to any constant Expr. Does not support constant-folding.
 template<int i>
 struct WildConst {
@@ -412,6 +454,17 @@ template<int i>
 std::ostream &operator<<(std::ostream &s, const WildConst<i> &c) {
     s << "c" << i;
     return s;
+}
+
+template<int i>
+IRNodeType get_node_type(const WildConst<i> &c) {
+    debug(0) << "get_node_type WildConst IntImm\n";
+    return IRNodeType::IntImm;
+}
+
+template<int i>
+bool should_commute(const WildConst<i> &c) {
+    return false;
 }
 
 // Matches and binds to any Expr
@@ -465,6 +518,17 @@ template<int i>
 std::ostream &operator<<(std::ostream &s, const Wild<i> &op) {
     s << "_" << i;
     return s;
+}
+
+template<int i>
+IRNodeType get_node_type(const Wild<i> &op) {
+    debug(0) << "get_node_type Wild Variable\n";
+    return IRNodeType::Variable;
+}
+
+template<int i>
+bool should_commute(const Wild<i> &op) {
+    return false;
 }
 
 // Matches a specific constant or broadcast of that constant. The
@@ -530,6 +594,15 @@ struct Const {
         }
     }
 };
+
+inline IRNodeType get_node_type(const Const &op) {
+    debug(0) << "get_node_type Const IntImm\n";
+    return IRNodeType::IntImm;
+}
+
+inline bool should_commute(const Const &op) {
+    return false;
+}
 
 // Convert a provided pattern, expr, or constant int into the internal
 // representation we use in the matcher trees.
@@ -764,10 +837,29 @@ struct CmpOp {
     }
 };
 
+template<typename Op, typename A, typename B>
+bool should_commute(const CmpOp<Op, A, B> &op) {
+   // return get_node_type(op.a) < get_node_type(op.b);
+    return false;
+}
+
 template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Add, A, B> &op) {
     s << "(" << op.a << " + " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Add, A, B> &op) {
+    debug(0) << "get_node_type Add\n";
+    return IRNodeType::Add;
+}
+
+template<typename A, typename B>
+bool should_commute(const BinOp<Add, A, B> &op) {
+    debug(0) << "called should_commute on Add\n";
+    if (get_node_type(op.a) == IRNodeType::Variable) return false;
+    return get_node_type(op.a) < get_node_type(op.b);
 }
 
 template<typename A, typename B>
@@ -777,9 +869,33 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Sub, A, B> &op) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Sub, A, B> &op) {
+    debug(0) << "get_node_type Sub\n";
+    return IRNodeType::Sub;
+}
+
+template<typename A, typename B>
+bool should_commute(const BinOp<Sub, A, B> &op) {
+    return false;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mul, A, B> &op) {
     s << "(" << op.a << " * " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Mul, A, B> &op) {
+    debug(0) << "get_node_type Mul\n";
+    return IRNodeType::Mul;
+}
+
+template<typename A, typename B>
+bool should_commute(const BinOp<Mul, A, B> &op) {
+    debug(0) << "called should_commute on Mul\n";
+    if (get_node_type(op.a) == IRNodeType::Variable) return false;
+    return get_node_type(op.a) < get_node_type(op.b);
 }
 
 template<typename A, typename B>
@@ -789,9 +905,33 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Div, A, B> &op) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Div, A, B> &op) {
+    debug(0) << "get_node_type Div\n";
+    return IRNodeType::Div;
+}
+
+template<typename A, typename B>
+bool should_commute(const BinOp<Div, A, B> &op) {
+    return false;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<And, A, B> &op) {
     s << "(" << op.a << " && " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<And, A, B> &op) {
+    debug(0) << "get_node_type And\n";
+    return IRNodeType::And;
+}
+
+template<typename A, typename B>
+bool should_commute(const BinOp<And, A, B> &op) {
+    debug(0) << "called should_commute on And\n";
+    if (get_node_type(op.a) == IRNodeType::Variable) return false;
+    return get_node_type(op.a) < get_node_type(op.b);
 }
 
 template<typename A, typename B>
@@ -801,9 +941,35 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Or, A, B> &op) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Or, A, B> &op) {
+    debug(0) << "get_node_type Or\n";
+    return IRNodeType::Or;
+}
+
+template<typename A, typename B>
+bool should_commute(const BinOp<Or, A, B> &op) {
+    debug(0) << "called should_commute on Or\n";
+    if (get_node_type(op.a) == IRNodeType::Variable) return false;
+    return get_node_type(op.a) < get_node_type(op.b);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Min, A, B> &op) {
     s << "min(" << op.a << ", " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Min, A, B> &op) {
+    debug(0) << "get_node_type Min\n";
+    return IRNodeType::Min;
+}
+
+template<typename A, typename B>
+bool should_commute(const BinOp<Min, A, B> &op) {
+    debug(0) << "called should_commute on Min\n";
+    if (get_node_type(op.a) == IRNodeType::Variable) return false;
+    return get_node_type(op.a) < get_node_type(op.b);
 }
 
 template<typename A, typename B>
@@ -813,9 +979,28 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Max, A, B> &op) {
+    debug(0) << "get_node_type Max\n";
+    return IRNodeType::Max;
+}
+
+template<typename A, typename B>
+bool should_commute(const BinOp<Max, A, B> &op) {
+    debug(0) << "called should_commute on Max\n";
+    if (get_node_type(op.a) == IRNodeType::Variable) return false;
+    return get_node_type(op.a) < get_node_type(op.b);
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<LE, A, B> &op) {
     s << "(" << op.a << " <= " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<LE, A, B> &op) {
+    debug(0) << "get_node_type LE\n";
+    return IRNodeType::LE;
 }
 
 template<typename A, typename B>
@@ -825,9 +1010,21 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<LT, A, B> &op) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<LT, A, B> &op) {
+    debug(0) << "get_node_type LT\n";
+    return IRNodeType::LT;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<GE, A, B> &op) {
     s << "(" << op.a << " >= " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<GE, A, B> &op) {
+    debug(0) << "get_node_type GE\n";
+    return IRNodeType::GE;
 }
 
 template<typename A, typename B>
@@ -837,9 +1034,20 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<GT, A, B> &op) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<GT, A, B> &op) {
+    debug(0) << "get_node_type GT\n";
+    return IRNodeType::GT;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<EQ, A, B> &op) {
     s << "(" << op.a << " == " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<EQ, A, B> &op) {
+    return IRNodeType::EQ;
 }
 
 template<typename A, typename B>
@@ -849,9 +1057,24 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
 }
 
 template<typename A, typename B>
+IRNodeType get_node_type(const CmpOp<NE, A, B> &op) {
+    return IRNodeType::NE;
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
     s << "(" << op.a << " % " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B>
+IRNodeType get_node_type(const BinOp<Mod, A, B> &op) {
+    return IRNodeType::Mod;
+}
+
+template<typename A, typename B>
+bool should_commute(const BinOp<Mod, A, B> &op) {
+    return false;
 }
 
 template<typename A, typename B>
@@ -1320,6 +1543,17 @@ std::ostream &operator<<(std::ostream &s, const Intrin<Args...> &op) {
 }
 
 template<typename... Args>
+IRNodeType get_node_type(const Intrin<Args...> &op) {
+    debug(0) << "get_node_type Intrin IntImm\n";
+    return IRNodeType::IntImm;
+}
+
+template<typename... Args>
+bool should_commute(const Intrin<Args...> &op) {
+    return false;
+}
+
+template<typename... Args>
 HALIDE_ALWAYS_INLINE auto intrin(Call::IntrinsicOp intrinsic_op, Args... args) noexcept -> Intrin<decltype(pattern_arg(args))...> {
     return {intrinsic_op, pattern_arg(args)...};
 }
@@ -1374,6 +1608,17 @@ template<typename A>
 inline std::ostream &operator<<(std::ostream &s, const NotOp<A> &op) {
     s << "!(" << op.a << ")";
     return s;
+}
+
+template<typename A>
+inline IRNodeType get_node_type(const NotOp<A> &op) {
+    debug(0) << "get_node_type Not\n";
+    return IRNodeType::Not;
+}
+
+template<typename A>
+inline bool should_commute(const NotOp<A> &op) {
+    return false;
 }
 
 template<typename C, typename T, typename F>
@@ -1434,6 +1679,17 @@ HALIDE_ALWAYS_INLINE auto select(C c, T t, F f) noexcept -> SelectOp<decltype(pa
     return {pattern_arg(c), pattern_arg(t), pattern_arg(f)};
 }
 
+template<typename C, typename T, typename F>
+IRNodeType get_node_type(const SelectOp<C, T, F> &op) {
+    debug(0) << "get_node_type Select\n";
+    return IRNodeType::Select;
+}
+
+template<typename C, typename T, typename F>
+bool should_commute(const SelectOp<C, T, F> &op) {
+    return false;
+}
+
 template<typename A, bool known_lanes>
 struct BroadcastOp {
     struct pattern_tag {};
@@ -1476,6 +1732,17 @@ struct BroadcastOp {
         ty.lanes = l | (ty.lanes & MatcherState::special_values_mask);
     }
 };
+
+template<typename A, bool known_lanes>
+inline IRNodeType get_node_type(const BroadcastOp<A, known_lanes>) {
+    debug(0) << "get_node_type Broadcast\n";
+    return IRNodeType::Broadcast;
+}
+
+template<typename A, bool known_lanes>
+bool should_commute(const BroadcastOp<A, known_lanes>) {
+    return false;
+}
 
 template<typename A>
 inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, true> &op) {
@@ -1560,6 +1827,17 @@ std::ostream &operator<<(std::ostream &s, const RampOp<A, B, false> &op) {
     return s;
 }
 
+template<typename A, typename B, bool known_lanes>
+IRNodeType get_node_type(const RampOp<A, B, known_lanes>) {
+    debug(0) << "get_node_type Ramp\n";
+    return IRNodeType::Ramp;
+}
+
+template<typename A, typename B, bool known_lanes>
+bool should_commute(const RampOp<A, B, known_lanes>) {
+    return false;
+}
+
 template<typename A, typename B>
 HALIDE_ALWAYS_INLINE auto ramp(A a, B b, int lanes) noexcept -> RampOp<decltype(pattern_arg(a)), decltype(pattern_arg(b)), true> {
     return {pattern_arg(a), pattern_arg(b), lanes};
@@ -1636,6 +1914,17 @@ std::ostream &operator<<(std::ostream &s, const NegateOp<A> &op) {
 }
 
 template<typename A>
+IRNodeType get_node_type(const NegateOp<A> &op) {
+    debug(0) << "get_node_type Negate Sub\n";
+    return IRNodeType::Sub;
+}
+
+template<typename A>
+bool should_commute(const NegateOp<A> &op) {
+    return false;
+}
+
+template<typename A>
 HALIDE_ALWAYS_INLINE auto operator-(A a) noexcept -> NegateOp<decltype(pattern_arg(a))> {
     return {pattern_arg(a)};
 }
@@ -1687,6 +1976,17 @@ HALIDE_ALWAYS_INLINE auto cast(halide_type_t t, A a) noexcept -> CastOp<decltype
 }
 
 template<typename A>
+IRNodeType get_node_type(const CastOp<A> &op) {
+    debug(0) << "get_node_type Cast\n";
+    return IRNodeType::Cast;
+}
+
+template<typename A>
+bool should_commute(const CastOp<A> &op) {
+    return false;
+}
+
+template<typename A>
 struct Fold {
     struct pattern_tag {};
     A a;
@@ -1721,6 +2021,17 @@ std::ostream &operator<<(std::ostream &s, const Fold<A> &op) {
 }
 
 template<typename A>
+IRNodeType get_node_type(const Fold<A> &op) {
+    debug(0) << "get_node_type Fold IntImm\n";
+    return IRNodeType::IntImm;
+}
+
+template<typename A>
+bool should_commute(const Fold<A> &op) {
+    return false;
+}
+
+template<typename A>
 struct Overflows {
     struct pattern_tag {};
     A a;
@@ -1748,6 +2059,17 @@ template<typename A>
 std::ostream &operator<<(std::ostream &s, const Overflows<A> &op) {
     s << "overflows(" << op.a << ")";
     return s;
+}
+
+template<typename A>
+IRNodeType get_node_type(const Overflows<A> &op) {
+    debug(0) << "get_node_type Overflows Variable\n";
+    return IRNodeType::Variable;
+}
+
+template<typename A>
+bool should_commute(const Overflows<A> &op) {
+    return false;
 }
 
 struct Overflow {
@@ -1784,6 +2106,15 @@ inline std::ostream &operator<<(std::ostream &s, const Overflow &op) {
     return s;
 }
 
+inline IRNodeType get_node_type(const Overflow &op) {
+    debug(0) << "get_node_type Overflow Variable\n";
+    return IRNodeType::Variable;
+}
+
+inline bool should_commute(const Overflow &op) {
+    return false;
+}
+
 template<typename A>
 struct IsConst {
     struct pattern_tag {};
@@ -1813,6 +2144,17 @@ template<typename A>
 std::ostream &operator<<(std::ostream &s, const IsConst<A> &op) {
     s << "is_const(" << op.a << ")";
     return s;
+}
+
+template<typename A>
+IRNodeType get_node_type(const IsConst<A> &op) {
+    debug(0) << "get_node_type IsConst Variable\n";
+    return IRNodeType::Variable;
+}
+
+template<typename A>
+bool should_commute(const IsConst<A> &op) {
+    return false;
 }
 
 template<typename A, typename Prover>
@@ -1847,6 +2189,17 @@ std::ostream &operator<<(std::ostream &s, const CanProve<A, Prover> &op) {
     return s;
 }
 
+template<typename A, typename Prover>
+IRNodeType get_node_type(const CanProve<A, Prover> &op) {
+    debug(0) << "get_node_type CanProve Variable\n";
+    return IRNodeType::Variable;
+}
+
+template<typename A, typename Prover>
+bool should_commute(const CanProve<A, Prover> &op) {
+    return false;
+}
+
 template<typename A>
 struct IsFloat {
     struct pattern_tag {};
@@ -1876,6 +2229,23 @@ template<typename A>
 std::ostream &operator<<(std::ostream &s, const IsFloat<A> &op) {
     s << "is_float(" << op.a << ")";
     return s;
+}
+
+template<typename A>
+IRNodeType get_node_type(const IsFloat<A> &op) {
+    return IRNodeType::Variable;
+}
+
+template<typename A>
+bool should_commute(const IsFloat<A> &op) {
+    return false;
+}
+
+template<typename Before>
+void check_should_commute(Before &&before, std::string rulename) noexcept {
+    if (should_commute(before)) {
+        debug(0) << "shouldcommute: " << rulename << " " << before << "\n";
+    }
 }
 
 // Verify properties of each rewrite rule. Currently just fuzz tests them.
@@ -2058,6 +2428,7 @@ struct Rewriter {
              typename = typename enable_if_pattern<Before>::type,
              typename = typename enable_if_pattern<After>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, After after, std::string rulename) {
+        check_should_commute(before,rulename);
         static_assert((Before::binds & After::binds) == After::binds, "Rule result uses unbound values");
 #if HALIDE_FUZZ_TEST_RULES
         fuzz_test_rule(before, after, true, wildcard_type, output_type);
@@ -2079,6 +2450,7 @@ struct Rewriter {
     template<typename Before,
              typename = typename enable_if_pattern<Before>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, const Expr &after, std::string rulename) noexcept {
+        check_should_commute(before,rulename);
         if (before.template match<0>(instance, state)) {
             result = after;
 #if HALIDE_DEBUG_MATCHED_RULES
@@ -2096,6 +2468,7 @@ struct Rewriter {
     template<typename Before,
              typename = typename enable_if_pattern<Before>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, int64_t after, std::string rulename) noexcept {
+        check_should_commute(before,rulename);
 #if HALIDE_FUZZ_TEST_RULES
         fuzz_test_rule(before, Const(after), true, wildcard_type, output_type);
 #endif
@@ -2120,6 +2493,7 @@ struct Rewriter {
              typename = typename enable_if_pattern<After>::type,
              typename = typename enable_if_pattern<Predicate>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, After after, Predicate pred, std::string rulename) {
+        check_should_commute(before,rulename);
         static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
         static_assert((Before::binds & After::binds) == After::binds, "Rule result uses unbound values");
         static_assert((Before::binds & Predicate::binds) == Predicate::binds, "Rule predicate uses unbound values");
@@ -2146,6 +2520,7 @@ struct Rewriter {
              typename = typename enable_if_pattern<Before>::type,
              typename = typename enable_if_pattern<Predicate>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, const Expr &after, Predicate pred, std::string rulename) {
+        check_should_commute(before,rulename);
         static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
         if (before.template match<0>(instance, state) &&
             evaluate_predicate(pred, state)) {
@@ -2167,6 +2542,7 @@ struct Rewriter {
              typename = typename enable_if_pattern<Before>::type,
              typename = typename enable_if_pattern<Predicate>::type>
     HALIDE_ALWAYS_INLINE bool operator()(Before before, int64_t after, Predicate pred, std::string rulename) {
+        check_should_commute(before,rulename);
         static_assert(Predicate::foldable, "Predicates must consist only of operations that can constant-fold");
 #if HALIDE_FUZZ_TEST_RULES
         fuzz_test_rule(before, Const(after), pred, wildcard_type, output_type);
