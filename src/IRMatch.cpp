@@ -437,6 +437,230 @@ bool equal_helper(const BaseExprNode &a, const BaseExprNode &b) noexcept {
     return false;
 }
 
+void update_bfs_node_type_map(bfs_node_type_map &type_map, IRMatcherType t, int current_depth) {
+    if (type_map.count(current_depth) == 0) {
+        std::list<IRMatcherType> l = {t};
+        type_map.insert({current_depth, l});
+    } else {
+        type_map[current_depth].push_back(t);
+    }
+}
+
+void update_bfs_const_str_map(const_str_map &const_map, std::string s, int current_depth) {
+    if (const_map.count(current_depth) == 0) {
+        const_map.insert({current_depth, s});
+    } else {
+        const_map[current_depth] = const_map[current_depth] + s;
+    }
+}
+
+std::string const_str_map_to_string(const_str_map &map1) {
+    int largest_key = 0;
+    for (auto it = map1.begin(); it != map1.end(); ++it) {
+        if (it->first > largest_key) {
+            largest_key = it->first;
+        }
+    }
+    std::string s;
+    for (int i = 0; i<=largest_key; i++) {
+        if (map1.count(i) != 0) {
+            s += map1[i];
+        }
+    }
+    return s;
+}
+
+bool variable_counts_geq(variable_count_map &m1, variable_count_map &m2) {
+    for (auto const& var : m2) {
+        if (var.first[0] != 'c' && !(m1[var.first] >= var.second)) {
+            debug(0) << "failed variable count geq: not " << m1[var.first] << " >= " << var.second << "\n";
+            return false;
+        }
+    }
+    return true;
+}
+
+void increment_term(IRMatcherType node_type, term_map &m) {
+    if (m.count(node_type) == 0) {
+        m[node_type] = 1;
+    } else {
+        m[node_type] = m[node_type] + 1;
+    }
+}
+
+int get_total_op_count(term_map &t) {
+    int total = 0;
+    for (auto const& term_entry : t) {
+        total += term_entry.second;
+    }
+    return total;
+}
+
+int get_expensive_arith_count(term_map &t) {
+    return t[IRMatcherType::Div] + t[IRMatcherType::Mod] + t[IRMatcherType::Mul]; //+ t[IRMatcherType::MulByConstant];
+}
+
+int ternary_comp(int i1, int i2) {
+    if (i1 == i2) {
+        return 0;
+    } else if (i1 > i2) {
+        return 1;
+    } else {
+        return -1;
+    }
+}
+
+int term_map_comp(term_map &m1, term_map &m2) {
+    if (m1[IRMatcherType::Ramp] != m2[IRMatcherType::Ramp]) {
+        return ternary_comp(m1[IRMatcherType::Ramp],m2[IRMatcherType::Ramp]);
+    } else if (m1[IRMatcherType::Broadcast] != m2[IRMatcherType::Broadcast]) {
+        return ternary_comp(m1[IRMatcherType::Broadcast], m2[IRMatcherType::Broadcast]);
+    } else if (m1[IRMatcherType::Select] != m2[IRMatcherType::Select]) {
+        return ternary_comp(m1[IRMatcherType::Select], m2[IRMatcherType::Select]);
+    } else if (m1[IRMatcherType::Div] != m2[IRMatcherType::Div]) {
+        return ternary_comp(m1[IRMatcherType::Div], m2[IRMatcherType::Div]);
+    } else if (m1[IRMatcherType::Mul] != m2[IRMatcherType::Mul]) {
+        return ternary_comp(m1[IRMatcherType::Mul], m2[IRMatcherType::Mul]);
+    } else if (m1[IRMatcherType::Mod] != m2[IRMatcherType::Mod]) {
+        return ternary_comp(m1[IRMatcherType::Mod], m2[IRMatcherType::Mod]);
+    } else if (m1[IRMatcherType::Sub] != m2[IRMatcherType::Sub]) { 
+        return ternary_comp(m1[IRMatcherType::Sub], m2[IRMatcherType::Sub]);
+    } else if (m1[IRMatcherType::Add] != m2[IRMatcherType::Add]) {
+        return ternary_comp(m1[IRMatcherType::Add], m2[IRMatcherType::Add]);
+    } else if (m1[IRMatcherType::Min] != m2[IRMatcherType::Min]) { // max ops go in this bucket too
+        return ternary_comp(m1[IRMatcherType::Min], m2[IRMatcherType::Min]);
+    } else if (m1[IRMatcherType::MulByConstant] != m2[IRMatcherType::MulByConstant]) {
+        return ternary_comp(m1[IRMatcherType::MulByConstant], m2[IRMatcherType::MulByConstant]);
+    } else if (m1[IRMatcherType::SubByConstant] != m2[IRMatcherType::SubByConstant]) { 
+        return ternary_comp(m1[IRMatcherType::SubByConstant], m2[IRMatcherType::SubByConstant]);
+    } else if (m1[IRMatcherType::AddByConstant] != m2[IRMatcherType::AddByConstant]) { 
+        return ternary_comp(m1[IRMatcherType::AddByConstant], m2[IRMatcherType::AddByConstant]);
+    } else if (m1[IRMatcherType::Or] != m2[IRMatcherType::Or]) {
+        return ternary_comp(m1[IRMatcherType::Or], m2[IRMatcherType::Or]);
+    } else if (m1[IRMatcherType::And] != m2[IRMatcherType::And]) {
+        return ternary_comp(m1[IRMatcherType::And], m2[IRMatcherType::And]);
+    } else if (m1[IRMatcherType::GE] != m2[IRMatcherType::GE]) {
+        return ternary_comp(m1[IRMatcherType::GE], m2[IRMatcherType::GE]);
+    } else if (m1[IRMatcherType::GT] != m2[IRMatcherType::GT]) {
+         return ternary_comp(m1[IRMatcherType::GT], m2[IRMatcherType::GT]);
+    } else if (m1[IRMatcherType::LE] != m2[IRMatcherType::LE]) {
+        return ternary_comp(m1[IRMatcherType::LE], m2[IRMatcherType::LE]);
+    } else if (m1[IRMatcherType::LT] != m2[IRMatcherType::LT]) {
+        return ternary_comp(m1[IRMatcherType::LT], m2[IRMatcherType::LT]);
+    } else if (m1[IRMatcherType::NE] != m2[IRMatcherType::NE]) {
+        return ternary_comp(m1[IRMatcherType::NE], m2[IRMatcherType::NE]);
+    } else if (m1[IRMatcherType::EQ] != m2[IRMatcherType::EQ]) {
+        return ternary_comp(m1[IRMatcherType::EQ], m2[IRMatcherType::EQ]);
+    } else if (m1[IRMatcherType::Not] != m2[IRMatcherType::Not]) {
+        return ternary_comp(m1[IRMatcherType::Not], m2[IRMatcherType::Not]);
+    } else {
+        return 0; // two histograms are equiv
+    }
+}
+
+node_type_ordering nto = {
+    {IRMatcherType::Ramp,23},
+    {IRMatcherType::Broadcast,22},
+    {IRMatcherType::Select,21},
+    {IRMatcherType::Div,20},
+    {IRMatcherType::Mul,19},
+    {IRMatcherType::MulByConstant,18},
+    {IRMatcherType::Mod,17},
+    {IRMatcherType::Sub,16},
+    {IRMatcherType::SubByConstant,15},
+    {IRMatcherType::Add,14},
+    {IRMatcherType::Max,13},
+    {IRMatcherType::Min,13},
+
+    {IRMatcherType::Or,12},
+    {IRMatcherType::And,11},
+    {IRMatcherType::GE,10},
+    {IRMatcherType::GT,9},
+    {IRMatcherType::LE,8},
+    {IRMatcherType::LT,7},
+    {IRMatcherType::NE,6},
+    {IRMatcherType::EQ,5},
+    {IRMatcherType::Not,4},
+};
+
+// add and sub are least, all others are greatest
+node_type_ordering nto_adds = {
+    {IRMatcherType::Ramp,100},
+    {IRMatcherType::Broadcast,100},
+    {IRMatcherType::Select,100},
+    {IRMatcherType::Div,100},
+    {IRMatcherType::Mul,100},
+    {IRMatcherType::MulByConstant,2},
+    {IRMatcherType::Mod,100},
+    {IRMatcherType::Sub,3},
+    {IRMatcherType::SubByConstant,1},
+    {IRMatcherType::Add,3},
+    {IRMatcherType::AddByConstant,1},
+    {IRMatcherType::Max,100},
+    {IRMatcherType::Min,100},
+
+    {IRMatcherType::Or,100},
+    {IRMatcherType::And,100},
+    {IRMatcherType::GE,100},
+    {IRMatcherType::GT,100},
+    {IRMatcherType::LE,100},
+    {IRMatcherType::LT,100},
+    {IRMatcherType::NE,100},
+    {IRMatcherType::EQ,100},
+    {IRMatcherType::Not,100},
+};
+
+
+int multiset_node_order(std::list<IRMatcherType> &m1, std::list<IRMatcherType> &m2, node_type_ordering &comparator) {
+    int max_m1 = 0;
+    int max_m2 = 0;
+    for (IRMatcherType node_type : m1) {
+        if (comparator[node_type] > max_m1)
+            max_m1 = comparator[node_type];
+    }
+    for (IRMatcherType node_type : m2) {
+        if (comparator[node_type] > max_m2) 
+            max_m2 = comparator[node_type];
+    }
+    if (max_m1 > max_m2) {
+        return 1;
+    } else if (max_m1 < max_m2) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+// not implementing the full recursive checks; root and first layer should be sufficient
+int mpo(bfs_node_type_map &map1, bfs_node_type_map &map2, node_type_ordering &comparator) {
+    // if t2 is variable and t1 is not, t1 > t2
+    if (!(map1.empty()) && map2.empty()) {
+        return 1;
+    }
+    // if roots are different, compare roots
+    if ((map1.count(0) != 0) && (map2.count(0) != 0)) {
+        int root_status = multiset_node_order(map1[0],map2[0],comparator);
+        if (!(root_status == 0)) {
+            return root_status;
+        }  
+    }
+    // compare first depth
+    if ((map1.count(1) != 0) && (map2.count(1) != 0)) {
+        return multiset_node_order(map1[1],map2[1],comparator);
+    } else {
+        return 0;
+    }
+
+}
+
+int mpo_adds(bfs_node_type_map &map1, bfs_node_type_map &map2) {
+    return mpo(map1,map2,nto_adds);
+}
+
+int mpo_full(bfs_node_type_map &map1, bfs_node_type_map &map2) {
+    return mpo(map1,map1,nto);
+}
+
 }  // namespace IRMatcher
 }  // namespace Internal
 }  // namespace Halide
