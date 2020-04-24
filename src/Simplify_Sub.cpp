@@ -84,7 +84,7 @@ Expr Simplify::visit(const Sub *op, ExprInfo *bounds) {
              (rewrite((c0 - x) - (y + c1), fold(c0 - c1) - (x + y), "sub84")) ||
              (rewrite(x - (y - z), x + (z - y), "sub85")) ||
              (rewrite(x - y*c0, x + y*fold(-c0), c0 < 0 && -c0 > 0, "sub86")) ||
-             (rewrite(x - (y + c0), (x - y) - c0, "sub87")) ||
+             (rewrite(x - (y + c0), (x - y) + fold(-c0), "sub87")) ||
              (rewrite((c0 - x) - c1, fold(c0 - c1) - x, "sub88")) ||
              (rewrite(x*y - z*y, (x - z)*y, "sub89")) ||
              (rewrite(x*y - y*z, (x - z)*y, "sub90")) ||

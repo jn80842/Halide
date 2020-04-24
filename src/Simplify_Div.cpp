@@ -154,10 +154,10 @@ Expr Simplify::visit(const Div *op, ExprInfo *bounds) {
                (rewrite((z + (x * c0 + y)) / c1, (z + y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div154")) ||
                (rewrite((z + (x * c0 - y)) / c1, (z - y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div155")) ||
                (rewrite((z - (x * c0 - y)) / c1, (z + y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div156")) ||
-               (rewrite((z - (x * c0 + y)) / c1, (z - y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div157")) ||
+               (rewrite((z - (x * c0 + y)) / c1, (z - y) / c1 + x * fold(-(c0 / c1)), c0 % c1 == 0 && c1 > 0, "div157")) ||
 
                (rewrite((z + (y + x * c0)) / c1, (z + y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div159")) ||
-               (rewrite((z - (y + x * c0)) / c1, (z - y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div160")) ||
+               (rewrite((z - (y + x * c0)) / c1, (z - y) / c1 + x * fold(-(c0 / c1)), c0 % c1 == 0 && c1 > 0, "div160")) ||
                (rewrite((z + (y - x * c0)) / c1, (z + y) / c1 - x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div161")) ||
                (rewrite((z - (y - x * c0)) / c1, (z - y) / c1 + x * fold(c0 / c1), c0 % c1 == 0 && c1 > 0, "div162")) ||
 
