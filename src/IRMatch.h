@@ -90,7 +90,9 @@ enum class IRMatcherType {
     MulByConstant,
     Div,
     Min,
+    MinWithConstant,
     Max,
+    MaxWithConstant,
     EQ,
     NE,
     LT,
@@ -101,6 +103,7 @@ enum class IRMatcherType {
     Or,
     Not,
     Select,
+    SelectConstantBranch,
     Ramp,
 };
 typedef std::map<IRMatcherType, int> term_map;
@@ -1207,10 +1210,18 @@ template<typename A, typename B>
 void count_terms(const BinOp<Sub, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    if (is_constant(op.b)) {
-        increment_term(IRMatcherType::SubByConstant, m);
+    if (is_constant(op.a)) {
+        std::ostringstream s;
+        s << op.a;
+        if (s.str().compare("0") == 0) {
+            increment_term(IRMatcherType::SubByConstant, m);
+        }
     } else {
-        increment_term(IRMatcherType::Sub, m);
+        if (is_constant(op.b)) {
+            increment_term(IRMatcherType::SubByConstant, m);
+        } else {
+            increment_term(IRMatcherType::Sub, m);
+        }
     }
 }
 
@@ -1313,7 +1324,11 @@ template<typename A, typename B>
 void count_terms(const BinOp<Min, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
-    increment_term(IRMatcherType::Min, m);
+    if (is_constant(op.b)) {
+        increment_term(IRMatcherType::MinWithConstant, m);
+    } else {
+        increment_term(IRMatcherType::Min, m);
+    }
 }
 
 template<typename A, typename B>
@@ -1332,7 +1347,11 @@ void count_terms(const BinOp<Max, A, B> &op, term_map &m) {
     count_terms(op.a, m);
     count_terms(op.b, m);
     // min and max have equal cost, so put both in Min bucket
-    increment_term(IRMatcherType::Min, m);
+    if (is_constant(op.b)) {
+        increment_term(IRMatcherType::MinWithConstant, m);
+    } else {
+        increment_term(IRMatcherType::Min, m);
+    }
 }
 
 template<typename A, typename B>
@@ -2153,7 +2172,11 @@ void count_terms(const SelectOp<C, T, F> &op, term_map &m) {
     count_terms(op.c, m);
     count_terms(op.t, m);
     count_terms(op.f, m);
-    increment_term(IRMatcherType::Select, m);
+    if (is_constant(op.t) || is_constant(op.f)) {
+        increment_term(IRMatcherType::SelectConstantBranch, m);
+    } else {
+        increment_term(IRMatcherType::Select, m);
+    }
 }
 
 template<typename C, typename T, typename F>
@@ -3317,7 +3340,7 @@ struct Rewriter {
     HALIDE_ALWAYS_INLINE bool operator()(Before before, const Expr &after, const char *rulename) noexcept {
         static_assert(Before::canonical, "LHS of rewrite rule should be in canonical form");
 #if HALIDE_CHECK_RULE_PROPERTIES
-        debug(0) << rulename << " NOT CHECKED\n";
+        debug(0) << rulename << " " << before << " ; " << after << " ; " << " NOT CHECKED\n";
 #endif
         if (before.template match<0>(instance, state)) {
             LOG_MATCHED_RULE;

@@ -517,6 +517,8 @@ int term_map_comp(term_map &m1, term_map &m2) {
         return ternary_comp(m1[IRMatcherType::Broadcast], m2[IRMatcherType::Broadcast]);
     } else if (m1[IRMatcherType::Select] != m2[IRMatcherType::Select]) {
         return ternary_comp(m1[IRMatcherType::Select], m2[IRMatcherType::Select]);
+    } else if (m1[IRMatcherType::SelectConstantBranch], m2[IRMatcherType::SelectConstantBranch]) {
+        return ternary_comp(m1[IRMatcherType::SelectConstantBranch], m2[IRMatcherType::SelectConstantBranch]);
     } else if (m1[IRMatcherType::Div] != m2[IRMatcherType::Div]) {
         return ternary_comp(m1[IRMatcherType::Div], m2[IRMatcherType::Div]);
     } else if (m1[IRMatcherType::Mul] != m2[IRMatcherType::Mul]) {
@@ -529,6 +531,8 @@ int term_map_comp(term_map &m1, term_map &m2) {
         return ternary_comp(m1[IRMatcherType::Add], m2[IRMatcherType::Add]);
     } else if (m1[IRMatcherType::Min] != m2[IRMatcherType::Min]) { // max ops go in this bucket too
         return ternary_comp(m1[IRMatcherType::Min], m2[IRMatcherType::Min]);
+    } else if (m1[IRMatcherType::MinWithConstant] != m2[IRMatcherType::MinWithConstant]) {
+        return ternary_comp(m1[IRMatcherType::MinWithConstant], m2[IRMatcherType::MinWithConstant]);
     } else if (m1[IRMatcherType::MulByConstant] != m2[IRMatcherType::MulByConstant]) {
         return ternary_comp(m1[IRMatcherType::MulByConstant], m2[IRMatcherType::MulByConstant]);
     } else if (m1[IRMatcherType::SubByConstant] != m2[IRMatcherType::SubByConstant]) { 
