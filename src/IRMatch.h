@@ -305,6 +305,14 @@ inline void build_bfs_const_map(SpecificExpr e, const_str_map const_map, int cur
     return;
 }
 
+inline bool is_vector_op(SpecificExpr e) {
+    return false;
+}
+
+inline int count_vector_ops(SpecificExpr e) {
+    return 0;
+}
+
 template<int i>
 struct WildConstInt {
     struct pattern_tag {};
@@ -391,6 +399,16 @@ void build_bfs_type_map(const WildConstInt<i> &c, bfs_node_type_map &type_map, i
 template<int i>
 void build_bfs_const_map(const WildConstInt<i> &c, const_str_map &const_map, int current_depth) {
     update_bfs_const_str_map(const_map, "b", current_depth);
+}
+
+template<int i>
+bool is_vector_op(const WildConstInt<i> &c) {
+    return false;
+}
+
+template<int i>
+int count_vector_ops(const WildConstInt<i> &c) {
+    return 0;
 }
 
 template<int i>
@@ -482,6 +500,16 @@ void build_bfs_const_map(const WildConstUInt<i> &c, const_str_map &const_map, in
 }
 
 template<int i>
+bool is_vector_op(const WildConstUInt<i> &c) {
+    return false;
+}
+
+template<int i>
+int count_vector_ops(const WildConstUInt<i> &c) {
+    return 0;
+}
+
+template<int i>
 struct WildConstFloat {
     struct pattern_tag {};
 
@@ -569,6 +597,16 @@ void build_bfs_const_map(const WildConstFloat<i> &c, const_str_map &const_map, i
     update_bfs_const_str_map(const_map, "b", current_depth);
 }
 
+template<int i>
+bool is_vector_op(const WildConstFloat<i> &c) {
+    return false;
+}
+
+template<int i>
+int count_vector_ops(const WildConstFloat<i> &c) {
+    return 0;
+}
+
 // Matches and binds to any constant Expr. Does not support constant-folding.
 template<int i>
 struct WildConst {
@@ -654,6 +692,16 @@ void build_bfs_type_map(const WildConst<i> &c, bfs_node_type_map &type_map, int 
 template<int i>
 void build_bfs_const_map(const WildConst<i> &c, const_str_map &const_map, int current_depth) {
     update_bfs_const_str_map(const_map, "b", current_depth);
+}
+
+template<int i>
+bool is_vector_op(const WildConst<i> &c) {
+    return false;
+}
+
+template<int i>
+int count_vector_ops(const WildConst<i> &c) {
+    return 0;
 }
 
 
@@ -756,6 +804,16 @@ void build_bfs_type_map(const Wild<i> &op, bfs_node_type_map &type_map, int curr
 template<int i>
 void build_bfs_const_map(const Wild<i> &c, const_str_map &const_map, int current_depth) {
     update_bfs_const_str_map(const_map, "a", current_depth);
+}
+
+template<int i>
+bool is_vector_op(const Wild<i> &c) {
+    return false;
+}
+
+template<int i>
+int count_vector_ops(const Wild<i> &c) {
+    return 0;
 }
 
 // Matches a specific constant or broadcast of that constant. The
@@ -890,6 +948,14 @@ inline void build_bfs_type_map(const Const &op, bfs_node_type_map &type_map, int
 
 inline void build_bfs_const_map(const Const &op, const_str_map &const_map, int current_depth) {
     update_bfs_const_str_map(const_map, "b", current_depth);
+}
+
+inline bool is_vector_op(const Const &op) {
+    return false;
+}
+
+inline int count_vector_ops(const Const &op) {
+    return 0;
 }
 
 template<typename Op>
@@ -1043,6 +1109,20 @@ void build_bfs_const_map(const BinOp<Op, A, B> &op, const_str_map &const_map, in
     build_bfs_const_map(op.b, const_map, current_depth + 1);
 }
 
+template<typename Op, typename A, typename B>
+bool is_vector_op(const BinOp<Op, A, B> &op) {
+    return (is_vector_op(op.a) || is_vector_op(op.b));
+}
+
+template<typename Op, typename A, typename B>
+int count_vector_ops(const BinOp<Op, A, B> &op) {
+    if (is_vector_op(op.a) || is_vector_op(op.b)) {
+        return 1 + count_vector_ops(op.a) + count_vector_ops(op.b);
+    } else {
+        return count_vector_ops(op.a) + count_vector_ops(op.b);
+    }
+}
+
 template<typename Op>
 uint64_t constant_fold_cmp_op(int64_t, int64_t) noexcept;
 
@@ -1180,6 +1260,20 @@ void build_bfs_const_map(const CmpOp<Op, A, B> &op, const_str_map &const_map, in
     build_bfs_const_map(op.b, const_map, current_depth + 1);
 }
 
+template<typename Op, typename A, typename B>
+bool is_vector_op(const CmpOp<Op, A, B> &op) {
+    return (is_vector_op(op.a) || is_vector_op(op.b));
+}
+
+template<typename Op, typename A, typename B>
+int count_vector_ops(const CmpOp<Op, A, B> &op) {
+    if (is_vector_op(op.a) || is_vector_op(op.b)) {
+        return 1 + count_vector_ops(op.a) + count_vector_ops(op.b);
+    } else {
+        return count_vector_ops(op.a) + count_vector_ops(op.b);
+    }
+}
+
 template<typename A, typename B>
 void count_terms(const BinOp<Add, A, B> &op, term_map &m) {
     count_terms(op.a, m);
@@ -1215,6 +1309,8 @@ void count_terms(const BinOp<Sub, A, B> &op, term_map &m) {
         s << op.a;
         if (s.str().compare("0") == 0) {
             increment_term(IRMatcherType::SubByConstant, m);
+        } else {
+            increment_term(IRMatcherType::Sub, m);
         }
     } else {
         if (is_constant(op.b)) {
@@ -2000,6 +2096,16 @@ void build_bfs_const_map(const Intrin<Args...> &op, const_str_map &const_map, in
 }
 
 template<typename... Args>
+bool is_vector_op(const Intrin<Args...> &op) {
+    return false;
+}
+
+template<typename... Args>
+int count_vector_ops(const Intrin<Args...> &op) {
+    return 0;
+}
+
+template<typename... Args>
 HALIDE_ALWAYS_INLINE auto intrin(Call::IntrinsicOp intrinsic_op, Args... args) noexcept -> Intrin<decltype(pattern_arg(args))...> {
     return {intrinsic_op, pattern_arg(args)...};
 }
@@ -2095,6 +2201,20 @@ void build_bfs_type_map(const NotOp<A> &op, bfs_node_type_map &type_map, int cur
 template<typename A>
 void build_bfs_const_map(const NotOp<A> &op, const_str_map &const_map, int current_depth) {
     build_bfs_const_map(op.a, const_map, current_depth + 1);
+}
+
+template<typename A>
+bool is_vector_op(const NotOp<A> &op) {
+    return is_vector_op(op.a);
+}
+
+template<typename A>
+int count_vector_ops(const NotOp<A> &op) {
+    if (is_vector_op(op.a)) {
+        return 1 + count_vector_ops(op.a);
+    } else {
+        return count_vector_ops(op.a);
+    }
 }
 
 template<typename C, typename T, typename F>
@@ -2205,6 +2325,20 @@ void build_bfs_const_map(const SelectOp<C, T, F> &op, const_str_map &const_map, 
 }
 
 template<typename C, typename T, typename F>
+bool is_vector_op(const SelectOp<C, T, F> &op) {
+    return (is_vector_op(op.c) || is_vector_op(op.t) || is_vector_op(op.f));
+}
+
+template<typename C, typename T, typename F>
+int count_vector_ops(const SelectOp<C, T, F> &op) {
+    if (is_vector_op(op.c) || is_vector_op(op.t) || is_vector_op(op.f)) {
+        return 1 + count_vector_ops(op.c) + count_vector_ops(op.t) + count_vector_ops(op.f);
+    } else {
+        return count_vector_ops(op.c) + count_vector_ops(op.t) + count_vector_ops(op.f);
+    }
+}
+
+template<typename C, typename T, typename F>
 HALIDE_ALWAYS_INLINE auto select(C c, T t, F f) noexcept -> SelectOp<decltype(pattern_arg(c)), decltype(pattern_arg(t)), decltype(pattern_arg(f))> {
     return {pattern_arg(c), pattern_arg(t), pattern_arg(f)};
 }
@@ -2304,6 +2438,16 @@ void build_bfs_type_map(const BroadcastOp<A, known_lanes> &op, bfs_node_type_map
 template<typename A, bool known_lanes>
 void build_bfs_const_map(const BroadcastOp<A, known_lanes> &op, const_str_map &const_map, int current_depth) {
     build_bfs_const_map(op.a, const_map, current_depth + 1);
+}
+
+template<typename A, bool known_lanes>
+bool is_vector_op(const BroadcastOp<A, known_lanes> &op) {
+    return true;
+}
+
+template<typename A, bool known_lanes>
+int count_vector_ops(const BroadcastOp<A, known_lanes> &op) {
+    return 1;
 }
 
 template<typename A>
@@ -2421,6 +2565,16 @@ template<typename A, typename B, bool known_lanes>
 void build_bfs_const_map(const RampOp<A, B, known_lanes> &op, const_str_map &const_map, int current_depth) {
     build_bfs_const_map(op.a, const_map, current_depth + 1);
     build_bfs_const_map(op.b, const_map, current_depth + 1);
+}
+
+template<typename A, typename B, bool known_lanes>
+bool is_vector_op(const RampOp<A, B, known_lanes> &op) {
+    return true;
+}
+
+template<typename A, typename B, bool known_lanes>
+int count_vector_ops(const RampOp<A, B, known_lanes> &op) {
+    return 1;
 }
 
 template<typename A, typename B>
@@ -2541,6 +2695,20 @@ void build_bfs_const_map(const NegateOp<A> &op, const_str_map &const_map, int cu
 }
 
 template<typename A>
+bool is_vector_op(const NegateOp<A> &op) {
+    return is_vector_op(op.a);
+}
+
+template<typename A>
+int count_vector_ops(const NegateOp<A> &op) {
+    if (is_vector_op(op.a)) {
+        return 1 + count_vector_ops(op.a);
+    } else {
+        return count_vector_ops(op.a);
+    }
+}
+
+template<typename A>
 HALIDE_ALWAYS_INLINE auto operator-(A a) noexcept -> NegateOp<decltype(pattern_arg(a))> {
     return {pattern_arg(a)};
 }
@@ -2626,6 +2794,16 @@ void build_bfs_const_map(const CastOp<A> &op, const_str_map &const_map, int curr
 }
 
 template<typename A>
+bool is_vector_op(const CastOp<A> &op) {
+    return false;
+}
+
+template<typename A>
+int count_vector_ops(const CastOp<A> &op) {
+    return 0;
+}
+
+template<typename A>
 HALIDE_ALWAYS_INLINE auto cast(halide_type_t t, A a) noexcept -> CastOp<decltype(pattern_arg(a))> {
     return {t, pattern_arg(a)};
 }
@@ -2704,6 +2882,16 @@ void build_bfs_const_map(const Fold<A> &op, const_str_map &const_map, int curren
 }
 
 template<typename A>
+bool is_vector_op(const Fold<A> &op) {
+    return false;
+}
+
+template<typename A>
+int count_vector_ops(const Fold<A> &op) {
+    return 0;
+}
+
+template<typename A>
 struct Overflows {
     struct pattern_tag {};
     A a;
@@ -2767,6 +2955,16 @@ void build_bfs_type_map(const Overflows<A> &op, bfs_node_type_map &type_map, int
 template<typename A>
 void build_bfs_const_map(const Overflows<A> &op, const_str_map &const_map, int current_depth) {
     return;
+}
+
+template<typename A>
+bool is_vector_op(const Overflows<A> &op) {
+    return false;
+}
+
+template<typename A>
+int count_vector_ops(const Overflows<A> &op) {
+    return 0;
 }
 
 struct Overflow {
@@ -2835,6 +3033,14 @@ inline void build_bfs_type_map(const Overflow &op, bfs_node_type_map &type_map, 
 
 inline void build_bfs_const_map(const Overflow &op, const_str_map &const_map, int current_depth) {
     return;
+}
+
+inline bool is_vector_op(const Overflow &op) {
+    return false;
+}
+
+inline int count_vector_ops(const Overflow &op) {
+    return 0;
 }
 
 template<typename A>
@@ -2908,6 +3114,16 @@ void build_bfs_type_map(const IsConst<A> &op, bfs_node_type_map &type_map, int c
 template<typename A>
 void build_bfs_const_map(const IsConst<A> &op, const_str_map &const_map, int current_depth) {
     return;
+}
+
+template<typename A>
+bool is_vector_op(const IsConst<A> &op) {
+    return false;
+}
+
+template<typename A>
+int count_vector_ops(const IsConst<A> &op) {
+    return 0;
 }
 
 template<typename A, typename Prover>
@@ -2984,6 +3200,16 @@ void build_bfs_const_map(const CanProve<A, Prover> &op, const_str_map &const_map
     return;
 }
 
+template<typename A, typename Prover>
+bool is_vector_op(const CanProve<A, Prover> &op) {
+    return false;
+}
+
+template<typename A, typename Prover>
+int count_vector_ops(const CanProve<A, Prover> &op) {
+    return 0;
+}
+
 template<typename A>
 struct IsFloat {
     struct pattern_tag {};
@@ -3054,6 +3280,16 @@ void build_bfs_type_map(const IsFloat<A> &op, bfs_node_type_map &type_map, int c
 template<typename A>
 void build_bfs_const_map(const IsFloat<A> &op, const_str_map &const_map, int current_depth) {
     return;
+}
+
+template<typename A>
+bool is_vector_op(const IsFloat<A> &op) {
+    return false;
+}
+
+template<typename A>
+int count_vector_ops(const IsFloat<A> &op) {
+    return 0;
 }
 
 // Verify properties of each rewrite rule. Currently just fuzz tests them.
@@ -3215,8 +3451,8 @@ void check_rule_properties(Before &&before, After &&after, Predicate &&pred,
     count_terms(before, LHS_term_map);
     count_terms(after, RHS_term_map);
 
-    int LHS_vector_count = LHS_term_map[IRMatcherType::Ramp] + LHS_term_map[IRMatcherType::Broadcast];
-    int RHS_vector_count = RHS_term_map[IRMatcherType::Ramp] + RHS_term_map[IRMatcherType::Broadcast];
+    int LHS_vector_count = count_vector_ops(before);
+    int RHS_vector_count = count_vector_ops(after);
 
     int LHS_leaf_count = count_leaves(before);
     int RHS_leaf_count = count_leaves(after);
