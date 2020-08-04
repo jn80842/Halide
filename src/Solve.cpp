@@ -14,12 +14,218 @@ namespace Internal {
 using std::map;
 using std::pair;
 using std::string;
+#include <iostream>     // std::cout, std::ios
+#include <sstream>
 
 namespace {
 
 // Returns true iff t is an integral type where overflow is undefined
 bool no_overflow_int(Type t) {
     return t.is_int() && t.bits() >= 32;
+}
+
+class LexicoStringRename  : public IRVisitor {
+public:
+    LexicoStringRename(const string &v)
+        : varname(v) {
+    }
+    using IRVisitor::visit;
+
+    void visit(const Variable *op) override {
+        if (op->name.compare(varname) == 0) {
+            lexicostring.append("a");
+        } else {
+            lexicostring.append("z");
+        }
+    }
+
+    void visit(const IntImm *op) override {
+        lexicostring.append("z");
+    }
+
+    void visit(const UIntImm *op) override {
+        lexicostring.append("z");
+    }
+
+    void visit(const FloatImm *op) override {
+        lexicostring.append("z");
+    }
+
+    void visit(const StringImm *op) override {
+        lexicostring.append("z");
+    }
+
+    void visit(const Add *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const Sub *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const Mul *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const Div *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const Mod *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const Min *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const Max *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const EQ *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const NE *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const LT *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const LE *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const GT *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const GE *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const And *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const Or *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+        op->b.accept(this);
+    }
+
+    void visit(const Not *op) override {
+        lexicostring.append("z");
+        op->a.accept(this);
+    }
+
+    void visit(const Select *op) override {
+        lexicostring.append("z");
+        op->condition.accept(this);
+        op->true_value.accept(this);
+        op->false_value.accept(this);
+    }
+
+    void visit(const Ramp *op) override {
+        lexicostring.append("z");
+        op->base.accept(this);
+        op->stride.accept(this);
+    }
+
+    void visit(const Broadcast *op) override {
+        lexicostring.append("z");
+        op->value.accept(this);
+    }
+
+    string varname;
+    string lexicostring = "";
+};
+
+string get_lexico_expr(const string &v, const Expr &e) {
+    LexicoStringRename lsr(v);
+    e.accept(&lsr);
+    return lsr.lexicostring;
+}
+
+// 1 if e1 > e2, 0 if e1 = e2, -1 if e1 < e2
+int expr_order_comp(const string &v, const Expr &e1, const Expr &e2) {
+    return get_lexico_expr(v, e1).compare(get_lexico_expr(v, e2));
+}
+
+bool expr_order_gt(const string &v, const Expr &e1, const Expr &e2) {
+    return expr_order_comp(v, e1, e2) == 1;
+}
+
+string stringify(const Expr &e) {
+    std::ostringstream os;
+    os << e;
+    return os.str();
+}
+
+
+// stolen from can_prove
+pair<Expr, Expr> renamed_vars_exprs(const Expr e1, const Expr e2) {
+     struct RenameVariables : public IRMutator {
+        using IRMutator::visit;
+
+        Expr visit(const Variable *op) override {
+            auto it = vars.find(op->name);
+            if (lets.contains(op->name)) {
+                return Variable::make(op->type, lets.get(op->name));
+            } else if (it == vars.end()) {
+                std::string name = "v" + std::to_string(count++);
+                vars[op->name] = name;
+                out_vars.emplace_back(op->type, name);
+                return Variable::make(op->type, name);
+            } else {
+                return Variable::make(op->type, it->second);
+            }
+        }
+
+        Expr visit(const Let *op) override {
+            std::string name = "v" + std::to_string(count++);
+            ScopedBinding<string> bind(lets, op->name, name);
+            return Let::make(name, mutate(op->value), mutate(op->body));
+        }
+
+        int count = 0;
+        map<string, string> vars;
+        Scope<string> lets;
+        std::vector<pair<Type, string>> out_vars;
+    } renamer;
+    pair<Expr, Expr> retpair (renamer.mutate(e1), renamer.mutate(e2));
+    return retpair;
 }
 
 /** A mutator that moves all instances of a free variable as far left
@@ -43,11 +249,25 @@ public:
     Expr mutate(const Expr &e) override {
         map<Expr, CacheEntry, ExprCompare>::iterator iter = cache.find(e);
         if (iter == cache.end()) {
+         //   debug(0) << "Called SolveExpression for var " << var << " on " << e << " lexico version is " << get_lexico_expr(var, e) << "\n";
             // Not in the cache, call the base class version.
             debug(4) << "Mutating " << e << " (" << uses_var << ")\n";
             bool old_uses_var = uses_var;
             uses_var = false;
             Expr new_e = IRMutator::mutate(e);
+            if (uses_var) {
+                pair<Expr, Expr> renamed_exprs = renamed_vars_exprs(e, new_e);
+                if (stringify(renamed_exprs.first).compare("v0") != 0) {
+                    if (expr_order_comp(var, e, new_e) == 0) {
+                        debug(4) << "SolveExpression var " << var << " no change from " << renamed_exprs.first << " (" << get_lexico_expr(var, e) << ") to " << renamed_exprs.second << " (" << get_lexico_expr(var, new_e) << ")\n";
+                    } else if (expr_order_comp(var, e, new_e) > 0) {
+                        debug(4) << "SolveExpression var " << var << "  GT from " << renamed_exprs.first << " (" << get_lexico_expr(var, e) << ") to " << renamed_exprs.second << " (" << get_lexico_expr(var, new_e) << ")\n";
+                    } else {
+                        debug(4) << "SolveExpression var " << var << "  LT from " << renamed_exprs.first << " (" << get_lexico_expr(var, e) << ") to " << renamed_exprs.second << " (" << get_lexico_expr(var, new_e) << ")\n";
+                    }
+                }
+            }
+
             CacheEntry entry = {new_e, uses_var};
             uses_var = old_uses_var || uses_var;
             cache[e] = entry;
@@ -149,44 +369,44 @@ private:
         if (a_uses_var && !b_uses_var) {
             if (sub_a && !a_failed) {
                 // (f(x) - a) + b -> f(x) + (b - a)
-                expr = mutate(sub_a->a + (b - sub_a->b));
+                expr = mutate(sub_a->a + (b - sub_a->b)); // 1
             } else if (add_a && !a_failed) {
                 // (f(x) + a) + b -> f(x) + (a + b)
-                expr = mutate(add_a->a + (add_a->b + b));
+                expr = mutate(add_a->a + (add_a->b + b)); // 2
             }
         } else if (a_uses_var && b_uses_var) {
             if (equal(a, b)) {
-                expr = mutate(a * 2);
+                expr = mutate(a * 2); // 3
             } else if (add_a && !a_failed) {
                 // (f(x) + a) + g(x) -> (f(x) + g(x)) + a
-                expr = mutate((add_a->a + b) + add_a->b);
+                expr = mutate((add_a->a + b) + add_a->b); // 4
             } else if (add_b && !b_failed) {
                 // f(x) + (g(x) + a) -> (f(x) + g(x)) + a
-                expr = mutate((a + add_b->a) + add_b->b);
+                expr = mutate((a + add_b->a) + add_b->b); // 5
             } else if (sub_a && !a_failed) {
                 // (f(x) - a) + g(x) -> (f(x) + g(x)) - a
-                expr = mutate((sub_a->a + b) - sub_a->b);
+                expr = mutate((sub_a->a + b) - sub_a->b); // 6
             } else if (sub_b && !b_failed) {
                 // f(x) + (g(x) - a) -> (f(x) + g(x)) - a
-                expr = mutate((a + sub_b->a) - sub_b->b);
+                expr = mutate((a + sub_b->a) - sub_b->b); // 7
             } else if (mul_a && mul_b && equal(mul_a->a, mul_b->a)) {
                 // f(x)*a + f(x)*b -> f(x)*(a + b)
-                expr = mutate(mul_a->a * (mul_a->b + mul_b->b));
+                expr = mutate(mul_a->a * (mul_a->b + mul_b->b)); // 8
             } else if (mul_a && mul_b && equal(mul_a->b, mul_b->b)) {
                 // f(x)*a + g(x)*a -> (f(x) + g(x))*a;
-                expr = mutate(mul_a->a + mul_b->a) * mul_a->b;
+                expr = mutate(mul_a->a + mul_b->a) * mul_a->b; // 9
             } else if (mul_a && equal(mul_a->a, b)) {
                 // f(x)*a + f(x) -> f(x) * (a + 1)
-                expr = mutate(b * (mul_a->b + 1));
+                expr = mutate(b * (mul_a->b + 1)); // 10
             } else if (mul_b && equal(mul_b->a, a)) {
                 // f(x) + f(x)*a -> f(x) * (a + 1)
-                expr = mutate(a * (mul_b->b + 1));
+                expr = mutate(a * (mul_b->b + 1)); // 11
             } else if (div_a && !a_failed) {
                 // f(x)/a + g(x) -> (f(x) + g(x) * a) / b
-                expr = mutate((div_a->a + b * div_a->b) / div_a->b);
+                expr = mutate((div_a->a + b * div_a->b) / div_a->b); // 12
             } else if (div_b && !b_failed) {
                 // f(x) + g(x)/b -> (f(x) * b + g(x)) / b
-                expr = mutate((a * div_b->b + div_b->a) / div_b->b);
+                expr = mutate((a * div_b->b + div_b->a) / div_b->b); // 13
             } else {
                 expr = fail(a + b);
             }
