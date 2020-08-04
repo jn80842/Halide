@@ -573,7 +573,11 @@ class LowerWarpShuffles : public IRMutator {
 
         // Move this_lane as far left as possible in the expression to
         // reduce the number of cases to check below.
-        lane = solve_expression(lane, this_lane_name).result;
+        static string env_var_value = get_env_variable("HL_DONT_USE_SOLVE_EXPRESSION");
+        static bool dontuse = env_var_value == "1";
+        if (!(dontuse)) {
+            lane = solve_expression(lane, this_lane_name).result;
+        }
 
         Expr shuffled;
 

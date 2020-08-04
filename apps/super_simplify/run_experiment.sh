@@ -18,7 +18,7 @@ fi
 make -C ../../ distrib -j32
 
 # Build the autoscheduler
-HL_USE_SYNTHESIZED_RULES=0 make -C ../autoscheduler bin/libauto_schedule.so -j16
+HL_USE_SYNTHESIZED_RULES=0 HL_DONT_USE_SOLVE_EXPRESSION=0 make -C ../autoscheduler bin/libauto_schedule.so -j16
 
 # Build the app generator
 make bin/host/${APP}.generator -j32
@@ -55,7 +55,8 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
     fi
     
     echo "Running generator with seed ${SEED}"    
-    HL_USE_SYNTHESIZED_RULES=1 \
+    HL_DONT_USE_SOLVE_EXPRESSION=1 \
+    HL_USE_SYNTHESIZED_RULES=0 \
     HL_PERMIT_FAILED_UNROLL=1 \
     HL_SEED=${SEED} \
     HL_RANDOM_DROPOUT=1 \
@@ -63,6 +64,7 @@ for ((SEED=${FIRST_SEED};SEED<${LAST_SEED};SEED++)); do
     HL_DEBUG_CODEGEN=1 \
     ./bin/host/${APP}.generator -g ${APP} -e stmt,static_library,h,assembly,registration,compiler_log -o results/${SEED} -p ../autoscheduler/bin/libauto_schedule.so target=host-no_runtime auto_schedule=true -s Adams2019  > results/${SEED}/stdout.txt 2> results/${SEED}/stderr.txt  &
 
+    HL_DONT_USE_SOLVE_EXPRESSION=0 \
     HL_USE_SYNTHESIZED_RULES=0 \
     HL_PERMIT_FAILED_UNROLL=1 \
     HL_SEED=${SEED} \

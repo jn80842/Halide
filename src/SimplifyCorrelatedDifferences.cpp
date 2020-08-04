@@ -215,7 +215,12 @@ class SimplifyCorrelatedDifferences : public IRMutator {
                 e = Let::make(it->name, it->value, e);
             }
             e = common_subexpression_elimination(e);
-            e = solve_expression(e, loop_var).result;
+            static string env_var_value = get_env_variable("HL_DONT_USE_SOLVE_EXPRESSION");
+            static bool dontuse = env_var_value == "1";
+            if (!(dontuse)) {
+                e = solve_expression(e, loop_var).result;
+            }
+
             e = PartiallyCancelDifferences().mutate(e);
             e = simplify(e);
 

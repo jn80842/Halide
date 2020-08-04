@@ -1709,10 +1709,14 @@ class SolveIfThenElse : public IRMutator {
 
         FindInnermostVar find(vars_depth);
         op->condition.accept(&find);
-        if (!find.innermost_var.empty()) {
-            Expr condition = solve_expression(op->condition, find.innermost_var).result;
-            if (!condition.same_as(op->condition)) {
-                stmt = IfThenElse::make(condition, op->then_case, op->else_case);
+        static string env_var_value = get_env_variable("HL_DONT_USE_SOLVE_EXPRESSION");
+        static bool dontuse = env_var_value == "1";
+        if (!(dontuse)) {
+            if (!find.innermost_var.empty()) {
+                Expr condition = solve_expression(op->condition, find.innermost_var).result;
+                if (!condition.same_as(op->condition)) {
+                    stmt = IfThenElse::make(condition, op->then_case, op->else_case);
+                }
             }
         }
         return stmt;
@@ -2299,9 +2303,14 @@ private:
                 vector<RestrictedVar> to_pop;
                 auto vars = find_free_vars(op->condition);
                 for (auto v : vars) {
-                    auto result = solve_expression(c, v->name);
-                    if (!result.fully_solved) continue;
-                    Expr solved = result.result;
+                    static string env_var_value = get_env_variable("HL_DONT_USE_SOLVER");
+                    static bool dontuse = env_var_value == "1";
+                    Expr solved = c;
+                    if (!(dontuse))  {
+                        auto result = solve_expression(c, v->name);
+                        if (!result.fully_solved) continue;
+                        solved = result.result;
+                    }
 
                     // Trim the scope down to represent the fact that the
                     // condition is true. We only understand certain types

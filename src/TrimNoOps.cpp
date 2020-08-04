@@ -219,10 +219,15 @@ class SimplifyUsingBounds : public IRMutator {
                 Scope<Interval> s;
                 // Rearrange the expression if possible so that the
                 // loop var only occurs once.
-                SolverResult solved = solve_expression(test, loop.var);
-                if (solved.fully_solved) {
-                    test = solved.result;
+                static string env_var_value = get_env_variable("HL_DONT_USE_SOLVE_EXPRESSION");
+                static bool dontuse = env_var_value == "1";
+                if (!(dontuse)) {
+                    SolverResult solved = solve_expression(test, loop.var);
+                    if (solved.fully_solved) {
+                        test = solved.result;
+                    }
                 }
+
                 s.push(loop.var, loop.i);
                 test = and_condition_over_domain(test, s);
             }
