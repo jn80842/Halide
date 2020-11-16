@@ -13,6 +13,8 @@
 #include "IR.h"
 #include "IREquality.h"
 #include "IROperator.h"
+#include "Expr.h"
+#include "ExprUsesVar.h"
 
 namespace Halide {
 namespace Internal {
@@ -75,6 +77,8 @@ constexpr int max_wild = 6;
  */
 struct MatcherState {
     const BaseExprNode *bindings[max_wild];
+    const BaseExprNode *tarvar_bindings[max_wild];
+    const BaseExprNode *nontarvar_bindings[max_wild];
     halide_scalar_value_t bound_const[max_wild];
 
     // values of the lanes field with special meaning.
@@ -82,6 +86,8 @@ struct MatcherState {
     static constexpr uint16_t special_values_mask = 0x8000;  // currently only one
 
     halide_type_t bound_const_type[max_wild];
+
+    std::string target_var = "";
 
     HALIDE_ALWAYS_INLINE
     void set_binding(int i, const BaseExprNode &n) noexcept {
@@ -91,6 +97,31 @@ struct MatcherState {
     HALIDE_ALWAYS_INLINE
     const BaseExprNode *get_binding(int i) const noexcept {
         return bindings[i];
+    }
+
+    HALIDE_ALWAYS_INLINE
+    bool contains_tarvar(const BaseExprNode &n) noexcept {
+        return expr_uses_var(Expr(&n), target_var);
+    }
+
+    HALIDE_ALWAYS_INLINE
+    void set_tarvar_binding(int i, const BaseExprNode &n) noexcept {
+        tarvar_bindings[i] = &n;
+    }
+
+    HALIDE_ALWAYS_INLINE
+    const BaseExprNode *get_tarvar_binding(int i) const noexcept {
+        return tarvar_bindings[i];
+    }
+
+    HALIDE_ALWAYS_INLINE
+    void set_nontarvar_binding(int i, const BaseExprNode &n) noexcept {
+        nontarvar_bindings[i] = &n;
+    }
+
+    HALIDE_ALWAYS_INLINE
+    const BaseExprNode *get_nontarvar_binding(int i) const noexcept {
+        return nontarvar_bindings[i];
     }
 
     HALIDE_ALWAYS_INLINE
@@ -432,6 +463,124 @@ struct WildConst {
 template<int i>
 std::ostream &operator<<(std::ostream &s, const WildConst<i> &c) {
     s << "c" << i;
+    return s;
+}
+
+// Matches and binds to any Expr that contains the target variable
+template<int i>
+struct WildTargetVar {
+    struct pattern_tag {};
+
+    constexpr static uint32_t binds = 1 << (i + 8);
+    constexpr static IRNodeType min_node_type = IRNodeType::IntImm;
+    constexpr static IRNodeType max_node_type = StrongestExprNodeType;
+    constexpr static bool canonical = true;
+
+    template<uint32_t bound>
+    HALIDE_ALWAYS_INLINE bool match(const BaseExprNode &e, MatcherState &state) const noexcept {
+        if (state.contains_tarvar(e)) {
+            if (bound & binds) {
+            return equal(*state.get_tarvar_binding(i), e);
+            }
+            state.set_tarvar_binding(i, e);
+            return true;
+        }
+        return false;
+    }
+
+    HALIDE_ALWAYS_INLINE
+    Expr make(MatcherState &state, halide_type_t type_hint) const {
+        return state.get_tarvar_binding(i);
+    }
+
+    constexpr static bool foldable = true;
+    HALIDE_ALWAYS_INLINE
+    void make_folded_const(halide_scalar_value_t &val, halide_type_t &ty, MatcherState &state) const noexcept {
+        auto e = state.get_tarvar_binding(i);
+        ty = e->type;
+        switch (e->node_type) {
+        case IRNodeType::UIntImm:
+            val.u.u64 = ((const UIntImm *)e)->value;
+            return;
+        case IRNodeType::IntImm:
+            val.u.i64 = ((const IntImm *)e)->value;
+            return;
+        case IRNodeType::FloatImm:
+            val.u.f64 = ((const FloatImm *)e)->value;
+            return;
+        default:
+            // The function is noexcept, so silent failure. You
+            // shouldn't be calling this if you haven't already
+            // checked it's going to be a constant (e.g. with
+            // is_const, or because you manually bound a constant Expr
+            // to the state).
+            val.u.u64 = 0;
+        }
+    }
+};
+
+template<int i>
+std::ostream &operator<<(std::ostream &s, const WildTargetVar<i> &op) {
+    s << "trvr" << i;
+    return s;
+}
+
+// Matches and binds to any Expr that DOESN'T contains the target variable
+template<int i>
+struct WildNonTargetVar {
+    struct pattern_tag {};
+
+    constexpr static uint32_t binds = 1 << (i + 24);
+    constexpr static IRNodeType min_node_type = IRNodeType::IntImm;
+    constexpr static IRNodeType max_node_type = StrongestExprNodeType;
+    constexpr static bool canonical = true;
+
+    template<uint32_t bound>
+    HALIDE_ALWAYS_INLINE bool match(const BaseExprNode &e, MatcherState &state) const noexcept {
+       if (!state.contains_tarvar(e)) {
+            if (bound & binds) {
+                return equal(*state.get_nontarvar_binding(i), e);
+            }
+            state.set_nontarvar_binding(i, e);
+            return true;
+        }
+        return false;
+    }
+
+    HALIDE_ALWAYS_INLINE
+    Expr make(MatcherState &state, halide_type_t type_hint) const {
+        return state.get_nontarvar_binding(i);
+    }
+
+    constexpr static bool foldable = true;
+    HALIDE_ALWAYS_INLINE
+    void make_folded_const(halide_scalar_value_t &val, halide_type_t &ty, MatcherState &state) const noexcept {
+        auto e = state.get_nontarvar_binding(i);
+        ty = e->type;
+        switch (e->node_type) {
+        case IRNodeType::UIntImm:
+            val.u.u64 = ((const UIntImm *)e)->value;
+            return;
+        case IRNodeType::IntImm:
+            val.u.i64 = ((const IntImm *)e)->value;
+            return;
+        case IRNodeType::FloatImm:
+            val.u.f64 = ((const FloatImm *)e)->value;
+            return;
+        default:
+            // The function is noexcept, so silent failure. You
+            // shouldn't be calling this if you haven't already
+            // checked it's going to be a constant (e.g. with
+            // is_const, or because you manually bound a constant Expr
+            // to the state).
+            val.u.u64 = 0;
+        }
+    }
+};
+
+template<int i>
+std::ostream &operator<<(std::ostream &s, const WildNonTargetVar<i> &op) {
+    s << "ntrvr" << i;
     return s;
 }
 
@@ -2154,7 +2303,7 @@ HALIDE_ALWAYS_INLINE bool evaluate_predicate(Pattern p, MatcherState &state) {
 // #defines for testing
 
 // Print all successful or failed matches
-#define HALIDE_DEBUG_MATCHED_RULES 0
+#define HALIDE_DEBUG_MATCHED_RULES 1
 #define HALIDE_DEBUG_UNMATCHED_RULES 0
 
 // Set to true if you want to fuzz test every rewrite passed to
@@ -2199,6 +2348,10 @@ struct Rewriter {
     HALIDE_ALWAYS_INLINE
     Rewriter(Instance &&instance, halide_type_t ot, halide_type_t wt)
         : instance(std::forward<Instance>(instance)), output_type(ot), wildcard_type(wt) {
+    }
+
+    void set_target_var(const std::string &var) {
+        state.target_var = var;
     }
 
     template<typename After>

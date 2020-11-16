@@ -22,7 +22,7 @@ int Simplify::debug_indent = 0;
 namespace {
 
 bool get_use_synthesized_rules_from_environment() {
-    static string env_var_value = get_env_variable("HL_USE_SYNTHESIZED_RULES");
+/*    static string env_var_value = get_env_variable("HL_USE_SYNTHESIZED_RULES");
     static bool enable = env_var_value == "1";
     static bool disable = env_var_value == "0";
     if (enable == disable) {
@@ -31,6 +31,8 @@ bool get_use_synthesized_rules_from_environment() {
         user_warning << "HL_USE_SYNTHESIZED_RULES unset\n";
     }
     return enable;
+    */
+    return false;
 }
 
 }  // namespace

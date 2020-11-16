@@ -28,6 +28,9 @@ SolverResult solve_expression(
     const Expr &e, const std::string &variable,
     const Scope<Expr> &scope = Scope<Expr>::empty_scope());
 
+Expr solve_trs_expression(
+	const Expr &e, const std::string &variable);
+
 /** Find the smallest interval such that the condition is either true
  * or false inside of it, but definitely false outside of it. Never
  * returns undefined Exprs, instead it uses variables called "pos_inf"
