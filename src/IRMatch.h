@@ -67,6 +67,9 @@ void expr_match_test();
  * such as a broadcast that matches any number of lanes, don't have
  * enough information to recreate an Expr.
  */
+
+typedef std::map<std::string, halide_type_t> variable_map;
+
 namespace IRMatcher {
 
 constexpr int max_wild = 6;
@@ -255,6 +258,16 @@ inline std::ostream &operator<<(std::ostream &s, const SpecificExpr &e) {
     return s;
 }
 
+inline std::string print_smt2(SpecificExpr e, halide_type_t type_hint) {
+    std::ostringstream s;
+    s << e;
+    return s.str();
+}
+
+inline void build_variable_map(SpecificExpr e, variable_map &varmap, halide_type_t type_hint) {
+    return;
+}
+
 template<int i>
 struct WildConstInt {
     struct pattern_tag {};
@@ -306,6 +319,13 @@ template<int i>
 std::ostream &operator<<(std::ostream &s, const WildConstInt<i> &c) {
     s << "ci" << i;
     return s;
+}
+
+template<int i>
+std::string print_smt2(const WildConstInt<i> &c, halide_type_t type_hint) {
+    std::ostringstream s;
+    s << c;
+    return s.str();
 }
 
 template<int i>
@@ -362,6 +382,13 @@ std::ostream &operator<<(std::ostream &s, const WildConstUInt<i> &c) {
 }
 
 template<int i>
+std::string print_smt2(const WildConstUInt<i> &c, halide_type_t type_hint) {
+    std::ostringstream s;
+    s << c;
+    return s.str();
+}
+
+template<int i>
 struct WildConstFloat {
     struct pattern_tag {};
 
@@ -414,6 +441,13 @@ std::ostream &operator<<(std::ostream &s, const WildConstFloat<i> &c) {
     return s;
 }
 
+template<int i>
+std::string print_smt2(const WildConstFloat<i> &c, halide_type_t type_hint) {
+    std::ostringstream s;
+    s << c;
+    return s.str();
+}
+
 // Matches and binds to any constant Expr. Does not support constant-folding.
 template<int i>
 struct WildConst {
@@ -464,6 +498,13 @@ template<int i>
 std::ostream &operator<<(std::ostream &s, const WildConst<i> &c) {
     s << "c" << i;
     return s;
+}
+
+template<int i>
+std::string print_smt2(const WildConst<i> &c, halide_type_t type_hint) {
+    std::ostringstream s;
+    s << c;
+    return s.str();
 }
 
 // Matches and binds to any Expr that contains the target variable
@@ -525,6 +566,13 @@ std::ostream &operator<<(std::ostream &s, const WildTargetVar<i> &op) {
     return s;
 }
 
+template<int i>
+std::string print_smt2(const WildTargetVar<i> &op, halide_type_t type_hint) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
 // Matches and binds to any Expr that DOESN'T contains the target variable
 template<int i>
 struct WildNonTargetVar {
@@ -584,6 +632,13 @@ std::ostream &operator<<(std::ostream &s, const WildNonTargetVar<i> &op) {
     return s;
 }
 
+template<int i>
+std::string print_smt2(const WildNonTargetVar<i> &op, halide_type_t type_hint) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
 // Matches and binds to any Expr
 template<int i>
 struct Wild {
@@ -639,6 +694,13 @@ template<int i>
 std::ostream &operator<<(std::ostream &s, const Wild<i> &op) {
     s << "_" << i;
     return s;
+}
+
+template<int i>
+std::string print_smt2(const Wild<i> &op, halide_type_t type_hint) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
 }
 
 // Matches a specific constant or broadcast of that constant. The
@@ -744,6 +806,20 @@ const BaseExprNode &unwrap(const SpecificExpr &e) {
 inline std::ostream &operator<<(std::ostream &s, const Const &op) {
     s << op.v;
     return s;
+}
+
+inline std::string print_smt2(const Const &op, halide_type_t type_hint) {
+    if (type_hint.code == halide_type_uint && type_hint.bits == 1) {
+        if (op.v == 0) {
+            return "false";
+        } else {
+            return "true";
+        }
+    } else {
+        std::ostringstream s;
+        s << op;
+        return s.str();
+    }
 }
 
 template<typename Op>
@@ -1019,6 +1095,57 @@ std::ostream &operator<<(std::ostream &s, const BinOp<Max, A, B> &op) {
 }
 
 template<typename A, typename B>
+std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
+    s << "(" << op.a << " % " << op.b << ")";
+    return s;
+}
+
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Add, A, B> &op, halide_type_t type_hint) {
+    return "(+ " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Sub, A, B> &op, halide_type_t type_hint) {
+    return "(- " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Mul, A, B> &op, halide_type_t type_hint) {
+    return "(* " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Div, A, B> &op, halide_type_t type_hint) {
+    return "(zerodiv " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const BinOp<And, A, B> &op, halide_type_t type_name) {
+    return "(and " + print_smt2(op.a, halide_type_of<bool>()) + " " + print_smt2(op.b, halide_type_of<bool>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Or, A, B> &op, halide_type_t type_hint) {
+    return "(or " + print_smt2(op.a, halide_type_of<bool>()) + " " + print_smt2(op.b, halide_type_of<bool>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Min, A, B> &op, halide_type_t type_hint) {
+    return "(min " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Max, A, B> &op, halide_type_t type_hint) {
+    return "(max " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const BinOp<Mod, A, B> &op, halide_type_t type_hint) {
+    return "(zeromod " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const CmpOp<LE, A, B> &op) {
     s << "(" << op.a << " <= " << op.b << ")";
     return s;
@@ -1054,10 +1181,53 @@ std::ostream &operator<<(std::ostream &s, const CmpOp<NE, A, B> &op) {
     return s;
 }
 
+// print_smt2 for CmpOp currently assumes both terms are type H-Int in z3
 template<typename A, typename B>
-std::ostream &operator<<(std::ostream &s, const BinOp<Mod, A, B> &op) {
-    s << "(" << op.a << " % " << op.b << ")";
-    return s;
+std::string print_smt2(const CmpOp<LE, A, B> &op, halide_type_t type_hint) {
+    return "(<= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<LT, A, B> &op, halide_type_t type_hint) {
+    return "(< " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<GE, A, B> &op, halide_type_t type_hint) {
+    return "(>= " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<GT, A, B> &op, halide_type_t type_hint) {
+    return "(> " + print_smt2(op.a, halide_type_of<int64_t>()) + " " + print_smt2(op.b, halide_type_of<int64_t>()) + ")";
+}
+
+// for both EQ and NE, we attempt to typecheck both sides
+// if one is definitively type Bool, both sides are assumed Bool
+// else, both sides are assumed Int(64)
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<EQ, A, B> &op, halide_type_t type_hint) {
+    halide_type_t fresh_type_hint;
+    halide_type_t lhs_t = typecheck(op.a, fresh_type_hint);
+    halide_type_t rhs_t = typecheck(op.b, fresh_type_hint);
+    if (lhs_t == Bool() || rhs_t == Bool()) {
+        return "(= " + print_smt2(op.a, halide_type_of<bool>()) + " " + print_smt2(op.b, halide_type_of<bool>()) + ")";
+    } else {
+        return "(= " + print_smt2(op.a, fresh_type_hint) + " " + print_smt2(op.b, fresh_type_hint) + ")";
+    }
+}
+
+template<typename A, typename B>
+std::string print_smt2(const CmpOp<NE, A, B> &op, halide_type_t type_hint) {
+    halide_type_t fresh_type_hint;
+    halide_type_t lhs_t = typecheck(op.a, fresh_type_hint);
+    halide_type_t rhs_t = typecheck(op.b, fresh_type_hint);
+    if (lhs_t == Bool() || rhs_t == Bool()) {
+        return "(not (= " + print_smt2(op.a, halide_type_of<bool>()) + " " + print_smt2(op.b, halide_type_of<bool>()) + "))";
+    } else {
+        return "(not (= " + print_smt2(op.a, fresh_type_hint) + " " + print_smt2(op.b, fresh_type_hint) + "))";
+    }
+
 }
 
 template<typename A, typename B>
@@ -1539,6 +1709,13 @@ std::ostream &operator<<(std::ostream &s, const Intrin<Args...> &op) {
 }
 
 template<typename... Args>
+std::string print_smt2(const Intrin<Args...> &op, halide_type_t type_hint) {
+    std::ostringstream s;
+    s << op;
+    return s.str();
+}
+
+template<typename... Args>
 HALIDE_ALWAYS_INLINE auto intrin(Call::IntrinsicOp intrinsic_op, Args... args) noexcept -> Intrin<decltype(pattern_arg(args))...> {
     return {intrinsic_op, pattern_arg(args)...};
 }
@@ -1599,6 +1776,11 @@ inline std::ostream &operator<<(std::ostream &s, const NotOp<A> &op) {
     return s;
 }
 
+template<typename A>
+std::string print_smt2(const NotOp<A> &op, halide_type_t type_hint) {
+    return "(not " + print_smt2(op.a, halide_type_of<bool>()) + ")";
+}
+
 template<typename C, typename T, typename F>
 struct SelectOp {
     struct pattern_tag {};
@@ -1655,6 +1837,19 @@ template<typename C, typename T, typename F>
 std::ostream &operator<<(std::ostream &s, const SelectOp<C, T, F> &op) {
     s << "select(" << op.c << ", " << op.t << ", " << op.f << ")";
     return s;
+}
+
+template<typename C, typename T, typename F>
+std::string print_smt2(const SelectOp<C, T, F> &op, halide_type_t type_hint) {
+    halide_type_t tbranch_type = typecheck(op.t, type_hint);
+    halide_type_t fbranch_type = typecheck(op.f, type_hint);
+    if (tbranch_type == Bool() || fbranch_type == Bool()) {
+        return "(ite " + print_smt2(op.c, halide_type_of<bool>()) + " " + print_smt2(op.t, halide_type_of<bool>()) + " " + print_smt2(op.f, halide_type_of<bool>()) + ")";
+    } else if (tbranch_type == Int(64) || fbranch_type == Int(64)) {
+        return "(ite " + print_smt2(op.c, halide_type_of<bool>()) + " " + print_smt2(op.t, halide_type_of<int64_t>()) + " " + print_smt2(op.f, halide_type_of<int64_t>()) + ")";
+    } else {
+        return "(ite " + print_smt2(op.c, halide_type_of<bool>()) + " " + print_smt2(op.t, type_hint) + " " + print_smt2(op.f, type_hint) + ")";
+    }
 }
 
 template<typename C, typename T, typename F>
@@ -1720,6 +1915,16 @@ template<typename A>
 inline std::ostream &operator<<(std::ostream &s, const BroadcastOp<A, false> &op) {
     s << "broadcast(" << op.a << ")";
     return s;
+}
+
+template<typename A>
+std::string print_smt2(const BroadcastOp<A, true> &op, halide_type_t type_hint) {
+   return print_smt2(op.a, type_hint);
+}
+
+template<typename A>
+std::string print_smt2(const BroadcastOp<A, false> &op, halide_type_t type_hint) {
+    return print_smt2(op.a, type_hint);
 }
 
 template<typename A>
@@ -1796,6 +2001,12 @@ template<typename A, typename B>
 std::ostream &operator<<(std::ostream &s, const RampOp<A, B, false> &op) {
     s << "ramp(" << op.a << ", " << op.b << ")";
     return s;
+}
+
+template<typename A, typename B, bool known_lanes>
+std::string print_smt2(const RampOp<A, B, known_lanes> &op, halide_type_t type_hint) {
+    // in order to match predicates, we represent lanes as lanes - 1
+    return "(+ " + print_smt2(op.a,type_hint) + " (* " + print_smt2(op.b,type_hint) + " (- lanes 1)))";
 }
 
 template<typename A, typename B>
@@ -1879,6 +2090,11 @@ std::ostream &operator<<(std::ostream &s, const NegateOp<A> &op) {
 }
 
 template<typename A>
+std::string print_smt2(const NegateOp<A> &op, halide_type_t type_hint) {
+    return "(- " + print_smt2(op.a, halide_type_of<int64_t>()) + ")";
+}
+
+template<typename A>
 HALIDE_ALWAYS_INLINE auto operator-(A a) noexcept -> NegateOp<decltype(pattern_arg(a))> {
     return {pattern_arg(a)};
 }
@@ -1929,6 +2145,11 @@ std::ostream &operator<<(std::ostream &s, const CastOp<A> &op) {
 }
 
 template<typename A>
+std::string print_smt2(const CastOp<A> &op, halide_type_t type_hint) {
+    return print_smt2(op.a, op.t);
+}
+
+template<typename A>
 HALIDE_ALWAYS_INLINE auto cast(halide_type_t t, A a) noexcept -> CastOp<decltype(pattern_arg(a))> {
     return {t, pattern_arg(a)};
 }
@@ -1971,6 +2192,13 @@ std::ostream &operator<<(std::ostream &s, const Fold<A> &op) {
     return s;
 }
 
+// fold doesn't mean anything for verification because constants are also symbolic variables
+// instead, fold only (potentially) changes order of operations, so we output nothing
+template<typename A>
+std::string print_smt2(const Fold<A> &op, halide_type_t type_hint) {
+    return print_smt2(op.a, type_hint);
+}
+
 template<typename A>
 struct Overflows {
     struct pattern_tag {};
@@ -2005,6 +2233,12 @@ template<typename A>
 std::ostream &operator<<(std::ostream &s, const Overflows<A> &op) {
     s << "overflows(" << op.a << ")";
     return s;
+}
+
+template<typename A>
+std::string print_smt2(const Overflows<A> &op, halide_type_t type_hint) {
+    // as we currently assume all numbers are infinite precision integers, they cannot overflow
+    return "false";
 }
 
 struct Overflow {
@@ -2046,6 +2280,10 @@ inline std::ostream &operator<<(std::ostream &s, const Overflow &op) {
     return s;
 }
 
+inline std::string print_smt2(const Overflow &op, halide_type_t type_hint) {
+    return "overflow()";
+}
+
 template<typename A>
 struct IsConst {
     struct pattern_tag {};
@@ -2080,6 +2318,16 @@ template<typename A>
 std::ostream &operator<<(std::ostream &s, const IsConst<A> &op) {
     s << "is_const(" << op.a << ")";
     return s;
+}
+
+template<typename A>
+std::string print_smt2(const IsConst<A> &op, halide_type_t type_hint) {
+    std::string a = print_smt2(op.a,type_hint);
+    if (!a.empty() && a[0] == 'c') {
+        return "true";
+    } else {
+        return "false";
+    }
 }
 
 template<typename A, typename Prover>
@@ -2119,6 +2367,11 @@ std::ostream &operator<<(std::ostream &s, const CanProve<A, Prover> &op) {
     return s;
 }
 
+template<typename A, typename Prover>
+std::string print_smt2(const CanProve<A, Prover> &op, halide_type_t type_hint) {
+    return print_smt2(op.a,type_hint);
+}
+
 template<typename A>
 struct IsFloat {
     struct pattern_tag {};
@@ -2153,6 +2406,15 @@ template<typename A>
 std::ostream &operator<<(std::ostream &s, const IsFloat<A> &op) {
     s << "is_float(" << op.a << ")";
     return s;
+}
+
+template<typename A>
+std::string print_smt2(const IsFloat<A> &op, halide_type_t type_hint) {
+    if (type_hint.code == halide_type_float) {
+        return "true";
+    } else {
+        return "false";
+    }
 }
 
 // Verify properties of each rewrite rule. Currently just fuzz tests them.
