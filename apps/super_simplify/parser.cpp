@@ -7,6 +7,7 @@ using std::map;
 using std::ostringstream;
 using std::string;
 using std::vector;
+using std::pair;
 using namespace Halide;
 using namespace Halide::Internal;
 
@@ -131,6 +132,59 @@ class Parser {
         return *cursor;
     }
 
+    bool incoming_variable() {
+        return ((peek() >= 'a' && peek() <= 'z') ||
+                (peek() >= 'A' && peek() <= 'Z') ||
+                peek() == '$' ||
+                peek() == '_' ||
+                peek() == '.');
+    }
+
+    Expr consume_variable(Type expected_type) {
+        string name = consume_token();
+        if (consume("[")) {
+            Expr index = parse_halide_expr(0);
+            // eat an alignment specifier
+            consume_whitespace();
+            if (consume("aligned(")) {
+                consume_int();
+                expect(", ");
+                consume_int();
+                expect(")");
+            }
+            expect("]");
+            if (expected_type == Type{}) {
+                expected_type = Int(32);
+            }
+            Expr predicate = const_true();
+            if (index.type().is_vector()) {
+                expected_type = expected_type.with_lanes(index.type().lanes());
+                predicate = cast(index.type(), predicate);
+            }
+            return Load::make(expected_type, name, index, Buffer<>(),
+                              Parameter(), predicate, ModulusRemainder());
+        } else if (consume("(")) {
+            vector<Expr> args;
+            while (1) {
+                consume_whitespace();
+                if (consume(")")) break;
+                args.push_back(parse_halide_expr(0));
+                consume_whitespace();
+                consume(",");
+            }
+            return Call::make(expected_type, name, args, Call::PureExtern);
+        } else {
+            auto it = var_types.find(name);
+            if (it != var_types.end()) {
+                expected_type = it->second;
+            }
+            if (expected_type == Type{}) {
+                expected_type = Int(32);
+            }
+            return Variable::make(expected_type, name);
+        }
+    }
+
 public:
     Expr reparse_as_bool(const Expr &e) {
         const Call *op = e.as<Call>();
@@ -151,6 +205,16 @@ public:
             abort();
             return Expr();
         }
+    }
+
+    pair<string, Expr> parse_var_solver_pair() {
+        consume_whitespace();
+        string target_var = consume_token();
+        consume_whitespace();
+        consume(":");
+        consume_whitespace();
+        Expr e = parse_halide_expr(0);
+        return pair<string, Expr>(target_var, e);
     }
 
     Expr parse_halide_expr(int precedence) {
@@ -231,6 +295,38 @@ public:
                 Expr a = Let::make(name, value, body);
                 expect(")");
                 return a;
+            }
+            // ...... except when it doesn't
+            if (consume("let ")) {
+                string name = consume_token();
+                consume_whitespace();
+                expect("=");
+                consume_whitespace();
+
+                Expr value = parse_halide_expr(0);
+
+                consume_whitespace();
+                expect("in");
+                consume_whitespace();
+
+                var_types[name] = value.type();
+
+                Expr body = parse_halide_expr(0);
+
+                Expr a = Let::make(name, value, body);
+                //expect(")");
+                return a;
+            }
+            if (consume("ramp(")) {
+                Expr a = parse_halide_expr(0);
+                expect(",");
+                Expr b = parse_halide_expr(0);
+                expect(",");
+                consume_whitespace();
+                int64_t stride = consume_int();
+                consume_whitespace();
+                expect(")");
+                return Ramp::make(a, b, stride);
             }
             if (consume("min(")) {
                 Expr a = parse_halide_expr(0);
@@ -375,48 +471,8 @@ public:
             }
 
             // Variables, loads, and calls
-            if ((peek() >= 'a' && peek() <= 'z') ||
-                (peek() >= 'A' && peek() <= 'Z') ||
-                peek() == '$' ||
-                peek() == '_' ||
-                peek() == '.') {
-                string name = consume_token();
-                if (consume("[")) {
-                    Expr index = parse_halide_expr(0);
-                    // eat an alignment specifier
-                    consume_whitespace();
-                    if (consume("aligned(")) {
-                        consume_int();
-                        expect(", ");
-                        consume_int();
-                        expect(")");
-                    }
-                    expect("]");
-                    if (expected_type == Type{}) {
-                        expected_type = Int(32);
-                    }
-                    return Load::make(expected_type, name, index, Buffer<>(),
-                                      Parameter(), const_true(), ModulusRemainder());
-                } else if (consume("(")) {
-                    vector<Expr> args;
-                    while (1) {
-                        consume_whitespace();
-                        if (consume(")")) break;
-                        args.push_back(parse_halide_expr(0));
-                        consume_whitespace();
-                        consume(",");
-                    }
-                    return Call::make(expected_type, name, args, Call::PureExtern);
-                } else {
-                    auto it = var_types.find(name);
-                    if (it != var_types.end()) {
-                        expected_type = it->second;
-                    }
-                    if (expected_type == Type{}) {
-                        expected_type = Int(32);
-                    }
-                    return Variable::make(expected_type, name);
-                }
+            if (incoming_variable()) {
+                return consume_variable(expected_type);
             }
 
             for (auto p : stack) {
@@ -524,6 +580,30 @@ Expr parse_halide_expr(const char *cursor, const char *end, Type expected_type) 
         result = parser.reparse_as_bool(result);
     }
     return result;
+}
+
+pair<string, Expr> parse_var_solver_pair(const char *cursor, const char *end, Type expected_type) {
+    Parser parser(cursor, end);
+    pair<string, Expr> result = parser.parse_var_solver_pair();
+    return result;
+}
+
+vector<pair<string, Expr>> parse_var_solver_pair_from_file(const std::string &filename) {
+    vector<pair<string, Expr>> solver_exprs;
+    std::ifstream input;
+    input.open(filename);
+    if (input.fail()) {
+        debug(0) << "parse_halide_exprs_from_file: Unable to open " << filename;
+        assert(false);
+    }
+    for (string line; std::getline(input, line);) {
+        if (line.empty()) continue;
+        const char *start = &line[0];
+        const char *end = &line[line.size()];
+        debug(0) << "Parsing: " << line << "\n";
+        solver_exprs.push_back(parse_var_solver_pair(start, end, Type{}));
+    }
+    return solver_exprs;
 }
 
 vector<Expr> parse_halide_exprs_from_file(const std::string &filename) {
