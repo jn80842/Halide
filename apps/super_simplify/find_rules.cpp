@@ -307,8 +307,26 @@ int main(int argc, char **argv) {
     const string blacklist_path = argv[3];
 
     // Generate LHS patterns from raw exprs
-    vector<Expr> exprs = parse_halide_exprs_from_file(input_exprs_path);
+    //vector<Expr> exprs = parse_halide_exprs_from_file(input_exprs_path);
+    vector<pair<string, Expr>> solver_exprs = parse_var_solver_pair_from_file(input_exprs_path);
+    debug(0) << "printing parsed expressions:\n";
+//    for (auto &e : solver_exprs) {
+//        debug(0) << e.first << " ~ " << e.second << "\n";
+//    }
 
+    for (auto &e : solver_exprs) {
+        debug(0) << "Input: " << e.first << " ~ " << e.second << "\n";
+        SolverResult sr = solve_expression(e.second, e.first);
+        debug(0) << "Old solved: " << sr.result << "\n";
+        Expr result = solve_trs_expression(e.second, e.first);
+        debug(0) << "TRS solved: " << result << "\n";
+    /*    if (!equal(sr.result, result)) {
+            debug(0) << "Different behavior on " << e.first << " ~ " << e.second << "\n";//<< " original result: " << sr.result << " TRS result: " << result << "\n";
+        } else {
+            debug(0) << "Same behavior on " << e.first << " ~ " << e.second << "\n";
+        } */
+    }
+    return 0;
     // Try to load a blacklist of patterns to skip over that are known
     // to fail. Delete the blacklist whenever you make a change that
     // might make things work for more expressions.
@@ -334,6 +352,7 @@ int main(int argc, char **argv) {
     map<Expr, int, IRDeepCompare> inputs_without_constants, patterns_without_constants;
 
     set<Expr, IRDeepCompare> patterns;
+    vector<Expr> exprs;
     size_t handled = 0, total = 0;
     for (auto &e : exprs) {
         e = substitute_in_all_lets(e);

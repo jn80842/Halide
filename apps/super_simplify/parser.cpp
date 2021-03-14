@@ -600,7 +600,7 @@ vector<pair<string, Expr>> parse_var_solver_pair_from_file(const std::string &fi
         if (line.empty()) continue;
         const char *start = &line[0];
         const char *end = &line[line.size()];
-        debug(0) << "Parsing: " << line << "\n";
+        debug(1) << "Parsing: " << line << "\n";
         solver_exprs.push_back(parse_var_solver_pair(start, end, Type{}));
     }
     return solver_exprs;

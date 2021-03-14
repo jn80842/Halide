@@ -7,6 +7,8 @@
 #include "IRMutator.h"
 #include "Simplify.h"
 #include "Substitute.h"
+#include "IRMatch.h"
+#include "ExprUsesVar.h"
 
 namespace Halide {
 namespace Internal {
@@ -21,6 +23,384 @@ namespace {
 bool no_overflow_int(Type t) {
     return t.is_int() && t.bits() >= 32;
 }
+
+// a minimal replacement for SolveExpression while we work out the kinks
+// don't reproduce any of the logging yet
+class SolveTRSExpression : public IRMutator {
+public:
+    SolveTRSExpression(const string &v) // not sure if we need scope?????? or why?
+         : failed(false), var(v), uses_var(false) {
+    }
+
+    using IRMutator::mutate;
+
+    Expr mutate(const Expr &e) override {
+        map<Expr, CacheEntry, ExprCompare>::iterator iter = cache.find(e);
+        if (iter == cache.end()) {
+            if (expr_uses_var(e, var)) {
+                Expr new_e = IRMutator::mutate(e);
+                CacheEntry entry = {new_e, true};
+                cache[e] = entry;
+                return new_e;
+            } else {
+                // no point rewriting an expr that doesn't use the target var
+                CacheEntry entry = {e, false};
+                cache[e] = entry;
+                return e;
+            }
+        } else {
+            // Cache hit.
+            uses_var = uses_var || iter->second.uses_var;
+            return iter->second.expr;
+        }
+    }
+    // Has the solve failed.
+    bool failed;
+private:
+    // The variable we're solving for.
+    string var;
+
+    // Whether or not the just-mutated expression uses the variable.
+    bool uses_var;
+
+    // Symbols used by rewrite rules
+    IRMatcher::Wild<0> x;
+    IRMatcher::Wild<1> y;
+//    IRMatcher::Wild<2> z;
+//    IRMatcher::Wild<3> w;
+//    IRMatcher::Wild<4> u;
+//    IRMatcher::Wild<5> v;
+    IRMatcher::WildConst<0> c0;
+//    IRMatcher::WildConst<1> c1;
+//    IRMatcher::WildConst<2> c2;
+//    IRMatcher::WildConst<3> c3;
+    IRMatcher::WildTargetVar<0> tarv0;
+    IRMatcher::WildTargetVar<1> tarv1;
+    IRMatcher::WildNonTargetVar<0> ntarv0;
+    IRMatcher::WildNonTargetVar<1> ntarv1;
+
+    // A cache of mutated results. Fortunately the mutator is
+    // stateless, so we can cache everything.
+    struct CacheEntry {
+        Expr expr;
+        bool uses_var;
+    };
+    map<Expr, CacheEntry, ExprCompare> cache;
+
+    // Internal lets. Already mutated.
+//    Scope<CacheEntry> scope;
+
+    // External lets.
+//    const Scope<Expr> &external_scope;
+
+        // Return the negative of an expr. Does some eager simplification
+    // to avoid injecting pointless -1s.
+    Expr negate(const Expr &e) {
+        internal_assert(!e.type().is_uint()) << "Negating unsigned is not legal\n";
+        const Mul *mul = e.as<Mul>();
+        if (mul && is_const(mul->b)) {
+            return mul->a * simplify(-1 * mul->b);
+        } else {
+            return e * -1;
+        }
+    }
+
+    using IRMutator::visit;
+
+    // Admit defeat. Isolated in a method for ease of debugging.
+    Expr fail(const Expr &e) {
+        debug(0) << "Failed to solve: " << e << "\n";
+        failed = true;
+        return Expr();
+    }
+
+    Expr visit(const Add *op) override {
+        // handle failed and uses_var flags
+        Expr a = mutate(op->a);
+        Expr b = mutate(op->b);
+        auto rewrite = IRMatcher::rewriter(IRMatcher::add(a, b), op->type);
+        rewrite.set_target_var(var);
+        if ((rewrite(ntarv0 + tarv0, tarv0 + ntarv0)) ||
+            (rewrite((tarv0 - x) + ntarv1, tarv0 + (ntarv1 - x))) ||
+            (rewrite((tarv0 + x) + ntarv1, tarv0 + (x + ntarv1))) ||
+            (rewrite(tarv0 + tarv0, tarv0 * 2)) ||
+            (rewrite((tarv0 + ntarv0) + tarv1, (tarv0 + tarv1) + ntarv0)) ||
+            (rewrite(tarv0 + (tarv1 + ntarv0), (tarv0 + tarv1) + ntarv0)) ||
+            (rewrite((tarv0 - ntarv0) + tarv1, (tarv0 + tarv1) - ntarv0)) ||
+            (rewrite(tarv0 + (tarv1 - ntarv0), (tarv0 + tarv1) - ntarv0)) ||
+            (rewrite((tarv0 * x) + (tarv0 * y), tarv0 * (x + y))) ||
+            (rewrite((tarv0 * x) + (tarv1 * x), (tarv0 + tarv1) * x)) ||
+            (rewrite((tarv0 * x) + tarv0, tarv0 * (x + 1))) ||
+            (rewrite(tarv0 + (tarv0 * x), tarv0 * (x + 1))) ||
+            (rewrite((tarv0 / x) + tarv1, (tarv0 + (tarv1 * x)) / x)) || // reduction order????
+            (rewrite(tarv0 + (x / tarv1), ((tarv0 * tarv1) + x) / tarv1)) || // reduction order?????*/
+            false ) {
+            return mutate(std::move(rewrite.result));
+        } else if (is_const(a) && is_const(b)) {
+            return simplify(a + b);
+        } else {
+            if (a.same_as(op->a) && b.same_as(op->b)) {
+                return op;
+            }
+            return Add::make(std::move(a), std::move(b));
+        }
+
+    }
+
+    Expr visit(const Sub *op) override {
+        Expr a = mutate(op->a);
+        Expr b = mutate(op->b);
+        auto rewrite = IRMatcher::rewriter(IRMatcher::sub(a, b), op->type);
+        rewrite.set_target_var(var);
+
+        if (op->type.is_uint()) {
+            if (rewrite(ntarv0 - (x - tarv0), tarv0 + (ntarv0 - x))) {
+                return mutate(std::move(rewrite.result));
+            } else {
+                return fail(a - b);
+            }
+        }
+
+        if (rewrite(0 - tarv0, 0 - tarv0)) { // negative escape hatch
+            return a - b;
+        }
+
+        if ((rewrite((tarv0 - x) - ntarv0, tarv0 - (x + ntarv0))) ||
+            (rewrite((tarv0 + x) - ntarv0, tarv0 + (x - ntarv0))) ||
+            (rewrite(ntarv0 - (tarv0 - x), (tarv0 * -1) + (ntarv0 + x))) ||
+            (rewrite(ntarv0 - (tarv0 + x), (tarv0 * -1) + (ntarv0 - x))) ||
+            (rewrite(ntarv0 - tarv0, (tarv0 * -1) + ntarv0)) ||
+            (rewrite((tarv0 + x) - tarv1, (tarv0 - tarv1) + x)) || // reduction order?
+            (rewrite(tarv0 - (tarv1 + x), (tarv0 - tarv1) - x)) || // reduction order?
+            (rewrite((tarv0 - x) - tarv1, (tarv0 - tarv1) - x)) || // reduction order?
+            (rewrite(tarv0 - (tarv1 - x), (tarv0 - tarv1) + x)) || // reduction order?
+            (rewrite((tarv0 * x) - (tarv0 * y), tarv0 * (x - y))) ||
+            (rewrite((tarv0 * x) - (tarv1 *x), (tarv0 - tarv1) * x)) ||
+            (rewrite((tarv0 / x) - tarv1, (tarv0 - (tarv1 * x)) / x)) || // reduction order?
+            false) {
+            return mutate(std::move(rewrite.result));
+        } else if (is_const(a) && is_const(b)) {
+            return simplify(a - b);
+        } else {
+            if (a.same_as(op->a) && b.same_as(op->b)) {
+                return op;
+            } else {
+                return a - b;
+            }
+        }
+    }
+
+
+    Expr visit(const Mul *op) override {
+        Expr a = mutate(op->a);
+        Expr b = mutate(op->b);
+        auto rewrite = IRMatcher::rewriter(IRMatcher::mul(a, b), op->type);
+        rewrite.set_target_var(var);
+
+        if ((rewrite(ntarv0 * tarv0, tarv0 * ntarv0)) ||
+            (rewrite((tarv0 + ntarv0) * ntarv1, tarv0 * ntarv1 + ntarv0 * ntarv1)) ||
+            (rewrite((tarv0 - ntarv0) * ntarv1, tarv0 * ntarv1 - ntarv0 * ntarv1)) ||
+            (rewrite((tarv0 * ntarv0) * ntarv1, tarv0 * (ntarv0 * ntarv1))) ||
+                false) {
+            return mutate(std::move(rewrite.result));
+        } else if (is_const(a) && is_const(b)) {
+            return simplify(a * b);
+        } else {
+            if (a.same_as(op->a) && b.same_as(op->b)) {
+                return op;
+            } else {
+                return a * b;
+            }
+        }
+    }
+
+    Expr visit(const Div *op) override {
+        Expr a = mutate(op->a);
+        Expr b = mutate(op->b);
+        auto rewrite = IRMatcher::rewriter(IRMatcher::div(a, b), op->type);
+        rewrite.set_target_var(var);
+
+        if ((rewrite((tarv0 + ntarv0) / ntarv1, tarv0/ntarv1 + ntarv0/ntarv1, (tarv0/ntarv1)*ntarv1 == tarv0)) ||
+            (rewrite((tarv0 - ntarv0) / ntarv1, tarv0/ntarv1 - ntarv0/ntarv1, (tarv0/ntarv1)*ntarv1 == tarv0)) ||
+            (rewrite((tarv0 * ntarv0) / ntarv1, tarv0 * (ntarv0/ntarv1), (tarv0/ntarv1)*ntarv1 == tarv0)) ||
+        false) {
+            return mutate(std::move(rewrite.result));
+        } else if (is_const(a) && is_const(b)) {
+            return simplify(a / b);
+        } else {
+            if (a.same_as(op->a) && b.same_as(op->b)) {
+                return op;
+            } else {
+                return a / b;
+            }
+        }
+    }
+
+    Expr visit(const Max *op) override {
+        Expr a = mutate(op->a);
+        Expr b = mutate(op->b);
+        auto rewrite = IRMatcher::rewriter(IRMatcher::max(a, b), op->type);
+        rewrite.set_target_var(var);
+
+        if ((rewrite(max(ntarv0, tarv0), max(tarv0, ntarv0))) ||
+            (rewrite(max(max(tarv0, ntarv0), ntarv1), max(tarv0, max(ntarv0, ntarv1)))) ||
+            (rewrite(max(tarv0, tarv0), tarv0)) ||
+            (rewrite(max(max(tarv0, ntarv0), tarv1), max(max(tarv0, tarv1), ntarv0))) ||
+            (rewrite(max(tarv0, max(tarv1, ntarv0)), max(max(tarv0, tarv1), ntarv0))) ||
+            (rewrite(max((tarv0 - x), tarv0), tarv0 - max(x, 0))) ||
+            (rewrite(max(tarv0, (tarv0 - x)), tarv0 - max(x, 0))) ||
+            (rewrite(max(tarv0 * c0, tarv1 * c0), max(tarv0, tarv1) * c0, c0 > 0)) ||
+            (rewrite(max(tarv0 * c0, tarv1 * c0), min(tarv0, tarv1) * c0, c0 < 0)) ||
+            false) {
+            return mutate(std::move(rewrite.result));
+        } else if (is_const(a) && is_const(b)) {
+            return simplify(max(a, b));
+        } else {
+            if (a.same_as(op->a) && b.same_as(op->b)) {
+                return op;
+            } else {
+                return max(a, b);
+            }
+        }
+    }
+
+    Expr visit(const Min *op) override {
+        Expr a = mutate(op->a);
+        Expr b = mutate(op->b);
+        auto rewrite = IRMatcher::rewriter(IRMatcher::min(a, b), op->type);
+        rewrite.set_target_var(var);
+
+        if ((rewrite(min(ntarv0, tarv0), min(tarv0, ntarv0))) ||
+            (rewrite(min(min(tarv0, ntarv0), ntarv1), min(tarv0, min(ntarv0, ntarv1)))) ||
+            (rewrite(min(tarv0, tarv0), tarv0)) ||
+            (rewrite(min(min(tarv0, ntarv0), tarv1), min(min(tarv0, tarv1), ntarv0))) ||
+            (rewrite(min(tarv0, min(tarv1, ntarv0)), min(min(tarv0, tarv1), ntarv0))) ||
+            (rewrite(min((tarv0 - x), tarv0), tarv0 - min(x, 0))) ||
+            (rewrite(min(tarv0, (tarv0 - x)), tarv0 - min(x, 0))) ||
+            (rewrite(min(tarv0 * c0, tarv1 * c0), min(tarv0, tarv1) * c0, c0 > 0)) ||
+            (rewrite(min(tarv0 * c0, tarv1 * c0), max(tarv0, tarv1) * c0, c0 < 0)) ||
+            false) {
+            return mutate(std::move(rewrite.result));
+        } else if (is_const(a) && is_const(b)) {
+            return simplify(min(a, b));
+        } else {
+            if (a.same_as(op->a) && b.same_as(op->b)) {
+                return op;
+            } else {
+                return min(a, b);
+            }
+        }
+    }
+
+    Expr visit(const And *op) override {
+        Expr a = mutate(op->a);
+        Expr b = mutate(op->b);
+        auto rewrite = IRMatcher::rewriter(IRMatcher::and_op(a, b), op->type);
+        rewrite.set_target_var(var);
+
+        if ((rewrite(ntarv0 && tarv0, tarv0 && ntarv0)) ||
+            (rewrite(tarv0 && tarv0, tarv0)) ||
+            (rewrite((tarv0 && ntarv0) && tarv1, (tarv0 && tarv1) && ntarv0)) ||
+            (rewrite(tarv0 && (tarv1 && ntarv0), (tarv0 && tarv1) && ntarv0)) ||
+            false) {
+            return mutate(std::move(rewrite.result));
+        } else if (is_const(a) && is_const(b)) {
+            return simplify(a && b);
+        } else {
+            if (a.same_as(op->a) && b.same_as(op->b)) {
+                return op;
+            } else {
+                return a && b;
+            }
+        }
+    }
+
+    Expr visit(const Or *op) override {
+        Expr a = mutate(op->a);
+        Expr b = mutate(op->b);
+        auto rewrite = IRMatcher::rewriter(IRMatcher::or_op(a, b), op->type);
+        rewrite.set_target_var(var);
+
+        if ((rewrite(ntarv0 || tarv0, tarv0 || ntarv0)) ||
+            (rewrite(tarv0 || tarv0, tarv0)) ||
+            (rewrite((tarv0 || ntarv0) || tarv1, (tarv0 || tarv1) || ntarv0)) ||
+            (rewrite(tarv0 || (tarv1 || ntarv0), (tarv0 || tarv1) || ntarv0)) ||
+            false) {
+            return mutate(std::move(rewrite.result));
+        } else if (is_const(a) && is_const(b)) {
+            return simplify(a || b);
+        } else {
+            if (a.same_as(op->a) && b.same_as(op->b)) {
+                return op;
+            } else {
+                return a || b;
+            }
+        }
+    }
+
+    Expr visit(const EQ *op) override {
+        Expr a = mutate(op->a);
+        Expr b = mutate(op->b);
+        auto rewrite = IRMatcher::rewriter(IRMatcher::eq(a, b), op->type);
+        rewrite.set_target_var(var);
+
+        if ((rewrite(ntarv0 == tarv0, tarv0 == ntarv0)) ||
+            (rewrite((tarv0 + ntarv0) == ntarv1, tarv0 == (ntarv1 - ntarv0))) ||
+            (rewrite((tarv0 - ntarv0) == ntarv1, tarv0 == (ntarv1 + ntarv0))) ||
+            (rewrite(tarv0 * ntarv0 == ntarv1, (tarv0 == (ntarv0 / ntarv1)) && ((ntarv1 % ntarv0) == 0))) ||
+            false) {
+            return mutate(std::move(rewrite.result));
+        } else if (is_const(a) && is_const(b)) {
+            return simplify(EQ::make(a, b));
+        } else {
+            if (a.same_as(op->a) && b.same_as(op->b)) {
+                return op;
+            } else {
+                return EQ::make(a, b);
+            }
+        }
+    }
+
+    Expr visit(const NE *op) override {
+        return mutate(Not::make(EQ::make(op->a, op->b)));
+    }
+
+    Expr visit(const LT *op) override {
+        Expr a = mutate(op->a);
+        Expr b = mutate(op->b);
+        auto rewrite = IRMatcher::rewriter(IRMatcher::lt(a, b), op->type);
+        rewrite.set_target_var(var);
+
+        if ((rewrite((tarv0 + ntarv0) < ntarv1, tarv0 < (ntarv1 - ntarv0))) ||
+            (rewrite((tarv0 - ntarv0) < ntarv1, tarv0 < (ntarv1 + ntarv0))) ||
+            (rewrite((tarv0 * c0) < ntarv0, tarv0 < ((ntarv0 - 1)/c0), c0 > 0)) ||
+            (rewrite((tarv0 / c0) < ntarv0, tarv0 < (c0 * ntarv0), c0 > 0)) ||
+            false) {
+            return mutate(std::move(rewrite.result));
+        } else if (is_const(a), is_const(b)) {
+            return simplify(LT::make(a, b));
+        } else {
+            if (a.same_as(op->a) && b.same_as(op->b)) {
+                return op;
+            } else {
+                return LT::make(a, b);
+            }
+        }
+    }
+
+    Expr visit(const LE *op) override {
+        return mutate(Not::make(LT::make(op->b, op->a)));
+    }
+
+    Expr visit(const GT *op) override {
+        return mutate(LT::make(op->b, op->a));
+    }
+
+    Expr visit(const GE *op) override {
+        return mutate(Not::make(LT::make(op->a, op->b)));
+    }
+
+};
 
 /** A mutator that moves all instances of a free variable as far left
  * and as far outermost as possible. See the test cases at the bottom
@@ -1152,6 +1532,11 @@ SolverResult solve_expression(const Expr &e, const std::string &variable, const 
              << "  " << e << "\n"
              << "  " << new_e << "\n";
     return {new_e, !solver.failed};
+}
+
+Expr solve_trs_expression(const Expr &e, const std::string &variable) {
+    SolveTRSExpression trs_solver(variable);
+    return trs_solver.mutate(e);
 }
 
 Interval solve_for_inner_interval(const Expr &c, const std::string &var) {
